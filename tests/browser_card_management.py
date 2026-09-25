@@ -138,7 +138,18 @@ def main():
                 create_topic(page,"Work")
                 create_topic(page,"BIM","Work")
                 create_topic(page,"Finance")
-                edit_topics(page,"ngân hàng",["BIM","Finance"])
+                page.locator('[data-action="topics"]').click()
+                expect(page.locator(".topic-branch")).to_have_count(3)
+                work_branch=page.locator(".topic-branch").filter(has_text="Work").first
+                work_branch.locator("summary").click()
+                expect(work_branch).not_to_have_attribute("open","")
+                work_branch.locator("summary").click()
+                finance_branch=page.locator(".topic-tree > .topic-branch").filter(has_text="Finance").first
+                finance_branch.locator('[data-action="moveTopicDown"]').click()
+                roots=page.locator(".topic-tree > .topic-branch > summary")
+                expect(roots.first).to_contain_text("Work")
+                page.locator('[data-action="close"]').click()
+                edit_topics(page,"ngân hàng",["Work > BIM","Finance"])
                 edit_topics(page,"bờ sông",["Finance"])
                 sync_now(page)
                 page.reload(wait_until="networkidle")
@@ -150,7 +161,7 @@ def main():
                 page.locator('[data-action="toggleSelectAll"]').click()
                 page.locator('[data-action="bulkTopic"]').click()
                 page.locator('#bulk-topic-form [name="categoryId"]').select_option(
-                    label="BIM"
+                    label="Work > BIM"
                 )
                 page.locator('#bulk-topic-form [name="operation"]').select_option("remove")
                 page.locator('#bulk-topic-form [type="submit"]').click()
