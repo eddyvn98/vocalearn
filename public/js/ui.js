@@ -18,7 +18,7 @@ let opener,bound=false;
 export function modal(title,html) {
   const d=document.querySelector('#modal');opener=document.activeElement;
   d.innerHTML=`<header class="row between"><h2 id="dialog-title">${esc(title)}</h2>${button('&times;','close','icon-button',`aria-label="${t('close')}"`)}</header>${html}<p id="form-error" class="error-text" role="alert"></p>`;
-  if(!bound){d.addEventListener('close',()=>{if(opener?.isConnected)opener.focus();});bound=true;}
+  if(!bound){d.addEventListener('close',()=>{const target=opener;setTimeout(()=>{if(target?.isConnected)target.focus();},0);});bound=true;}
   d.showModal();
   requestAnimationFrame(()=>d.querySelector('input,select,textarea,button,[href]')?.focus());
 }
