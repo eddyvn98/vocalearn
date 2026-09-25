@@ -29,6 +29,7 @@ export async function refresh() {
   return replay(cached);
 }
 export const model = () => replay(cached);
+export const localEvents = () => [...cached];
 export const pendingCount = () => cached.filter(e=>!e.seq).length;
 export const getMeta = key => request(db.transaction('meta').objectStore('meta').get(key));
 export async function setMeta(key,value) {
