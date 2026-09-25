@@ -31,15 +31,25 @@ export function workbookToCards(book, mapping = detectMapping(book.rows[0]?.cell
     if(!Object.values(cells).some(v=>v.trim())&&!book.imageRows.has(row))continue;
     const card = Object.fromEntries(COLUMNS.filter(c=>mapping[c.key]).map(c=>[c.key,(cells[mapping[c.key]] || '').trim()]));
     if(!card.word){errors.push({row,message:'Missing Word'});continue;}
-    let answers = [];
-    if(card.answers) {
-      try {answers=card.answers.startsWith('[')?JSON.parse(card.answers):card.answers.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);}
-      catch {errors.push({row,message:'Invalid answers list'});continue;}
-    }
-    if(!Array.isArray(answers)||answers.some(a=>typeof a!=='string')) {errors.push({row,message:'Invalid answers list'});continue;}
+    const parseList=(raw,label)=>{
+      if(!raw)return [];
+      try{
+        const parsed=raw.startsWith('[')?JSON.parse(raw):raw.split(/[,;\n]/).map(v=>v.trim()).filter(Boolean);
+        if(!Array.isArray(parsed)||parsed.some(v=>typeof v!=='string'))throw new Error();
+        return parsed;
+      }catch{throw new Error(`Invalid ${label} list`);}
+    };
+    let answers=[],variants=[],synonyms=[],antonyms=[],collocations=[],wordFamily=[],tags=[],custom={};
+    try{
+      answers=parseList(card.answers,'answers');variants=parseList(card.variants,'variants');
+      synonyms=parseList(card.synonyms,'synonyms');antonyms=parseList(card.antonyms,'antonyms');
+      collocations=parseList(card.collocations,'collocations');wordFamily=parseList(card.wordFamily,'word family');
+      tags=parseList(card.tags,'tags');
+      if(card.custom){custom=JSON.parse(card.custom);if(!custom||typeof custom!=='object'||Array.isArray(custom))throw new Error('Invalid custom fields');}
+    }catch(error){errors.push({row,message:error.message});continue;}
     const embedded=book.imageRows.get(row),images=Array.isArray(embedded)?embedded:embedded?[embedded]:[];
-    cards.push({...card,answers,image:images.length===1?images[0]:card.image||'',
-      imageCandidates:images.length>1?images:[],row});
+    cards.push({...card,answers,variants,synonyms,antonyms,collocations,wordFamily,tags,custom,
+      image:images.length===1?images[0]:card.image||'',imageCandidates:images.length>1?images:[],row});
   }
   return {cards,errors,warnings:book.warnings,skipped:0,mapping};
 }
