@@ -8,6 +8,7 @@ import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';
 import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
+import {customFields,saveCustomField,deleteCustomField} from './card-schema.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 import {installAccessibility,isComposing} from './a11y.js';
@@ -67,6 +68,9 @@ async function click(action,el){
   if(action==='clearScope'){app.selectedCards.clear();app.scope=[];closeModal();app.render();return persistView();}
   if(action==='topicScope'){app.selectedCards.clear();app.scope=[el.dataset.id];app.render();return persistView();}
   if(action==='topics'||action==='editTopic')return topics(el.dataset.id);
+  if(action==='addSubtopic')return topics(null,el.dataset.id);
+  if(action==='customFields'||action==='editCustomField')return customFields(el.dataset.id);
+  if(action==='deleteCustomField')return deleteCustomField(el.dataset.id);
   if(action==='deleteTopic'){
     if(!confirm('Delete this topic and its subtopics? Cards will be kept.'))return;
     await commit([prepare('deleteCategory',{id:el.dataset.id})]);topics();return app.render();
@@ -99,10 +103,19 @@ async function click(action,el){
   if(action==='bulkTopic'){
     pruneSelection();
     const cs=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
-    return modal('Gán chủ đề hàng loạt',`<form id="bulk-topic-form" class="stack"><label>Chủ đề<select name="categoryId">${cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">Gán cho ${app.selectedCards.size} thẻ</button></form>`);
+    if(!cs.length)throw new Error(t('noTopics'));
+    return modal(t('topics'),`<form id="bulk-topic-form" class="stack">
+      <label>${t('topics')}<select name="categoryId">${cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
+      <label>${t('mode')}<select name="operation"><option value="assign">${t('assignTopic')}</option><option value="remove">${t('removeTopic')}</option></select></label>
+      <button type="submit" class="btn primary">${t('save')} · ${app.selectedCards.size} thẻ</button></form>`);
   }
   if(action==='trash')return trash();
   if(action==='restoreWord'){await commit([prepare('restoreWord',{id:el.dataset.id})]);trash();app.render();}
+  if(action==='restoreAllWords'){
+    const deleted=Object.values(app.model.words).filter(w=>w.deleted&&w.setId===app.setId);
+    if(!deleted.length||!confirm(`${t('restoreAll')} ${deleted.length} thẻ?`))return;
+    await commit(deleted.map(w=>prepare('restoreWord',{id:w.id})));trash();app.render();return;
+  }
   if(action==='restoreField'){
     const conflict=app.model.conflicts.find(c=>c.eventId===el.dataset.id&&c.field===el.dataset.field);
     const word=app.model.words[conflict.wordId];
@@ -129,6 +142,7 @@ document.addEventListener('submit',async e=>{
       app.setId=id;await navigate('home');
     }
     if(form.id==='word-form')await saveWord(form);
+    if(form.id==='custom-field-form')await saveCustomField(form);
     if(form.id==='answer-form')await submitInput(new FormData(form).get('answer'));
     if(form.id==='settings-form')await saveSettings(form);
     if(form.id==='scope-form'){app.selectedCards.clear();app.scope=new FormData(form).getAll('scope');closeModal();app.render();await persistView();}
@@ -140,8 +154,14 @@ document.addEventListener('submit',async e=>{
     }
     if(form.id==='bulk-topic-form'){
       pruneSelection();
-      const catId=new FormData(form).get('categoryId');
-      await commit(Array.from(app.selectedCards).map(wordId=>prepare('link',{wordId,categoryId:catId,base:app.model.links[`${wordId}/${catId}`]?.rev||null})));
+      const data=new FormData(form),catId=data.get('categoryId'),operation=data.get('operation');
+      const events=[];
+      for(const wordId of app.selectedCards){
+        const link=app.model.links[`${wordId}/${catId}`],linked=link&&!link.removed;
+        if(operation==='assign'&&!linked)events.push(prepare('link',{wordId,categoryId:catId,base:link?.rev||null}));
+        if(operation==='remove'&&linked)events.push(prepare('unlink',{wordId,categoryId:catId,base:link.rev}));
+      }
+      if(events.length)await commit(events);
       app.selectedCards.clear();closeModal();return app.render();
     }
   }catch(error){showError(error);}finally{app.busy=false;if(submit?.isConnected)submit.disabled=false;}
