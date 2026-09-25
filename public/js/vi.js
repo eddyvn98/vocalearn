@@ -168,7 +168,7 @@ export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidF
   "advanced": "Trường bổ sung",
   "imageFile": "Thêm ảnh (PNG/JPG/WebP)",
   "audioFile": "Audio offline (MP3/WAV/OGG/WebM/MP4, tối đa 3 MB)",
-  "mediaHelp": "Tệp được lưu cục bộ và đồng bộ cùng thẻ.",
+  "mediaHelp": "Tệp được lưu cục bộ, nén khi cần và đồng bộ riêng theo SHA-256; thẻ chỉ giữ mã tham chiếu.",
   "offlineResources": "Tài nguyên ngoại tuyến",
   "mediaReferences": "tài nguyên đang được thẻ tham chiếu",
   "mediaAvailable": "đã có trên thiết bị",
