@@ -10,6 +10,7 @@ import {setup,studyAction,submitInput,startClock,stopClock} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
+import {installAccessibility,isComposing} from './a11y.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -112,7 +113,7 @@ document.addEventListener('click',async e=>{
   app.busy=true;try{await click(el.dataset.action,el);}catch(error){showError(error);}finally{app.busy=false;}
 });
 document.addEventListener('submit',async e=>{
-  e.preventDefault();if(app.busy)return;app.busy=true;
+  e.preventDefault();if(e.target.id==='answer-form'&&isComposing())return;if(app.busy)return;app.busy=true;
   const form=e.target,submit=form.querySelector('[type="submit"]');if(submit)submit.disabled=true;
   try{
     if(form.id==='auth-form'){
@@ -142,7 +143,6 @@ document.addEventListener('submit',async e=>{
     }
   }catch(error){showError(error);}finally{app.busy=false;if(submit?.isConnected)submit.disabled=false;}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.isComposing)e.preventDefault();});
 document.addEventListener('input',e=>{
   if(e.target.closest('#word-form'))app.dirty=true;
   if(e.target.id==='search'){const pos=e.target.selectionStart;app.selectedCards.clear();app.query=e.target.value;app.render();const search=document.querySelector('#search');search.focus();try{search.setSelectionRange(pos,pos);}catch{}}
@@ -179,6 +179,7 @@ setInterval(async()=>{
     }
   }catch{}
 },30000);
+installAccessibility();
 try{
   const cached=JSON.parse(localStorage.getItem('vocalearn-user')||'null');
   let user;try{user=(await api('me')).user;}catch{user=cached;}
