@@ -18,7 +18,7 @@ export function validateEvent(e) {
           seen.add(field.id);
           if (field.type === 'select') {
             if (!Array.isArray(field.options) || field.options.length < 1 || field.options.length > 50
-              || field.options.some(option=>!text(option,200)||!option.trim())) fail('Invalid custom options');
+              || field.options.some(option=>!text(option,200)||!option.trim()) || new Set(field.options).size!==field.options.length) fail('Invalid custom options');
           } else if (field.options !== undefined && (!Array.isArray(field.options) || field.options.length)) fail('Invalid custom options');
         }
       }
