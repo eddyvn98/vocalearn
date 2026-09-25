@@ -6,6 +6,7 @@ import {validateEvent} from '../core/validation.js';
 import {RECOGNITION} from '../core/grading.js';
 import {validateReview} from './reviews.js';
 import {opportunityId} from '../core/opportunity.js';
+import {createMediaTable} from './media.js';
 export function openDatabase(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
@@ -15,6 +16,7 @@ export function openDatabase(path) {
     CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT NOT NULL REFERENCES users(id),event_id TEXT NOT NULL,payload TEXT NOT NULL,UNIQUE(user_id,event_id));
     CREATE INDEX IF NOT EXISTS user_events ON events(user_id,seq);
     CREATE TABLE IF NOT EXISTS devices(user_id TEXT,device_id TEXT,server_at INTEGER,client_at INTEGER,PRIMARY KEY(user_id,device_id));`);
+  createMediaTable(db);
   return db;
 }
 export function allEvents(db, userId) {
