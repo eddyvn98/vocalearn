@@ -15,7 +15,9 @@ export async function openStore(user) {
       if(!req.result.objectStoreNames.contains('meta'))req.result.createObjectStore('meta');
       if(!req.result.objectStoreNames.contains('media'))req.result.createObjectStore('media',{keyPath:'id'});
     };
-    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>{req.result.onversionchange=()=>req.result.close();resolve(req.result);};
+    req.onblocked=()=>reject(new Error('Close other VocaLearn tabs and reload to upgrade offline storage'));
+    req.onerror=()=>reject(req.error);
   });
   deviceId = await getMeta('deviceId');
   if (!deviceId) {deviceId=uuid();await setMeta('deviceId',deviceId);}
