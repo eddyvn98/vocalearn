@@ -10,6 +10,10 @@ test('Excel export and import round-trip with embedded image', async () => {
       meaning: 'kiên cường',
       ipa: '/rɪˈzɪl.jənt/',
       pos: 'adj',
+      level: 'B2',
+      variants: ['resilience','resiliently'],
+      tags: ['work','character'],
+      custom: {Source:'Internal notes',Priority:'high'},
       sentence: 'She is ___ under pressure.',
       answers: ['resilient'],
       note: 'Tập trung học',
@@ -41,6 +45,10 @@ test('Excel export and import round-trip with embedded image', async () => {
   assert.equal(result.cards[0].meaning, 'kiên cường');
   assert.equal(result.cards[0].ipa, '/rɪˈzɪl.jənt/');
   assert.equal(result.cards[0].pos, 'adj');
+  assert.equal(result.cards[0].level, 'B2');
+  assert.deepEqual(result.cards[0].variants, ['resilience','resiliently']);
+  assert.deepEqual(result.cards[0].tags, ['work','character']);
+  assert.deepEqual(result.cards[0].custom, {Source:'Internal notes',Priority:'high'});
   assert.equal(result.cards[0].sentence, 'She is ___ under pressure.');
   assert.deepEqual(result.cards[0].answers, ['resilient']);
   assert.equal(result.cards[0].note, 'Tập trung học');
