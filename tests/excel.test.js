@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {cardsToXlsx, xlsxToCards} from '../core/excel.js';
 
-test('Excel export and import round-trip with embedded image', () => {
+test('Excel export and import round-trip with embedded image', async () => {
   const dummyImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
   const originalCards = [
     {
@@ -31,11 +31,11 @@ test('Excel export and import round-trip with embedded image', () => {
     }
   ];
 
-  const buffer = cardsToXlsx(originalCards);
-  assert.ok(Buffer.isBuffer(buffer));
+  const buffer = await cardsToXlsx(originalCards);
+  assert.ok(buffer instanceof Uint8Array || Buffer.isBuffer(buffer));
   assert.ok(buffer.length > 500);
 
-  const result = xlsxToCards(buffer);
+  const result = await xlsxToCards(buffer);
   assert.equal(result.cards.length, 2);
   assert.equal(result.cards[0].word, 'resilient');
   assert.equal(result.cards[0].meaning, 'kiên cường');
@@ -50,7 +50,7 @@ test('Excel export and import round-trip with embedded image', () => {
   assert.equal(result.cards[1].meaning, 'ngân hàng');
 });
 
-test('Excel sense-aware duplicate handling: same word different meaning accepted, exact duplicate skipped', () => {
+test('Excel sense-aware duplicate handling: same word different meaning accepted, exact duplicate skipped', async () => {
   const existing = [
     {word: 'bank', meaning: 'ngân hàng'}
   ];
@@ -59,8 +59,8 @@ test('Excel sense-aware duplicate handling: same word different meaning accepted
     {word: 'bank', meaning: 'ngân hàng'}, // identical sense -> skip
     {word: 'river', meaning: 'dòng sông'}
   ];
-  const buffer = cardsToXlsx(newCards);
-  const result = xlsxToCards(buffer, existing);
+  const buffer = await cardsToXlsx(newCards);
+  const result = await xlsxToCards(buffer, existing);
 
   assert.equal(result.cards.length, 2);
   assert.equal(result.skipped, 1);
