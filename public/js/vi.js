@@ -105,6 +105,7 @@ export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidF
   "selected": "Đang chọn",
   "saved": "Đã lưu trên thiết bị",
   "saveError": "Chưa lưu được. Giữ màn hình và thử lại.",
+  "answeredElsewhere": "Cơ hội này đã được trả lời ở tab khác. Kết quả đầu tiên đã được giữ.",
   "sync": "Đồng bộ",
   "pending": "thay đổi chờ đồng bộ",
   "synced": "Đã đồng bộ",
