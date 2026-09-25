@@ -1,6 +1,6 @@
 import {gradeAnswer,normalize} from '../core/grading.js';
 import {DEFAULTS,scheduleFor} from '../core/srs.js';
-import {question as makeQuestion,GAME_FACES,reasons} from '../core/questions.js';
+import {question as makeQuestion,GAME_FACES,answerFaces,defaultAnswerFace,reasons} from '../core/questions.js';
 import {isDue} from '../core/time.js';
 import {WORD_FIELDS} from '../core/validation.js';
 const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
@@ -38,11 +38,18 @@ export function validateReview(state, event, events) {
   if(typeof input!=='string'||input.length>5000)throw new Error('Invalid answer input');
   const face=d.face || (d.game.startsWith('cloze')?'sentence':d.game==='match'?'word':
     d.question.prompt===snapshot.word && d.game==='quiz'?'word':'meaning');
+  const legacyAnswerFace=d.game==='quiz'&&face==='word'?'meaning':'word';
+  const answerFace=d.answerFace||legacyAnswerFace;
   if(d.schemaVersion===2 && !GAME_FACES[d.game]?.includes(face))throw new Error('Invalid game face');
   if(d.schemaVersion===2 && !snapshot[face] && face!=='sentence')throw new Error('Missing question resource');
-  const answers=d.game.startsWith('cloze') ? snapshot.answers : d.game==='quiz'&&face==='word' ? [snapshot.meaning] : [snapshot.word];
+  if(d.schemaVersion===2&&d.answerFace&&['quiz','match'].includes(d.game)&&!answerFaces(d.game,face).includes(answerFace))
+    throw new Error('Invalid answer face');
+  const answers=d.game.startsWith('cloze')?snapshot.answers:
+    d.answerFace&&['quiz','match'].includes(d.game)?[snapshot[answerFace]]:
+    d.game==='quiz'&&face==='word'?[snapshot.meaning]:[snapshot.word];
   if(!Array.isArray(answers)||answers.some(a=>typeof a!=='string'||!a.trim())||!same(d.question.answers,answers))throw new Error('Question answer key mismatch');
-  const prompt=['image','audio'].includes(face)?`[${face}]`:d.game.startsWith('cloze')?snapshot.sentence:d.game==='match'?snapshot.word:snapshot[face];
+  const prompt=['image','audio'].includes(face)?`[${face}]`:d.game.startsWith('cloze')?snapshot.sentence:
+    d.answerFace&&d.game==='match'?snapshot[face]:d.game==='match'?snapshot.word:snapshot[face];
   if(d.schemaVersion===2 && d.question.prompt!==prompt)throw new Error('Question prompt mismatch');
   const attempts=events.filter(e=>e.kind==='attempt'&&e.data.questionId===d.questionId);
   if(attempts.some(e=>e.data.wordId!==d.wordId))throw new Error('Question belongs to another word');
@@ -50,6 +57,7 @@ export function validateReview(state, event, events) {
   const unknown=d.unknown===true || d.schemaVersion!==2 && d.grade==='forget';
   let correct=!unknown && answers.some(a=>normalize(a)===normalize(input));
   if(d.game==='flash')correct=!unknown;
+  if(d.game==='quiz'&&d.answerFace==='image')correct=!unknown&&d.selectedWordId===d.wordId;
   if(d.game==='match')correct=!unknown && (d.selectedWordId===d.wordId || d.schemaVersion!==2 && d.grade!=='forget');
   const expected=gradeAnswer({correct,game:d.game,hint:d.hint||false,hadError:d.hadError,
     activeMs:d.activeMs,interrupted:d.interrupted||false,answer:answers[0],easyMs:d.config?.easyMs});
@@ -60,7 +68,8 @@ export function validateReview(state, event, events) {
   const related=events.slice(reset+1).filter(e=>e.data.wordId===current.id);
   const pool=Object.values(state.words).filter(w=>!w.deleted&&w.setId===current.setId).map(w=>w.id===snapshot.id?snapshot:w);
   const bestFace=snapshot.meaning?'meaning':snapshot.ipa?'ipa':'image';
-  event.reviewGate={ready:!!snapshot.ready,hasAudio:!!snapshot.audio,quizAvailable:!reasons(snapshot,'quiz',bestFace,pool).length};
+  event.reviewGate={ready:!!snapshot.ready,hasAudio:!!snapshot.audio,
+    quizAvailable:!reasons(snapshot,'quiz',bestFace,pool,defaultAnswerFace('quiz',bestFace)).length};
   const history=scheduleFor(current.generation,related),base=history.states.get(d.baseRev);
   if(!base) {
     // A child may arrive before its parent. Replay gates it when that parent exists.
@@ -70,7 +79,7 @@ export function validateReview(state, event, events) {
   if(base.phase==='new' && d.mode!=='new' || base.phase!=='new' && d.mode==='new')throw new Error('Invalid learning mode');
   if(base.phase!=='new'&&!isDue(base,event.effectiveAt,d.config?.zone||DEFAULTS.zone))throw new Error('Review step is not due');
   const word={...snapshot,review:base};
-  const generated=makeQuestion(word,pool,d.game,face,d.mode,d.config,()=> 'validation');
+  const generated=makeQuestion(word,pool,d.game,face,d.mode,d.config,()=> 'validation',d.answerFace);
   if(generated.blocked||generated.game!==d.game||!!d.familiarize!==generated.familiarize)throw new Error('Invalid learning step or unavailable game');
   if(generated.familiarize && (d.grade!=='hard'||d.hadError||d.assisted))throw new Error('Familiarization is not a scored failure');
   event.scheduleEligible=true;

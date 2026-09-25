@@ -3,10 +3,14 @@ import {t,esc,button,badge,brand} from '../ui.js';
 import {pendingCount} from '../storage.js';
 import {shell} from './shell.js';
 import {usesAudio} from '/core/questions.js';
+function faceValue(face,value,alt='') {
+  if(face==='image')return `<img class="answer-image" src="${esc(value)}" alt="${esc(alt||t('image'))}">`;
+  return esc(value);
+}
 function feedback(q) {
   if(!q.result)return '';
   const ok=q.result.grade!=='forget';
-  return `<section id="feedback" tabindex="-1" class="feedback ${ok?'':'bad'}" role="status"><div class="row between wrap"><h2>${t(ok?q.hadError?'afterFix':q.hint?'withHint':'correct':'wrong')}</h2>${q.familiarize?'':badge(t(q.result.grade),ok?'good':'warn')}</div><p class="result-word">${esc(q.answers.join(' / '))} <span>${esc(q.snapshot.meaning)}</span></p>${q.game.startsWith('cloze')?`<p>${esc(q.prompt.replace('___',q.answers[0]))}</p>`:''}<p>${esc(q.snapshot.note||'')}</p>
+  return `<section id="feedback" tabindex="-1" class="feedback ${ok?'':'bad'}" role="status"><div class="row between wrap"><h2>${t(ok?q.hadError?'afterFix':q.hint?'withHint':'correct':'wrong')}</h2>${q.familiarize?'':badge(t(q.result.grade),ok?'good':'warn')}</div><p class="result-word">${q.answerFace==='image'?faceValue('image',q.answers[0],q.snapshot.word):esc(q.answers.join(' / '))} <span>${esc(q.snapshot.meaning)}</span></p>${q.game.startsWith('cloze')?`<p>${esc(q.prompt.replace('___',q.answers[0]))}</p>`:''}<p>${esc(q.snapshot.note||'')}</p>
   <p class="muted small">${q.result.assisted?t('helpCap'):q.result.grade==='hard'&&!q.familiarize?t('recognitionCap'):''}</p><div class="row between wrap"><small>${t(q.mode==='free'||q.mode==='errors'?'noSchedule':'localSchedule')} \u00b7 ${t('saved')}</small>${button(t('next'),'next','primary')}</div></section>`;
 }
 function typing(q) {
@@ -30,13 +34,28 @@ export function studyView() {
   ${q.hint?`<p class="info">${t('hint')}: ${esc(q.snapshot.ipa||q.answers[0].slice(0,1)+'\u2026')} \u00b7 ${t('helpCap')}</p>`:''}
   ${['typing','dictation','cloze'].includes(q.game)?typing(q):q.game==='spell'?spelling(q):q.game==='flash'?`
   ${q.flipped?`<div class="flash-back"><h2>${esc(q.snapshot.word)}</h2><p>${esc(q.snapshot.meaning)}</p><p class="muted">${esc(q.snapshot.ipa||'')}</p><p>${esc(q.snapshot.note||'')}</p></div>${!q.result?`<div class="row center wrap">${q.familiarize?button(t('next'),'remember','primary'):button(t('forget'),'unknown')+button(t('remember'),'remember','primary')}</div>`:''}`:button(t('show'),'flip','primary full',usesAudio(q)&&!q.audioPlayed?'disabled':'')}`:
-  `<div class="answers">${q.choices.map((c,i)=>button(`${String.fromCharCode(65+i)}. ${esc(c.label)}${q.result&&c.correct?' \u2713':''}`,'choose',`answer ${q.result&&c.correct?'correct':q.result&&q.chosen===i?'wrong':''}`,`data-index="${i}" ${q.result||usesAudio(q)&&!q.audioPlayed?'disabled':''}`)).join('')}</div>`}
+  `<div class="answers">${q.choices.map((choice,i)=>button(
+    `${String.fromCharCode(65+i)}. ${faceValue(q.answerFace,choice.label,q.answerFace==='image'?t('image'):'')}${q.result&&choice.correct?' ✓':''}`,
+    'choose',`answer ${q.result&&choice.correct?'correct':q.result&&q.chosen===i?'wrong':''}`,
+    `data-index="${i}" ${q.result||usesAudio(q)&&!q.audioPlayed?'disabled':''}`)).join('')}</div>`}
   ${feedback(q)}<p id="study-error" class="error-text" role="alert">${esc(s.error||'')}</p></section><p class="muted small center">${t('saved')} \u00b7 ${pendingCount()} ${t('pending')}</p></main>`;
 }
 function matchView() {
   const s=app.session,done=s.queue.filter(q=>q.result).length;
-  const answers=s.matchOrder.map(i=>s.queue[i]);
-  return `<main class="study-shell"><header class="row between wrap">${brand()}${button(t('pause'),'pause')}</header><div class="study-meta row between">${badge(t(s.mode)+' \u00b7 '+t('match'))}<span>${done}/${s.queue.length}</span></div><progress max="${s.queue.length}" value="${done}" aria-label="${t('answered')}"></progress><section class="question-panel"><h1 tabindex="-1">${t('match')}</h1><p class="muted">${t('matchPrompt')}</p><div class="matching"><div role="group" aria-label="${t('word')}">${s.queue.map((q,i)=>button(`${esc(q.snapshot.word)} ${q.result?'\u2713 '+t('matched'):s.selected===i?t('selected'):''}`,'matchLeft',`match-cell ${s.selected===i?'selected':''}`,`data-index="${i}" aria-pressed="${s.selected===i}" ${q.result?'disabled':''}`)).join('')}</div><div role="group" aria-label="${t('meaning')}">${answers.map(q=>button(`${esc(q.snapshot.meaning)} ${q.result?'\u2713':''}`,'matchRight','match-cell',`data-id="${q.wordId}" ${q.result?'disabled':''}`)).join('')}</div></div><p role="status" class="error-text">${esc(s.matchMessage||'')}</p><p id="study-error" class="error-text" role="alert">${esc(s.error||'')}</p>${done===s.queue.length?button(t('results'),'finish','primary'):''}</section></main>`;
+  const answers=s.matchOrder.map(i=>s.queue[i]),sample=s.queue[0];
+  const left=q=>faceValue(q.face,q.prompt,q.snapshot.word);
+  const right=q=>faceValue(q.answerFace,q.answers[0],q.snapshot.word);
+  return `<main class="study-shell"><header class="row between wrap">${brand()}${button(t('pause'),'pause')}</header>
+  <div class="study-meta row between">${badge(t(s.mode)+' · '+t('match'))}<span>${done}/${s.queue.length}</span></div>
+  <progress max="${s.queue.length}" value="${done}" aria-label="${t('answered')}"></progress>
+  <section class="question-panel"><h1 tabindex="-1">${t('match')}</h1><p class="muted">${t('matchPrompt')}</p>
+  <div class="matching"><div role="group" aria-label="${t(sample?.face||'word')}">${s.queue.map((q,i)=>button(
+    `${left(q)} ${q.result?'✓ '+t('matched'):s.selected===i?t('selected'):''}`,'matchLeft',
+    `match-cell ${s.selected===i?'selected':''}`,`data-index="${i}" aria-pressed="${s.selected===i}" ${q.result?'disabled':''}`)).join('')}</div>
+  <div role="group" aria-label="${t(sample?.answerFace||'meaning')}">${answers.map(q=>button(
+    `${right(q)} ${q.result?'✓':''}`,'matchRight','match-cell',`data-id="${q.wordId}" ${q.result?'disabled':''}`)).join('')}</div></div>
+  <p role="status" class="error-text">${esc(s.matchMessage||'')}</p><p id="study-error" class="error-text" role="alert">${esc(s.error||'')}</p>
+  ${done===s.queue.length?button(t('results'),'finish','primary'):''}</section></main>`;
 }
 export function resultsView() {
   const s=app.session,answered=s.queue.filter(q=>q.result),now=Date.now();

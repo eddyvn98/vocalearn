@@ -66,6 +66,11 @@ jobs:
         env:
           PW_BROWSER: ${{ matrix.browser }}
         run: python tests/browser_late_parent.py
+      - name: Run study setup matrix acceptance
+        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
+        env:
+          PW_BROWSER: ${{ matrix.browser }}
+        run: python tests/browser_study_setup.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

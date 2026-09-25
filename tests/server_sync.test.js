@@ -149,3 +149,28 @@ test('Different devices may report the same scheduled opportunity for conservati
   const all=await request('/api/sync',batch([], 'dev1'));
   assert.equal(all.data.events.filter(e=>e.data.opportunityId==='schedule:word2:root-word2').length,2);
 });
+
+
+test('Server accepts an explicit quiz answer face frozen in the question snapshot', async () => {
+  const answer=event('face-answer','answer',{
+    schemaVersion:2,wordId:'word1',questionId:'q-face',opportunityId:'question:q-face',
+    baseRev:'root-word1',mode:'free',game:'quiz',face:'word',answerFace:'meaning',
+    grade:'hard',hadError:false,assisted:false,hint:false,unknown:false,activeMs:1200,
+    input:'con meo',config:DEFAULTS,familiarize:false,
+    question:{prompt:'cat',answers:['con meo'],word:'cat',meaning:'con meo',fields:{word:'w1',meaning:'w1'}}
+  });
+  const r=await request('/api/sync',batch([answer]));
+  assert.equal(r.status,200);
+});
+
+test('Server rejects a quiz whose explicit answer face equals its prompt face', async () => {
+  const answer=event('bad-face-answer','answer',{
+    schemaVersion:2,wordId:'word1',questionId:'q-bad-face',opportunityId:'question:q-bad-face',
+    baseRev:'root-word1',mode:'free',game:'quiz',face:'word',answerFace:'word',
+    grade:'hard',hadError:false,assisted:false,hint:false,unknown:false,activeMs:1200,
+    input:'cat',config:DEFAULTS,familiarize:false,
+    question:{prompt:'cat',answers:['cat'],word:'cat',meaning:'con meo',fields:{word:'w1',meaning:'w1'}}
+  });
+  const r=await request('/api/sync',batch([answer]));
+  assert.equal(r.status,400);
+});

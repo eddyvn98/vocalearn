@@ -127,9 +127,11 @@ def exercise_six_games(page):
     # G-03 Matching
     start_game(page, "match")
     left = page.locator('[data-action="matchLeft"]').first
-    word = left.inner_text().strip()
+    expected = page.evaluate(
+        "() => import('/js/state.js').then(m => m.app.session.queue[0].answers[0])"
+    )
     left.click()
-    page.locator('[data-action="matchRight"]').filter(has_text=WORD_TO_MEANING[word]).first.click()
+    page.locator('[data-action="matchRight"]').filter(has_text=expected).first.click()
     expect(page.locator('[data-action="matchLeft"]').first).to_be_disabled()
     finish_early(page)
 

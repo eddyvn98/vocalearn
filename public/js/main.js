@@ -6,7 +6,7 @@ import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';
-import {setup,studyAction,submitInput,startClock,stopClock} from './study.js';
+import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
@@ -35,6 +35,7 @@ async function authenticated(user){
   app.model=model();const saved=await getMeta('view');
   if(saved)Object.assign(app,saved);
   if(!app.model.sets[app.setId])app.setId=Object.keys(app.model.sets)[0]||null;
+  applyStudySetup(await getMeta('studySetup'));
   app.session=await getMeta('session')||null;
   if(app.session&&!app.session.finished){for(const q of app.session.queue)if(!q.result)q.interrupted=true;await setMeta('session',app.session);}
   app.page='home';app.render();replaceHistory();
@@ -152,8 +153,14 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',async e=>{
   try{
-    if(e.target.id==='setup-game'){app.game=e.target.value;setup();}
-    if(e.target.id==='setup-face'){app.face=e.target.value;setup();}
+    if(e.target.id==='setup-game'){app.game=e.target.value;await saveStudySetup();setup();}
+    if(e.target.id==='setup-face'){app.face=e.target.value;await saveStudySetup();setup();}
+    if(e.target.id==='setup-answer-face'){app.answerFace=e.target.value;await saveStudySetup();setup();}
+    if(e.target.dataset.mixGame){
+      const game=e.target.dataset.mixGame;
+      app.mixGames=e.target.checked?[...new Set([...app.mixGames,game])]:app.mixGames.filter(value=>value!==game);
+      await saveStudySetup();setup();
+    }
     if(e.target.id==='image-upload'||e.target.id==='audio-upload')await mediaFile(e.target.files[0],e.target.id==='image-upload'?'image':'audio');
     if(e.target.id==='json-file'||e.target.id==='import-file')await readImport(e.target.files[0]);
   }catch(error){showError(error);}
