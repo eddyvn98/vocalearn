@@ -1,7 +1,8 @@
 import {app,words} from './state.js';
 import {t,esc,button,modal,closeModal,field,notify} from './ui.js';
-import {prepare,transact,model,api,sync,pendingCount,getMeta} from './storage.js';
+import {prepare,transact,model,api,sync,pendingCount,getMeta,setMeta} from './storage.js';
 import {descendants, inScope} from '/core/model.js';
+import {scheduleAdjustments as diffSchedules} from '/core/sync-diff.js';
 export function settings() {
   const s=app.model.settings;
   modal(t('settings'),`<form id="settings-form" class="stack">${field('newLimit','newLimit',s.newLimit,'type="number" min="0" max="200" required')}${field('zone','zone',s.zone,'required')}
@@ -17,16 +18,31 @@ export async function saveSettings(form) {
   await transact([prepare('settings',data)]);app.model=model();closeModal();app.render();
 }
 export async function syncNow() {
-  const prior=Object.fromEntries(Object.values(app.model.words).map(w=>[w.id,w.review.rev]));
+  const before=app.model;
   await sync();app.model=model();
-  const changed=Object.values(app.model.words).some(w=>prior[w.id]&&prior[w.id]!==w.review.rev);
-  if(changed)notify(t('scheduleAdjusted'));
-  if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();return changed;
+  const changes=diffSchedules(before,app.model);
+  if(changes.length){
+    const history=await getMeta('scheduleAdjustments')||[],at=Date.now();
+    await setMeta('scheduleAdjustments',[...history,...changes.map(change=>({...change,at}))].slice(-50));
+    notify(t('scheduleAdjusted'));
+  }
+  if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();return changes.length>0;
+}
+function scheduleChange(change) {
+  const step=value=>value==null?'—':String(Number(value)+1);
+  const reason=t(change.reason==='late-parent'?'lateParentReason':change.reason==='merged-result'?'mergedResultReason':'replayReason');
+  const logs=change.retained?.length?change.retained.join(', '):change.newlyAccepted?.join(', ')||'—';
+  return `<div class="conflict"><strong>${esc(change.word||app.model.words[change.wordId]?.word||change.wordId)}</strong>
+    <p>${esc(change.beforePhase)} · ${t('step')} ${step(change.beforeStep)} → ${esc(change.afterPhase)} · ${t('step')} ${step(change.afterStep)}</p>
+    <p>${esc(reason)}</p><small class="muted">${esc(change.beforeRev.slice(0,16))} → ${esc(change.afterRev.slice(0,16))}</small>
+    <p class="muted small">${t('retainedLogs')}: ${esc(logs)}</p></div>`;
 }
 export async function syncInfo() {
-  const at=await getMeta('lastSync');
-  modal(t('sync'),`<div class="stack"><p>${t('saved')} \u00b7 ${pendingCount()} ${t('pending')}</p><p>${t('lastSync')}: ${at?new Date(at).toLocaleString('vi-VN'):'\u2014'}</p><p class="muted small">${t('phaseNotice')}</p>${button(t('sync'),'sync','primary')}
-  <details><summary>${t('conflicts')} (${app.model.conflicts.length})</summary>${app.model.conflicts.slice(-20).reverse().map(c=>`<div class="conflict"><strong>${esc(app.model.words[c.wordId]?.word)} \u00b7 ${esc(c.field)}</strong><p>${esc(String(c.before).slice(0,200))} \u2192 ${esc(String(c.after).slice(0,200))}</p>${button(t('restore'),'restoreField','',`data-id="${c.eventId}" data-field="${c.field}"`)}</div>`).join('')}</details></div>`);
+  const [at,schedule]=await Promise.all([getMeta('lastSync'),getMeta('scheduleAdjustments')]);
+  const changes=(schedule||[]).slice(-20).reverse();
+  modal(t('sync'),`<div class="stack"><p>${t('saved')} · ${pendingCount()} ${t('pending')}</p><p>${t('lastSync')}: ${at?new Date(at).toLocaleString('vi-VN'):'—'}</p><p class="muted small">${t('phaseNotice')}</p>${button(t('sync'),'sync','primary')}
+  <details><summary>${t('scheduleChanges')} (${changes.length})</summary>${changes.map(scheduleChange).join('')||`<p class="muted">${t('noScheduleChanges')}</p>`}</details>
+  <details><summary>${t('conflicts')} (${app.model.conflicts.length})</summary>${app.model.conflicts.slice(-20).reverse().map(c=>`<div class="conflict"><strong>${esc(app.model.words[c.wordId]?.word)} · ${esc(c.field)}</strong><p>${esc(String(c.before).slice(0,200))} → ${esc(String(c.after).slice(0,200))}</p>${button(t('restore'),'restoreField','',`data-id="${c.eventId}" data-field="${c.field}"`)}</div>`).join('')}</details></div>`);
 }
 
 export function buildTopicTree(categories, parentId = null, depth = 0) {
