@@ -78,9 +78,9 @@ function faceControls() {
   if(app.mode==='new')return `<p class="info">${t('requiredLearningSetup')}</p>`;
   const face=`<label>${t('questionFace')}<select id="setup-face">${FACES.map(value=>
     `<option value="${value}" ${value===app.face?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
-  if(!['quiz','match'].includes(app.game))return face;
-  const answers=GAME_ANSWER_FACES[app.game]||[];
-  return face+`<label>${t('answerFace')}<select id="setup-answer-face">${answers.map(value=>
+  if(!['mix','quiz','match'].includes(app.game))return face;
+  const answerGame=app.game==='mix'?'quiz':app.game,answers=GAME_ANSWER_FACES[answerGame]||[];
+  return face+`<label>${t(app.game==='mix'?'quizAnswerFace':'answerFace')}<select id="setup-answer-face">${answers.map(value=>
     `<option value="${value}" ${value===app.answerFace?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
 }
 export function setup(mode=app.mode,game=app.game) {
