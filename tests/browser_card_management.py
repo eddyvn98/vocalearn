@@ -13,6 +13,15 @@ from browser_acceptance_next import register_and_create_set, wait_server
 ROOT=Path(__file__).resolve().parents[1]
 
 
+def sync_now(page):
+    page.locator('[data-action="syncInfo"]:visible').first.click()
+    expect(page.locator("dialog")).to_be_visible()
+    page.locator('[data-action="sync"]').click()
+    expect(page.locator("dialog")).to_contain_text("0 thay đổi chờ đồng bộ")
+    page.locator('[data-action="close"]').click()
+    expect(page.locator("dialog")).not_to_be_visible()
+
+
 def add_word(page,word,meaning,priority=None):
     if page.locator('[data-action="add"]:visible').count()==0:
         page.locator('[data-action="library"]').click()
@@ -131,6 +140,9 @@ def main():
                 create_topic(page,"Finance")
                 edit_topics(page,"ngân hàng",["BIM","Finance"])
                 edit_topics(page,"bờ sông",["Finance"])
+                sync_now(page)
+                page.reload(wait_until="networkidle")
+                page.locator('[data-action="library"]').click()
 
                 choose_scope(page,"Work")
                 expect(page.locator(".word-row")).to_have_count(1)
@@ -173,6 +185,10 @@ def main():
                 page.once("dialog",lambda dialog: dialog.accept())
                 page.locator('[data-action="restoreAllWords"]').click()
                 page.locator('[data-action="close"]').click()
+                expect(page.locator(".word-row")).to_have_count(2)
+                sync_now(page)
+                page.reload(wait_until="networkidle")
+                page.locator('[data-action="library"]').click()
                 expect(page.locator(".word-row")).to_have_count(2)
                 print("PASS: scoped reset/delete and bulk restore affect only intended cards")
 
