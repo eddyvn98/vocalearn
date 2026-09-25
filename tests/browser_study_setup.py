@@ -120,6 +120,8 @@ def main():
                 expect(tab.locator(".game-grid")).to_be_visible()
                 tab.locator('[data-action="settings"]:visible').first.click()
                 expect(tab.locator("#settings-form")).to_be_visible()
+                tab.locator("#settings-form details summary").click()
+                expect(tab.locator('[name="easyMs"]')).to_be_visible()
                 tab.locator('[name="easyMs"]').fill("9000")
                 tab.locator('#settings-form [type="submit"]').click()
                 expect(tab.locator("dialog")).not_to_be_visible()
