@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {validateEvent} from '../core/validation.js';
-import {replay,inScope,descendants} from '../core/model.js';
+import {replay,inScope,descendants,categoryPath} from '../core/model.js';
 
 const event=(id,kind,data,seq=1)=>({id,kind,data,deviceId:'dev',at:seq,seq});
 
@@ -45,6 +45,7 @@ test('Recursive topic scope deduplicates multi-membership',()=>{
     other:{id:'other',setId:'set1',name:'Other',parentId:null},
   };
   assert.deepEqual([...descendants(categories,'root')].sort(),['child','leaf','root']);
+  assert.equal(categoryPath(categories,'leaf'),'Work > BIM > Revit');
   const word={categoryIds:['child','leaf']};
   assert.equal(inScope(word,['root'],categories),true);
   assert.equal(inScope(word,['other'],categories),false);
