@@ -88,7 +88,9 @@ def add_audio_and_test_export(page, temp):
     page.locator("details summary").click()
     wav_path = Path(temp) / "deploy.wav"
     make_wav(wav_path)
-    page.locator("#audio-upload").set_input_files(str(wav_path))
+    page.locator("#audio-upload").set_input_files({
+        "name": "deploy.wav", "mimeType": "audio/wav", "buffer": wav_path.read_bytes()
+    })
     expect(page.locator("#audio-status")).to_contain_text("deploy.wav")
     page.locator('#word-form [type="submit"]').click()
     expect(page.locator("dialog")).not_to_be_visible()
