@@ -7,6 +7,7 @@ import {previewQueue,setup as setupDialog,applyStudySetup,saveStudySetup} from '
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
 import {pushHistory} from './navigation.js';
 import {mediaBlob,mediaUrl} from './media-store.js';
+import {sessionBaseline} from '/core/session-summary.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
 async function ensureQuestionMedia(q,allMatch=false) {
@@ -45,6 +46,7 @@ export async function beginSession() {
   }
   if(!queue.length)return;
   const session={id:uuid(),setId:app.setId,mode:app.mode,queue,index:0,finished:false,match:queue.every(q=>q.game==='match'),
+    baseline:sessionBaseline(app.model,queue),
     setup:{game:app.game,face:app.face,answerFace:app.answerFace,mixGames:[...app.mixGames]},
     matchOrder:queue.map((_,i)=>i).reverse(),selected:null,error:''};
   await setMeta('session',session);app.session=session;closeModal();app.page='study';app.render();pushHistory();startClock();
