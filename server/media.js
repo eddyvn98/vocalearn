@@ -55,3 +55,10 @@ export function cleanupMedia(db,userId,events) {
   catch(error){db.exec('ROLLBACK');throw error;}
   return {removed:remove.length,...mediaStats(db,userId)};
 }
+
+export function sendMedia(res,row) {
+  if(!row){res.writeHead(404,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify({error:'Media not found'}));return;}
+  res.writeHead(200,{'Content-Type':row.mime,'Content-Length':row.size,
+    'Cache-Control':'private, max-age=31536000, immutable','ETag':`"${row.id}"`});
+  res.end(row.bytes);
+}
