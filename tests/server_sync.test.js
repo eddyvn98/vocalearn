@@ -35,6 +35,13 @@ after(async () => {
 
 const event = (id, kind, data, deviceId = 'dev1', at = Date.now()) => ({id, kind, data, deviceId, at});
 const batch = (events, deviceId = 'dev1', cursor = 0) => ({events, deviceId, cursor, clientNow: Date.now()});
+const snapshot=(word,meaning,eventId)=>({prompt:meaning,answers:[word],word,meaning,fields:{word:eventId,meaning:eventId}});
+const freeTyping=(id,questionId,wordId,word,meaning,eventId,grade='good',deviceId='dev1',at=Date.now())=>event(id,'answer',{
+  schemaVersion:2,wordId,questionId,baseRev:`root-${wordId}`,mode:'free',game:'typing',face:'meaning',
+  grade,hadError:grade==='forget',assisted:false,hint:false,unknown:grade==='forget',
+  activeMs:grade==='easy'?1000:6000,input:grade==='forget'?'wrong':word,config:DEFAULTS,
+  question:snapshot(word,meaning,eventId)
+},deviceId,at);
 
 test('Server rejects recognition game claiming good or easy grade', async () => {
   const set = event('s1', 'set', {id: 'set1', name: 'Vocab', language: 'en', meaningLanguage: 'vi'});
@@ -71,19 +78,11 @@ test('Server rejects question snapshot with mismatched word', async () => {
 });
 
 test('Server rejects duplicate final answers for same question ID', async () => {
-  const ans1 = event('a4-1', 'answer', {
-    wordId: 'word1', questionId: 'q-unique', baseRev: 'root-word1', mode: 'new',
-    game: 'typing', grade: 'good', hadError: false, assisted: false, activeMs: 6000,
-    config: DEFAULTS
-  });
+  const ans1=freeTyping('a4-1','q-unique','word1','cat','con meo','w1');
   const ok = await request('/api/sync', batch([ans1]));
   assert.equal(ok.status, 200);
 
-  const ans2 = event('a4-2', 'answer', {
-    wordId: 'word1', questionId: 'q-unique', baseRev: 'root-word1', mode: 'new',
-    game: 'typing', grade: 'hard', hadError: false, assisted: false, activeMs: 2000,
-    config: DEFAULTS
-  });
+  const ans2=freeTyping('a4-2','q-unique','word1','cat','con meo','w1');
   const dup = await request('/api/sync', batch([ans2]));
   assert.equal(dup.status, 400);
 });
@@ -96,31 +95,18 @@ test('Server rejects attempt added after question already answered', async () =>
   assert.equal(r.status, 400);
 });
 
-test('Two devices study concurrently on same opportunity: conservative merge', async () => {
+test('Two devices can submit independent answers without dropping either log', async () => {
   const newWord = event('w2', 'word', {id: 'word2', setId: 'set1', patch: {word: 'dog', meaning: 'con cho'}});
   await request('/api/sync', batch([newWord]));
 
-  // Device 1 answers hard on root-word2
-  const dev1Answer = event('d1-ans', 'answer', {
-    wordId: 'word2', questionId: 'q-dev1', baseRev: 'root-word2', mode: 'new',
-    game: 'typing', grade: 'hard', hadError: false, assisted: false, activeMs: 2000,
-    config: DEFAULTS
-  }, 'dev1', 1000);
-
-  // Device 2 answers forget on root-word2
-  const dev2Answer = event('d2-ans', 'answer', {
-    wordId: 'word2', questionId: 'q-dev2', baseRev: 'root-word2', mode: 'new',
-    game: 'typing', grade: 'forget', hadError: true, assisted: false, activeMs: 2000,
-    config: DEFAULTS
-  }, 'dev2', 1005);
+  const dev1Answer=freeTyping('d1-ans','q-dev1','word2','dog','con cho','w2','good','dev1',1000);
+  const dev2Answer=freeTyping('d2-ans','q-dev2','word2','dog','con cho','w2','forget','dev2',1005);
 
   const r1 = await request('/api/sync', batch([dev1Answer], 'dev1'));
   assert.equal(r1.status, 200);
-
   const r2 = await request('/api/sync', batch([dev2Answer], 'dev2'));
   assert.equal(r2.status, 200);
 
-  // Both events accepted into server log
   const syncState = await request('/api/sync', batch([], 'dev1'));
   const word2Events = syncState.data.events.filter(e => e.data.wordId === 'word2');
   assert.equal(word2Events.filter(e => e.kind === 'answer').length, 2);
