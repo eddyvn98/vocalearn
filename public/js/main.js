@@ -11,7 +11,7 @@ import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './edito
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 import {installAccessibility,isComposing} from './a11y.js';
-import {pushHistory,replaceHistory,restoreHistory} from './navigation.js';
+import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './navigation.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -171,7 +171,7 @@ window.addEventListener('voca-external',async()=>{
 });
 window.addEventListener('online',()=>{if(app.user)syncNow().catch(error=>notify(t('syncError')+': '+error.message,true));});
 window.addEventListener('popstate',async event=>{
-  if(!app.user||!event.state?.voca)return;
+  if(!app.user||!event.state?.voca||historyMatchesApp(event.state))return;
   try {
     if(app.page==='study'&&app.session){stopClock(true);await setMeta('session',app.session);}
     if(!restoreHistory(event.state))return;
