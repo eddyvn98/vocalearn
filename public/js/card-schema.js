@@ -28,7 +28,7 @@ function setEvent(customFields) {
 export async function saveCustomField(form) {
   const data=new FormData(form),id=form.dataset.id||uuid(),label=String(data.get('label')||'').trim();
   const type=String(data.get('type')||'text');
-  const options=type==='select'?String(data.get('options')||'').split(',').map(x=>x.trim()).filter(Boolean):[];
+  const options=type==='select'?[...new Set(String(data.get('options')||'').split(',').map(x=>x.trim()).filter(Boolean))]:[];
   if(!label)throw new Error(t('customFieldName'));
   if(type==='select'&&!options.length)throw new Error(t('customFieldOptionsRequired'));
   const next=defs().filter(item=>item.id!==id);
