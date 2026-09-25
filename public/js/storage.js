@@ -34,23 +34,40 @@ export function prepare(kind,data,id=uuid()) {
   const at=Date.now();lastOrder=Math.max(lastOrder+1,at*1000);
   return {id,deviceId,kind,data,at,effectiveAt:at+offset,localOrder:lastOrder};
 }
+async function writeTransaction(events,session,metadata={}) {
+  events.forEach(validateEvent);
+  const tx = db.transaction(['events','meta'],'readwrite');
+  for(const e of events) {
+    const store=tx.objectStore('events'), req=store.get(e.id);
+    req.onsuccess=()=>{
+      if(!req.result)store.add(e);
+      else if(req.result.kind!==e.kind||JSON.stringify(req.result.data)!==JSON.stringify(e.data))tx.abort();
+    };
+  }
+  if (session !== undefined) tx.objectStore('meta').put(session,'session');
+  for(const [key,value] of Object.entries(metadata))tx.objectStore('meta').put(value,key);
+  await done(tx);await refresh();channel?.postMessage({owner});
+}
 export async function transact(events,session,metadata={}) {
-  const run = async()=>{
-    events.forEach(validateEvent);
-    const tx = db.transaction(['events','meta'],'readwrite');
-    for(const e of events) {
-      const store=tx.objectStore('events'), req=store.get(e.id);
-      req.onsuccess=()=>{
-        if(!req.result)store.add(e);
-        else if(req.result.kind!==e.kind||JSON.stringify(req.result.data)!==JSON.stringify(e.data))tx.abort();
-      };
-    }
-    if (session !== undefined) tx.objectStore('meta').put(session,'session');
-    for(const [key,value] of Object.entries(metadata))tx.objectStore('meta').put(value,key);
-    await done(tx);await refresh();channel?.postMessage({owner});
-  };
+  const run=()=>writeTransaction(events,session,metadata);
   queue=queue.catch(()=>{}).then(()=>navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());
   return queue;
+}
+export async function transactAnswer(event,session) {
+  validateEvent(event);
+  let result;
+  const run=async()=>{
+    await refresh();
+    const scheduled=!['free','errors'].includes(event.data.mode);
+    const prior=cached.find(e=>e.kind==='answer'&&(
+      e.id===event.id || scheduled&&e.deviceId===event.deviceId&&e.data.opportunityId===event.data.opportunityId
+    ));
+    if(prior){result={inserted:false,event:prior};return;}
+    await writeTransaction([event],session);
+    result={inserted:true,event};
+  };
+  queue=queue.catch(()=>{}).then(()=>navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());
+  await queue;return result;
 }
 export async function api(path, body) {
   const response = await fetch(`/api/${path}`,{method:body===undefined?'GET':'POST',
