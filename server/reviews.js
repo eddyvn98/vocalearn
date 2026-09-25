@@ -68,7 +68,10 @@ export function validateReview(state, event, events) {
     event.scheduleEligible=d.schemaVersion===2;event.deferredReview=true;return;
   }
   if(base.phase==='new' && d.mode!=='new' || base.phase!=='new' && d.mode==='new')throw new Error('Invalid learning mode');
-  if(base.phase!=='new'&&!isDue(base,event.effectiveAt,d.config?.zone||DEFAULTS.zone))throw new Error('Review step is not due');
+  if(base.phase!=='new'&&!isDue(base,event.effectiveAt,d.config?.zone||DEFAULTS.zone)) {
+    const earlyBy=base.dueAt == null ? null : base.dueAt-event.effectiveAt;
+    throw new Error(`Review step is not due${earlyBy == null ? '' : ` (${earlyBy}ms early)`}`);
+  }
   const word={...snapshot,review:base};
   const generated=makeQuestion(word,pool,d.game,face,d.mode,d.config,()=> 'validation');
   if(generated.blocked||generated.game!==d.game||!!d.familiarize!==generated.familiarize)throw new Error('Invalid learning step or unavailable game');
