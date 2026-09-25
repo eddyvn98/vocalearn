@@ -1,9 +1,7 @@
-"""Real Chromium regression: launch the app, not a static HTML fixture.
+"""Real browser MVP regression against the live app and disposable server.
 
-Run: python -m pip install playwright==1.57.0
-     python -m playwright install chromium
-     python tests/browser_e2e.py
-Uses a disposable database and a fresh browser profile; never real user data.
+Covers login/setup, six MVP games, pause/resume across reload, Excel export,
+IME-safe submit, dialog focus restoration, and responsive overflow.
 """
 import json
 import os
@@ -12,12 +10,169 @@ import socket
 import subprocess
 import tempfile
 import time
+import wave
 from urllib.request import urlopen
 
 from playwright.sync_api import expect, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "tests" / "browser-evidence"
+MEANING_TO_WORD = {
+    "triển khai": "deploy",
+    "xác nhận": "confirm",
+    "hạn chót": "deadline",
+    "cải thiện": "improve",
+    "đi": "go",
+    "đáng tin cậy": "reliable",
+    "cơ hội": "opportunity",
+    "ước tính": "estimate",
+}
+WORD_TO_MEANING = {word: meaning for meaning, word in MEANING_TO_WORD.items()}
+CLOZE_TO_ANSWER = {
+    "We will ___ the app tomorrow.": "deploy",
+    "Please ___ the meeting time.": "confirm",
+    "The ___ is Friday.": "deadline",
+    "We need to ___ the app.": "improve",
+    "Yesterday, I ___ to school.": "went",
+    "She is a ___ teammate.": "reliable",
+    "This is a great ___.": "opportunity",
+    "Can you ___ the cost?": "estimate",
+}
+
+
+def wait_server(server, origin):
+    for _ in range(100):
+        if server.poll() is not None:
+            raise RuntimeError("Test server exited; see server.log")
+        try:
+            with urlopen(origin + "/api/health", timeout=1) as response:
+                if response.status == 200:
+                    return
+        except OSError:
+            time.sleep(0.1)
+    raise RuntimeError("Test server did not become ready")
+
+
+def make_wav(path):
+    with wave.open(str(path), "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(8000)
+        audio.writeframes(b"\x00\x00" * 800)
+
+
+def finish_early(page):
+    page.locator('[data-action="pause"]').click()
+    expect(page.locator(".resume")).to_be_visible()
+    page.locator('.resume [data-action="finish"]').click()
+    expect(page.locator(".summary")).to_be_visible()
+    page.locator('.summary [data-action="home"]').click()
+    expect(page.locator(".game-grid")).to_be_visible()
+
+
+def start_game(page, game):
+    page.locator(f'[data-action="practice"][data-game="{game}"]').click()
+    expect(page.locator("dialog")).to_be_visible()
+    start = page.locator('[data-action="startSession"]')
+    expect(start).to_be_enabled()
+    start.click()
+    expect(page.locator(".question-panel")).to_be_visible()
+
+
+def add_audio_and_test_export(page, temp):
+    page.locator('[data-action="library"]').click()
+    expect(page.locator("#word-rows")).to_be_visible()
+    row = page.locator(".word-row").filter(has_text="deploy").first
+    row.locator('[data-action="edit"]').click()
+    expect(page.locator("#word-form")).to_be_visible()
+    page.locator("details summary").click()
+    wav_path = Path(temp) / "deploy.wav"
+    make_wav(wav_path)
+    page.locator("#audio-upload").set_input_files(str(wav_path))
+    expect(page.locator("#audio-status")).to_contain_text("deploy.wav")
+    page.locator('#word-form [type="submit"]').click()
+    expect(page.locator("dialog")).not_to_be_visible()
+
+    page.once("dialog", lambda dialog: dialog.accept())
+    with page.expect_download() as download_info:
+        page.locator('[data-action="export"]').click()
+    export_path = Path(temp) / "acceptance.xlsx"
+    download_info.value.save_as(str(export_path))
+    assert export_path.stat().st_size > 1000, "Exported XLSX is unexpectedly small"
+    assert export_path.read_bytes()[:2] == b"PK", "Exported XLSX is not a ZIP workbook"
+    page.locator('[data-action="home"]').click()
+    expect(page.locator(".game-grid")).to_be_visible()
+    print("PASS: UI Excel export produces a real XLSX workbook")
+
+
+def exercise_six_games(page):
+    # G-01 Flash
+    start_game(page, "flash")
+    page.locator('[data-action="flip"]').click()
+    expect(page.locator(".flash-back")).to_be_visible()
+    page.locator('[data-action="remember"]').click()
+    expect(page.locator("#feedback")).to_be_visible()
+    finish_early(page)
+
+    # G-02 Multiple choice
+    start_game(page, "quiz")
+    prompt = page.locator(".prompt h1").inner_text().strip()
+    answer = MEANING_TO_WORD[prompt]
+    page.locator('[data-action="choose"]').filter(has_text=answer).first.click()
+    expect(page.locator("#feedback")).to_be_visible()
+    finish_early(page)
+
+    # G-03 Matching
+    start_game(page, "match")
+    left = page.locator('[data-action="matchLeft"]').first
+    word = left.inner_text().strip()
+    left.click()
+    page.locator('[data-action="matchRight"]').filter(has_text=WORD_TO_MEANING[word]).first.click()
+    expect(page.locator('[data-action="matchLeft"]').first).to_be_disabled()
+    finish_early(page)
+
+    # G-04 Typing + IME + pause/reload/resume persistence
+    start_game(page, "typing")
+    prompt = page.locator(".prompt h1").inner_text().strip()
+    answer = MEANING_TO_WORD[prompt]
+    field = page.locator("#answer")
+    field.dispatch_event("compositionstart")
+    page.keyboard.press("Enter")
+    expect(page.locator("#feedback")).to_have_count(0)
+    field.dispatch_event("compositionend")
+    partial = answer[:2]
+    field.fill(partial)
+    page.wait_for_timeout(100)
+    page.locator('[data-action="pause"]').click()
+    expect(page.locator(".resume")).to_be_visible()
+    page.reload(wait_until="networkidle")
+    expect(page.locator(".resume")).to_be_visible()
+    page.locator('.resume [data-action="resume"]').click()
+    expect(page.locator("#answer")).to_have_value(partial)
+    page.locator("#answer").fill(answer)
+    page.locator("#answer").press("Enter")
+    expect(page.locator("#feedback")).to_be_visible()
+    finish_early(page)
+
+    # G-05 Spelling / arrange letters; only deploy has the test audio resource.
+    start_game(page, "spell")
+    page.locator('[data-action="playAudio"]').click()
+    expect(page.locator('[data-action="checkLetters"]')).to_be_enabled(timeout=10000)
+    for index in range(len("deploy")):
+        page.locator(f'[data-action="letter"][data-index="{index}"]').click()
+    page.locator('[data-action="checkLetters"]').click()
+    expect(page.locator("#feedback")).to_be_visible()
+    finish_early(page)
+
+    # G-06 Fill sentence
+    start_game(page, "cloze")
+    prompt = page.locator(".prompt h1").inner_text().strip()
+    answer = CLOZE_TO_ANSWER[prompt]
+    page.locator("#answer").fill(answer)
+    page.locator("#answer").press("Enter")
+    expect(page.locator("#feedback")).to_be_visible()
+    finish_early(page)
+    print("PASS: all six MVP game families complete a real browser answer flow")
 
 
 def main():
@@ -29,27 +184,31 @@ def main():
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         origin = f"http://127.0.0.1:{port}"
-        env = dict(os.environ, PORT=str(port), HOST="127.0.0.1",
-                   DB_PATH=str(Path(temp) / "test.sqlite"), ALLOW_SIGNUP="true",
-                   NODE_ENV="test", APP_ORIGIN=origin)
+        env = dict(
+            os.environ,
+            PORT=str(port),
+            HOST="127.0.0.1",
+            DB_PATH=str(Path(temp) / "test.sqlite"),
+            ALLOW_SIGNUP="true",
+            NODE_ENV="test",
+            APP_ORIGIN=origin,
+        )
         with (EVIDENCE / "server.log").open("w") as log:
-            server = subprocess.Popen(["node", "server/main.js"], cwd=ROOT,
-                                      env=env, stdout=log, stderr=subprocess.STDOUT)
+            server = subprocess.Popen(
+                ["node", "server/main.js"],
+                cwd=ROOT,
+                env=env,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+            )
             try:
-                for _ in range(100):
-                    if server.poll() is not None:
-                        raise RuntimeError("Test server exited; see server.log")
-                    try:
-                        with urlopen(origin + "/api/health", timeout=1) as response:
-                            if response.status == 200:
-                                break
-                    except OSError:
-                        time.sleep(0.1)
-                else:
-                    raise RuntimeError("Test server did not become ready")
+                wait_server(server, origin)
                 with sync_playwright() as p:
                     browser = getattr(p, browser_name).launch()
-                    context = browser.new_context(viewport={"width": width, "height": height})
+                    context = browser.new_context(
+                        viewport={"width": width, "height": height},
+                        accept_downloads=True,
+                    )
                     page = context.new_page()
                     errors = []
                     page.on("pageerror", lambda error: errors.append(str(error)))
@@ -57,7 +216,6 @@ def main():
                         page.goto(origin, wait_until="networkidle")
                         expect(page.locator("#auth-form")).to_be_visible(timeout=10000)
                         assert not errors, "Browser module/runtime errors: " + repr(errors)
-                        print("PASS: live app modules load and login form is interactive")
                         page.locator('[data-action="toggleAuth"]').click()
                         page.locator('[name="email"]').fill("e2e@example.test")
                         page.locator('[name="password"]').fill("disposable-password-123")
@@ -70,31 +228,36 @@ def main():
                         expect(page.locator(".metric")).to_have_count(4)
 
                         settings = page.locator('[data-action="settings"]:visible').first
-                        settings.focus(); settings.click()
+                        settings.focus()
+                        settings.click()
                         expect(page.locator("dialog")).to_be_visible()
-                        assert page.evaluate("document.querySelector('#modal').contains(document.activeElement)")
+                        assert page.evaluate(
+                            "document.querySelector('#modal').contains(document.activeElement)"
+                        )
                         page.keyboard.press("Escape")
                         expect(page.locator("dialog")).not_to_be_visible()
                         expect(settings).to_be_focused()
 
-                        page.locator('[data-action="setupFree"]').click()
-                        expect(page.locator("dialog")).to_be_visible()
-                        page.locator('[data-action="startSession"]').click()
-                        expect(page.locator(".question-panel")).to_be_visible()
-                        page.locator("#answer").dispatch_event("compositionstart")
-                        page.keyboard.press("Enter")
-                        expect(page.locator("#feedback")).to_have_count(0)
-                        page.locator("#answer").dispatch_event("compositionend")
-                        page.locator('[data-action="pause"]').click()
+                        add_audio_and_test_export(page, temp)
+                        exercise_six_games(page)
 
-                        overflow = page.evaluate("document.documentElement.scrollWidth-document.documentElement.clientWidth")
+                        overflow = page.evaluate(
+                            "document.documentElement.scrollWidth-document.documentElement.clientWidth"
+                        )
                         assert overflow <= 1, f"Horizontal overflow: {overflow}"
-                        print(f"PASS: {browser_name} {width}x{height} live app, focus, IME and reflow smoke")
                         assert not errors, "Browser runtime errors: " + repr(errors)
+                        print(
+                            f"PASS: {browser_name} {width}x{height} MVP browser regression"
+                        )
                     finally:
                         prefix = f"{browser_name}-{width}x{height}"
-                        page.screenshot(path=str(EVIDENCE / f"{prefix}-last-page.png"), full_page=True)
-                        (EVIDENCE / f"{prefix}-page-errors.json").write_text(json.dumps(errors, indent=2))
+                        page.screenshot(
+                            path=str(EVIDENCE / f"{prefix}-last-page.png"),
+                            full_page=True,
+                        )
+                        (EVIDENCE / f"{prefix}-page-errors.json").write_text(
+                            json.dumps(errors, indent=2)
+                        )
                         context.close()
                         browser.close()
             finally:
