@@ -6,7 +6,7 @@ import {shell} from './shell.js';
 export function filtered() {
   const query=app.query.toLocaleLowerCase('vi');
   return scoped().filter(w=>{
-    const text=[w.word,w.meaning,...w.categoryIds.map(id=>app.model.categories[id]?.name)].join(' ').toLocaleLowerCase('vi');
+    const text=[w.word,w.meaning,w.pos,w.ipa,w.level,w.register,w.source,...(w.variants||[]),...(w.tags||[]),...(w.synonyms||[]),...(w.antonyms||[]),...Object.values(w.custom||{}),...w.categoryIds.map(id=>app.model.categories[id]?.name)].join(' ').toLocaleLowerCase('vi');
     const status=app.filter==='all'||app.filter==='due'&&isDue(w.review,Date.now(),app.model.settings.zone)
       ||app.filter==='waiting'&&!w.ready||app.filter==='new'&&w.review.phase==='new'&&w.ready
       ||app.filter==='learning'&&['learning','relearn'].includes(w.review.phase)||app.filter==='errors'&&w.errors.inBook;
