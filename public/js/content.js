@@ -88,20 +88,24 @@ function renderPreview() {
   ${draft.rows.map((r,i)=>`<div class="conflict"><strong>D\u00f2ng ${r.row}: ${esc(r.patch.word)}</strong> \u2014 ${esc(r.patch.meaning)}
   ${!r.error&&r.patch.image?(()=>{const m=mediaMarkup(r.patch.image);return `<img class="editor-image" ${m.src?`src="${esc(m.src)}" `:''}${m.ref?`data-media-ref="${esc(m.ref)}" `:''}alt="\u1ea2nh nh\u1eadp">`;})():''}
   ${r.error?`<p class="error-text">${esc(r.error)}</p>`:`<label>Thao t\u00e1c<select data-import-row="${i}">${[['skip','B\u1ecf qua'],['add','Th\u1ebb ri\u00eang'],...(r.targetId&&!r.identityConflict?[['merge','G\u1ed9p, gi\u1eef ti\u1ebfn \u0111\u1ed9']]:[])].map(([v,label])=>`<option value="${v}" ${r.action===v?'selected':''}>${label}</option>`).join('')}</select></label>`}
+  ${r.imageCandidates?.length?`<fieldset class="image-choice"><legend>Chọn 1 ảnh cho dòng này</legend>${r.imageCandidates.map((image,n)=>`<label class="check-label"><input type="radio" name="image-${i}" data-import-image="${n}" data-row="${i}" ${r.imageChoice===n?'checked':''}><img class="editor-image" src="${esc(image)}" alt="Ảnh ${n+1}"> Ảnh ${n+1}</label>`).join('')}</fieldset>`:''}
   ${r.reason?`<p>${esc(r.reason)}</p>`:''}
   ${!r.identityConflict?r.conflicts.map(c=>`<label class="check-label"><input type="checkbox" data-import-field="${c.key}" data-row="${i}" ${r.take[c.key]?'checked':''}>Thay ${esc(c.key)}: ${esc(String(c.before).slice(0,100))} \u2192 ${esc(String(c.after).slice(0,100))}</label>`).join(''):''}</div>`).join('')}`;
-  document.querySelector('[data-action="confirmImport"]').disabled=!draft.rows.some(r=>!r.error&&r.action!=='skip');
+  const pendingImageChoice=draft.rows.some(r=>!r.error&&r.action!=='skip'&&r.imageCandidates?.length&&!r.patch.image);
+  document.querySelector('[data-action="confirmImport"]').disabled=pendingImageChoice||!draft.rows.some(r=>!r.error&&r.action!=='skip');
   hydrateMedia(body).catch(()=>{});
   body.onchange=async e=>{
-    const row=e.target.dataset.importRow,field=e.target.dataset.importField;
+    const row=e.target.dataset.importRow,field=e.target.dataset.importField,image=e.target.dataset.importImage;
     if(row!==undefined)draft.rows[Number(row)].action=e.target.value;
     if(field)draft.rows[Number(e.target.dataset.row)].take[field]=e.target.checked;
+    if(image!==undefined){const target=draft.rows[Number(e.target.dataset.row)],index=Number(image);target.imageChoice=index;target.patch.image=target.imageCandidates[index]||'';}
     draft.events=null;
     try{await setMeta('importDraft',draft);renderPreview();}catch(error){notify(error.message,true);}
   };
 }
 export async function confirmImport() {
   if(!draft||draft.setId!==app.setId)throw new Error('Reopen the import preview');
+  if(draft.rows.some(r=>!r.error&&r.action!=='skip'&&r.imageCandidates?.length&&!r.patch.image))throw new Error('Hãy chọn một ảnh cho mỗi dòng có nhiều ảnh trước khi nhập');
   if(draft.warnings.length&&!confirm('T\u1ec7p c\u00f3 c\u1ea3nh b\u00e1o \u1ea3nh/c\u00f4ng th\u1ee9c. Nh\u1eadp ph\u1ea7n \u0111\u1ecdc \u0111\u01b0\u1ee3c?'))return;
   if(!draft.events){
     await convertImportMedia(draft.rows);
