@@ -11,7 +11,10 @@ const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
 async function ensureQuestionMedia(q,allMatch=false) {
   const values=[];
-  if(q?.face==='image')values.push(q.prompt);
+  if(q?.face==='image'){
+    if(allMatch)for(const item of app.session.queue)values.push(item.prompt);
+    else values.push(q.prompt);
+  }
   if(q?.answerFace==='image'){
     if(allMatch)for(const item of app.session.queue)values.push(item.answers?.[0]);
     else if(q.game==='quiz')for(const choice of q.choices||[])values.push(choice.label);
@@ -53,7 +56,7 @@ async function writeAnswer(q,correct) {
   try {
     stopClock();
     await ensureQuestionMedia(q);
-  if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
+    if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
     const result=gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,
       activeMs:Math.round(q.activeMs),interrupted:q.interrupted,answer:q.answers[0],easyMs:q.config.easyMs});
     const next=structuredClone(app.session),target=next.queue.find(x=>x.id===q.id);
@@ -86,6 +89,7 @@ async function writeAnswer(q,correct) {
 }
 export async function submitInput(value) {
   const q=current();if(!q||q.result||submitting)return;
+  await ensureQuestionMedia(q);
   if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
   q.input=value;
   const result=checkAnswer(value,q.answers,q.retry);
