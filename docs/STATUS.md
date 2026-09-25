@@ -32,7 +32,7 @@ Status meanings:
 3. Implement the required Excel import/export: embedded images, column mapping, row-level errors, sense-aware duplicate handling, stable import IDs and resumable retries. Do not rename the JSON utility to Excel.
 4. Complete the user-configurable face matrix and game mix, card custom fields, valid question disambiguation, advanced settings/time rules, topic tree interactions and scoped bulk operations.
 5. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
-6. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Complete keyboard focus, IME, screen-reader, zoom/contrast and mobile virtual-keyboard checks on declared devices.
+6. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Automated coverage now includes modal focus return, IME Enter protection, responsive reflow smoke checks and multi-engine/OS browser jobs. Real screen-reader, measured contrast, real virtual keyboard and declared physical-device checks still require manual/device evidence.
 7. Establish production migrations, secret handling, backup/restore, account recovery, throttling/observability and tested scale limits before public hosting.
 
 ## Important known behavior differences
@@ -43,7 +43,7 @@ Status meanings:
 - English alternatives are constructed from local cards. Semantic synonym ambiguity is not comprehensively detected; the author should verify candidate meanings. Exact duplicate checks are not semantic validation.
 - A new card is identified as ready by word + meaning/IPA/image. Missing meaning prevents some games; unsupported combinations stay unavailable. Full semantic disambiguation/readiness per language is pending.
 - Browser edits retain hidden fields in the journal, but the UI exposes only a subset of all spec fields.
-- On this environment actual app navigation in Chromium was blocked by policy. Static view screenshots are not proof of functioning IndexedDB, reload persistence, audio, accessibility or full flows.
+- Local restricted environments may still block browser navigation. GitHub Actions now launches the live app on Chromium/WebKit across Linux, Windows and macOS. WebKit coverage is useful engine coverage but is not proof of real Safari/iPhone/iPad acceptance.
 
 ## Suggested issue titles for the repository
 
