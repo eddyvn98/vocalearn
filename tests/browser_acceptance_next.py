@@ -177,7 +177,9 @@ def offline_reconnect(page, context):
     page.locator('[data-action="syncInfo"]:visible').first.click()
     expect(page.locator("dialog")).to_be_visible()
     page.locator('[data-action="sync"]').click()
+    expect(page.locator("dialog")).to_contain_text("0 thay đổi chờ đồng bộ")
     page.locator('[data-action="close"]').click()
+    page.reload(wait_until="networkidle")
     expect(page.locator('[data-action="syncInfo"]:visible').first).not_to_contain_text("chờ đồng bộ")
     print("PASS: offline answer survives reload and syncs once after reconnect")
 
