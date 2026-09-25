@@ -20,14 +20,19 @@ function parseCustom(value) {
   }
   return out;
 }
+function topicTree(categories,parentId=null,depth=0){
+  return categories.filter(c=>(c.parentId||null)===parentId)
+    .sort((a,b)=>a.name.localeCompare(b.name,'vi'))
+    .flatMap(c=>[{...c,depth},...topicTree(categories,c.id,depth+1)]);
+}
 export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};app.dirty=false;
   const w=editing||{};
-  const categories=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
+  const categories=topicTree(Object.values(app.model.categories).filter(c=>c.setId===app.setId));
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
   ${field('word','word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
-  <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(c.name)}</label>`).join('')||t('uncategorized')}</fieldset>
+  <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${'\u00a0\u00a0\u00a0'.repeat(c.depth)}${c.depth?'└─ ':''}${esc(c.name)}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('level','level',w.level,'maxlength="100"')}${field('variants','variants',listText(w.variants),'maxlength="2000"')}${field('tags','tags',listText(w.tags),'maxlength="2000"')}
   ${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I ___ to school."')}${field('answers','answers',listText(w.answers))}
   <label>${t('note')}<textarea name="note" rows="3">${esc(w.note||'')}</textarea></label>
