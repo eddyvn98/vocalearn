@@ -1,7 +1,7 @@
 import {descendants} from '/core/model.js';
 import {app,current} from './state.js';
 import {api,openStore,model,prepare,transact,setMeta,getMeta,refresh,sync,pendingCount,uuid} from './storage.js';
-import {t,notify,closeModal,modal,esc} from './ui.js';
+import {t,notify,closeModal,modal,esc,setModalTrigger,clearModalTrigger} from './ui.js';
 import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
@@ -110,7 +110,8 @@ async function click(action,el){
 }
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-action]');if(!el||el.disabled||app.busy)return;
-  app.busy=true;try{await click(el.dataset.action,el);}catch(error){showError(error);}finally{app.busy=false;}
+  setModalTrigger(el);app.busy=true;
+  try{await click(el.dataset.action,el);}catch(error){showError(error);}finally{clearModalTrigger();app.busy=false;}
 });
 document.addEventListener('submit',async e=>{
   e.preventDefault();if(e.target.id==='answer-form'&&isComposing())return;if(app.busy)return;app.busy=true;
