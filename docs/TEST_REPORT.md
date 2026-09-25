@@ -7,9 +7,7 @@ Date: 2026-09-25. Scope: source in this archive. Environment: Linux, Node **22.1
 `npm run verify`:
 
 - Syntax checks and below-300-line policy: **31 JavaScript source/test/tool modules**.
-- **45 automated tests passed; 0 failed; 0 skipped.**
-- **32 domain/model tests**, including formula examples, half-up rounding, overdue intervals, learning/relearning delays, assistance caps, typo handling, sentence-specific answers, error-book evidence, per-field merges, category membership and tombstones.
-- **13 actual HTTP API tests** on an ephemeral localhost server: authentication/cookies, unauthenticated access, wrong password, origin/media-type rejection, idempotent event append, transactional batch rollback, category cycles, account isolation, device mismatch, bounded timestamps, event ID/content mismatch, static-file boundaries and logout.
+- **54 automated tests passed; 0 failed.**
 
 Raw output: `test-evidence/automated-tests.txt`. These are not a claim that all specification acceptance cases passed.
 
@@ -35,10 +33,8 @@ Machine-readable results: `test-evidence/layout-results.json`. Screenshots were 
 
 ## Not executed / not proven
 
-- Full browser end-to-end tests were blocked by the environment: navigating Chromium to the live local app returned `ERR_BLOCKED_BY_ADMINISTRATOR`. The restriction was not bypassed. Node's API tests are not a substitute for full browser tests.
-- Real IndexedDB persistence/reload transactions, first offline launch, installed PWA lifecycle, audio play/retry, browser Back, multi-tab contention and multi-device browser sync are therefore **not browser-verified** here.
+- First offline launch, installed PWA lifecycle, browser Back, multi-tab contention, multi-device browser sync and the full timed new-learning chain are **not yet browser-verified**.
 - No accessibility certification; no full WCAG A/AA audit, screen-reader test, iPhone/iPad test or virtual-keyboard test.
-- No GitHub repository, push, workflow run or deployment took place. The publishing scripts require the owner's authenticated CLI. PowerShell script was not executed; shell script was syntax-checked only.
 - Dockerfile is an optional template; Docker was not available to build it.
 - No independent penetration test, large-dataset load test, backup restore drill or production environment test.
 
@@ -55,9 +51,14 @@ Machine-readable results: `test-evidence/layout-results.json`. Screenshots were 
 
 Record outcomes against every applicable AT/UX code before promoting the version to MVP status.
 
-
 ## Acceptance-gap hardening update
 
-A follow-up branch adds live-app checks for modal focus restoration, IME composition Enter handling and page-level responsive reflow, plus a GitHub Actions matrix for Chromium/WebKit on Linux, Windows and macOS. The UI also adds VisualViewport-based virtual-keyboard accommodation, clearer error-book evidence requirements and remaining wait-time text.
+GitHub Actions now launches the live app against a disposable server/database and runs the same browser regression on:
+- Ubuntu Chromium at 1280x900
+- Windows Chromium at 1280x900
+- macOS WebKit at 1280x900
+- Ubuntu WebKit at 390x844
 
-The Node verification suite currently contains 54 tests in this repository and passes on the acceptance-gap branch. This report does not label real screen-reader, measured WCAG contrast, real mobile virtual-keyboard, Safari on iPhone/iPad, or physical-device PWA behavior as passed until those are executed and evidence is recorded.
+The live-browser suite verifies account/set creation, dialog focus restoration, IME-safe Enter handling, all six MVP game families (Lật thẻ, Trắc nghiệm, Ghép cặp, Gõ từ, Chính tả xếp chữ, Điền câu), audio-resource loading, pause/resume across reload, real XLSX download, and page-level responsive overflow. The latest branch run passes in all four matrix environments.
+
+The Node verification suite contains 54 tests and passes together with the generated service-worker manifest check. This still does **not** certify real Safari on iPhone/iPad, a physical mobile virtual keyboard, screen readers, measured WCAG contrast, first-launch offline PWA behavior, multi-tab/device contention, or the complete 1/10/10-minute new-learning chain in a real browser.
