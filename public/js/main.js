@@ -34,9 +34,10 @@ async function navigate(page){
 }
 async function authenticated(user){
   app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
+  try{await migrateLegacyMedia();}catch(error){notify(t('mediaMigrationError')+': '+error.message,true);}
   try{await sync();}catch(error){notify(t('syncError')+': '+error.message,true);}
+  try{if(await migrateLegacyMedia())await sync();}catch(error){notify(t('mediaMigrationError')+': '+error.message,true);}
   app.model=model();
-  try{if(await migrateLegacyMedia()){app.model=model();if(navigator.onLine)sync().catch(()=>{});}}catch(error){notify(t('mediaMigrationError')+': '+error.message,true);}
   const saved=await getMeta('view');
   if(saved)Object.assign(app,saved);
   if(!app.model.sets[app.setId])app.setId=Object.keys(app.model.sets)[0]||null;
