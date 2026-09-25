@@ -47,4 +47,5 @@ export function restoreHistory(state) {
     restoring=false;
   }
 }
+export function historyMatchesApp(state){return !!state?.voca&&same(snapshot(),state);}
 export function isRestoringHistory(){return restoring;}
