@@ -23,7 +23,9 @@ export async function syncNow() {
   const changes=diffSchedules(before,app.model);
   if(changes.length){
     const history=await getMeta('scheduleAdjustments')||[],at=Date.now();
-    await setMeta('scheduleAdjustments',[...history,...changes.map(change=>({...change,at}))].slice(-50));
+    const fresh=changes.filter(change=>!history.some(old=>old.wordId===change.wordId
+      &&old.beforeRev===change.beforeRev&&old.afterRev===change.afterRev));
+    if(fresh.length)await setMeta('scheduleAdjustments',[...history,...fresh.map(change=>({...change,at}))].slice(-50));
     notify(t('scheduleAdjusted'));
   }
   if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();return changes.length>0;
