@@ -73,9 +73,13 @@ async function setDraft(result) {
   draft={id:uuid(),setId:app.setId,rows:inspectCards(result.cards,model(),app.setId),errors:result.errors,warnings:result.warnings,events:null};
   await setMeta('importDraft',draft);renderPreview();
 }
+function importCounts() {
+  return draft.rows.reduce((out,row)=>{if(row.error)out.error++;else out[row.action]=(out[row.action]||0)+1;return out;},
+    {add:0,merge:0,skip:0,error:draft.errors.length});
+}
 function renderPreview() {
-  const body=document.querySelector('#import-preview');
-  body.innerHTML=`<p>${draft.rows.length} th\u1ebb \u00b7 ${draft.errors.length+draft.rows.filter(r=>r.error).length} l\u1ed7i. M\u00e3 nh\u1eadp: ${esc(draft.id)}</p>
+  const body=document.querySelector('#import-preview'),counts=importCounts();
+  body.innerHTML=`<p>${draft.rows.length} thẻ · ${counts.add} thêm · ${counts.merge} cập nhật · ${counts.skip} bỏ qua · ${counts.error} lỗi. Mã nhập: ${esc(draft.id)}</p>
   ${[...draft.errors,...draft.warnings].map(e=>`<p class="error-text">D\u00f2ng ${e.row}: ${esc(e.message)}</p>`).join('')}
   ${draft.rows.map((r,i)=>`<div class="conflict"><strong>D\u00f2ng ${r.row}: ${esc(r.patch.word)}</strong> \u2014 ${esc(r.patch.meaning)}
   ${!r.error&&r.patch.image?`<img class="editor-image" src="${esc(r.patch.image)}" alt="\u1ea2nh nh\u1eadp">`:''}
@@ -95,6 +99,8 @@ export async function confirmImport() {
   if(!draft||draft.setId!==app.setId)throw new Error('Reopen the import preview');
   if(draft.warnings.length&&!confirm('T\u1ec7p c\u00f3 c\u1ea3nh b\u00e1o \u1ea3nh/c\u00f4ng th\u1ee9c. Nh\u1eadp ph\u1ea7n \u0111\u1ecdc \u0111\u01b0\u1ee3c?'))return;
   if(!draft.events){draft.events=createImportEvents(draft.rows,model(),draft.setId,prepare,uuid,draft.id);await setMeta('importDraft',draft);}
+  const counts=importCounts();
   await transact(draft.events,undefined,{importDraft:null});
-  draft=null;app.model=model();closeModal();app.render();notify(t('saved'));
+  draft=null;app.model=model();closeModal();app.render();
+  notify(`Đã nhập: ${counts.add} mới · ${counts.merge} cập nhật · ${counts.skip} bỏ qua · ${counts.error} lỗi`);
 }

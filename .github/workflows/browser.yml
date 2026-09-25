@@ -51,6 +51,11 @@ jobs:
         env:
           PW_BROWSER: ${{ matrix.browser }}
         run: python tests/browser_acceptance_next.py
+      - name: Run Excel import acceptance
+        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
+        env:
+          PW_BROWSER: ${{ matrix.browser }}
+        run: python tests/browser_excel_import.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

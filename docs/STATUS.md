@@ -19,7 +19,7 @@ Status meanings:
 | UI-07 | Answer/clean/error summary and pending learning steps. Full started/graduated/entered/left breakdown remains incomplete. |
 | UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio; delete/restore; identity-change copy or reset; bulk selection, bulk delete, bulk assign topic and bulk reset. |
 | UI-10 | Parent/child topic data, parent selection, multi-membership and recursive scope. Hierarchical topic tree with depth indentation, subtopic creation and card counts. |
-| UI-11 | **Excel import/export implemented** in pure JS (.xlsx with OpenXML/ZIP), embedded images, column mapping, row-level validation, sense-aware duplicate handling. |
+| UI-11 | **Excel import/export implemented** in pure JS (.xlsx with OpenXML/ZIP), floating embedded images, column mapping, row-level validation and sense-aware duplicate handling. Chromium acceptance covers embedded-image import, preview recovery after reload, per-field conflict choice and repeated import without duplicate cards. |
 | UI-12 | Error-book filter, practice, episode counts/evidence display. Pure evidence rules tested; richer remaining-condition UI pending. |
 | UI-13 | Daily limit, timezone, basic SRS factors, open-app reminder. No background notifications or primary-device scheduler. |
 | UI-14 | IndexedDB journal, authenticated sync, authoritative server snapshot & grade validation, opportunity deduplication, conservative multi-device merge, offline resource status modal. |
@@ -29,7 +29,7 @@ Status meanings:
 
 1. Finish the remaining navigation/contention acceptance around browser Back and deliberately competing same-question submissions. Controlled-clock new learning, offline reload/reconnect, multi-tab propagation and isolated-profile account sync now run in CI.
 2. Continue authoritative review hardening. The server validates v2 question/config snapshots, allowed learning transitions, deterministic opportunity identity, same-device duplicate scheduled submissions, anchored clock bounds and deferred child-before-parent replay. Add more adversarial late-parent contradiction histories and conflict-detail evidence.
-3. Add live-browser Excel import acceptance, including embedded-image import, conflict choices and restart/retry behavior. Core import/export round trips and UI export are automated.
+3. Finish the remaining Excel compatibility edges: Microsoft 365 Place in Cell/rich-data images, image compression/bounds and larger invalid-file recovery. The core AT-03/UX-18 flow now has live-browser acceptance for embedded image import, reload/retry and conflict choices.
 4. Complete the user-configurable face matrix and game mix, card custom fields, valid question disambiguation, advanced settings/time rules, topic tree interactions and scoped bulk operations.
 5. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
 6. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Automated coverage now includes modal focus return, IME Enter protection, responsive reflow smoke checks and multi-engine/OS browser jobs. Real screen-reader, measured contrast, real virtual keyboard and declared physical-device checks still require manual/device evidence.
