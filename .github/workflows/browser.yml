@@ -46,6 +46,11 @@ jobs:
           PW_BROWSER: ${{ matrix.browser }}
           PW_VIEWPORT: ${{ matrix.viewport }}
         run: python tests/browser_e2e.py
+      - name: Run timed/offline/multi-client acceptance
+        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
+        env:
+          PW_BROWSER: ${{ matrix.browser }}
+        run: python tests/browser_acceptance_next.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
