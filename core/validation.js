@@ -1,5 +1,5 @@
 import {DEFAULTS} from './srs.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -9,6 +9,19 @@ export function validateEvent(e) {
   switch (e.kind) {
     case 'set':
       if (!id(d.id) || !text(d.name, 100) || !d.name.trim() || d.language !== 'en' || !['en','vi'].includes(d.meaningLanguage)) fail('Invalid study set');
+      if (d.customFields !== undefined) {
+        if (!Array.isArray(d.customFields) || d.customFields.length > 30) fail('Invalid custom fields');
+        const seen=new Set();
+        for (const field of d.customFields) {
+          if (!field || !id(field.id) || seen.has(field.id) || !text(field.label,100) || !field.label.trim()
+            || !['text','number','select'].includes(field.type)) fail('Invalid custom field');
+          seen.add(field.id);
+          if (field.type === 'select') {
+            if (!Array.isArray(field.options) || field.options.length < 1 || field.options.length > 50
+              || field.options.some(option=>!text(option,200)||!option.trim())) fail('Invalid custom options');
+          } else if (field.options !== undefined && (!Array.isArray(field.options) || field.options.length)) fail('Invalid custom options');
+        }
+      }
       break;
     case 'category':
       if (!id(d.id) || !id(d.setId) || !text(d.name, 100) || !d.name.trim() || (d.parentId && !id(d.parentId))) fail('Invalid category');
@@ -17,8 +30,16 @@ export function validateEvent(e) {
       if (!id(d.id) || !id(d.setId) || !d.patch || typeof d.patch !== 'object' || Array.isArray(d.patch)) fail('Invalid word');
       for (const [key, v] of Object.entries(d.patch)) {
         if (!WORD_FIELDS.has(key)) fail('Unexpected word field');
-        if (['answers','variants','tags'].includes(key)) {
+        if (['answers','variants','tags','synonyms','antonyms','collocations','wordFamily'].includes(key)) {
           if (!Array.isArray(v) || v.length > 100 || v.some(x => !text(x, 500))) fail('Invalid list');
+        } else if (key === 'custom') {
+          if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).length > 30) fail('Invalid custom data');
+          for (const [customId,value] of Object.entries(v)) {
+            if (!id(customId)) fail('Invalid custom field ID');
+            if (Array.isArray(value)) {
+              if (value.length > 50 || value.some(item=>!text(item,500))) fail('Invalid custom value');
+            } else if (!(text(value,5000) || Number.isFinite(value) || value === null)) fail('Invalid custom value');
+          }
         } else if (['image','audio'].includes(key)) {
           if (!text(v, 2200000) || (v && !/^data:(image\/(png|jpeg|webp)|audio\/(mpeg|wav|ogg|webm|mp4));base64,[A-Za-z0-9+/=]+$/.test(v))) fail('Invalid media');
         } else if (!text(v, key === 'word' ? 100 : 5000)) fail('Invalid word text');
