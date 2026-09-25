@@ -1,9 +1,10 @@
 import {app,current,words} from './state.js';
 import {t,notify,modal,button,esc,closeModal} from './ui.js';
-import {prepare,transact,model,setMeta,uuid} from './storage.js';
+import {prepare,transact,transactAnswer,model,setMeta,getMeta,uuid} from './storage.js';
 import {availablePool,learningAllowed,question,GAMES,GAME_FACES,usesAudio} from '/core/questions.js';
 import {inScope} from '/core/model.js';
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
+import {pushHistory} from './navigation.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
 export function startClock() {
@@ -64,7 +65,7 @@ export async function beginSession() {
   if(!queue.length)return;
   const session={id:uuid(),setId:app.setId,mode:app.mode,queue,index:0,finished:false,match:queue.every(q=>q.game==='match'),
     matchOrder:queue.map((_,i)=>i).reverse(),selected:null,error:''};
-  await setMeta('session',session);app.session=session;closeModal();app.page='study';app.render();startClock();
+  await setMeta('session',session);app.session=session;closeModal();app.page='study';app.render();pushHistory();startClock();
 }
 let submitting=false;
 async function writeAnswer(q,correct) {
@@ -86,7 +87,19 @@ async function writeAnswer(q,correct) {
     const event=q.pendingAnswer || prepare('answer',data,q.eventId);
     q.pendingAnswer=event;target.hadError=event.data.hadError;target.result={grade:event.data.grade,assisted:event.data.assisted};
     delete target.pendingAnswer;
-    await transact([event],next);app.session=next;app.model=model();app.render('#feedback');
+    const recorded=await transactAnswer(event,next);
+    if(recorded.inserted)app.session=next;
+    else {
+      const latest=await getMeta('session');
+      if(latest?.id===app.session.id)app.session=latest;
+      else {
+        const winner=recorded.event.data;
+        target.hadError=winner.hadError;target.result={grade:winner.grade,assisted:winner.assisted};
+        next.error=t('answeredElsewhere');await setMeta('session',next);app.session=next;
+      }
+      notify(t('answeredElsewhere'));
+    }
+    app.model=model();app.render('#feedback');
   } catch(error){app.session.error=t('saveError')+' '+error.message;app.render();throw error;}
   finally{submitting=false;}
 }
@@ -114,9 +127,9 @@ export async function playAudio(slow=false) {
 export async function studyAction(action,element) {
   const q=current();
   if(action==='startSession')return beginSession();
-  if(action==='resume'){app.page='study';app.setId=app.session.setId;app.render();startClock();return;}
-  if(action==='pause'){stopClock(true);await setMeta('session',app.session);app.page='home';app.render();return;}
-  if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';app.render();return;}
+  if(action==='resume'){app.page='study';app.setId=app.session.setId;app.render();pushHistory();startClock();return;}
+  if(action==='pause'){stopClock(true);await setMeta('session',app.session);app.page='home';app.render();pushHistory();return;}
+  if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';app.render();pushHistory();return;}
   if(!q)return;
   if(action==='playAudio'||action==='slowAudio')return playAudio(action==='slowAudio');
   if(action==='flip'){q.flipped=true;await setMeta('session',app.session);app.render();}
