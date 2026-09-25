@@ -16,7 +16,7 @@ export function applyStudySetup(saved) {
   if(['word','meaning','ipa','image'].includes(saved.answerFace))app.answerFace=saved.answerFace;
   if(Array.isArray(saved.mixGames)){
     const games=[...new Set(saved.mixGames.filter(game=>MIX_GAMES.includes(game)))];
-    if(games.length)app.mixGames=games;
+    app.mixGames=games;
   }
 }
 export const saveStudySetup=()=>setMeta('studySetup',{
