@@ -57,6 +57,7 @@ export function validateReview(state, event, events) {
   const unknown=d.unknown===true || d.schemaVersion!==2 && d.grade==='forget';
   let correct=!unknown && answers.some(a=>normalize(a)===normalize(input));
   if(d.game==='flash')correct=!unknown;
+  if(d.game==='quiz'&&d.answerFace==='image')correct=!unknown&&d.selectedWordId===d.wordId;
   if(d.game==='match')correct=!unknown && (d.selectedWordId===d.wordId || d.schemaVersion!==2 && d.grade!=='forget');
   const expected=gradeAnswer({correct,game:d.game,hint:d.hint||false,hadError:d.hadError,
     activeMs:d.activeMs,interrupted:d.interrupted||false,answer:answers[0],easyMs:d.config?.easyMs});
