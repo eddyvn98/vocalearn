@@ -63,6 +63,7 @@ export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidF
   "face": "Mặt hỏi",
   "questionFace": "Mặt hỏi",
   "answerFace": "Mặt đáp",
+  "quizAnswerFace": "Mặt đáp cho Trắc nghiệm trong Trộn",
   "mixGames": "Game dùng trong Trộn",
   "mixHelp": "Chỉ chọn trong các game đã bật và đủ điều kiện cho từng thẻ.",
   "matchSeparate": "Ghép cặp dùng một bảng nhiều thẻ nên hiện được chọn chơi riêng, không trộn từng câu trong phiên.",
