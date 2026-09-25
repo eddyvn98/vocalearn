@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {replay,inScope} from '../core/model.js';
 import {validateEvent} from '../core/validation.js';
+import {advance,DEFAULTS,initialState} from '../core/srs.js';
 const event=(id,kind,data,seq)=>({id,kind,data,seq,at:100,deviceId:'device'});
 const set=event('s','set',{id:'set',name:'EN',language:'en',meaningLanguage:'vi'},1);
 const word=event('w','word',{id:'word',setId:'set',patch:{word:'bank',meaning:'financial institution'}},2);
@@ -42,4 +43,32 @@ test('Reject unsafe media, prototype fields, invalid clocks/settings',()=>{
  assert.throws(()=>validateEvent(event('bad','settings',{zone:'invalid/zone'})));
  assert.throws(()=>validateEvent(event('bad','settings',{newLimit:1.5})));
  assert.throws(()=>validateEvent(event('bad','settings',JSON.parse('{"__proto__":{}}'))));
+});
+
+
+test('AT-19: invalidated descendants become practice and replay is arrival-order stable',()=>{
+ const baseAt=Date.parse('2026-09-25T05:00:00Z');
+ const rootState=initialState('word');
+ const afterRoot=advance(rootState,{grade:'hard',assisted:false},baseAt,DEFAULTS);
+ const hardParent=advance(afterRoot,{grade:'hard',assisted:false},baseAt+60000,DEFAULTS);
+ const answer=(id,baseRev,grade,when,game,mode='review',hadError=false)=>({
+   id,kind:'answer',deviceId:id,at:when,effectiveAt:when,data:{wordId:'word',baseRev,mode,game,grade,
+     assisted:false,hadError,familiarize:mode==='new',config:DEFAULTS,questionId:'q-'+id}
+ });
+ const root=answer('root',rootState.rev,'hard',baseAt,'flash','new');
+ const parent=answer('parent',afterRoot.rev,'hard',baseAt+60000,'quiz');
+ const child=answer('child',hardParent.rev,'good',baseAt+660000,'typing');
+ const late=answer('late',afterRoot.rev,'forget',baseAt+660000,'quiz','review',true);
+ const withSeq=(items)=>[set,word,...items.map((e,i)=>({...e,seq:i+3}))];
+ const a=replay(withSeq([root,parent,child,late]));
+ const b=replay(withSeq([root,late,parent,child]));
+ for(const state of [a,b]){
+   const w=state.words.word;
+   assert.equal(w.review.step,1);
+   assert.equal(w.accepted.has('child'),false);
+   assert.deepEqual(w.practiceReclassified,['child']);
+   assert.equal(w.errors.failures,1);
+   assert.equal(w.errors.total,1);
+ }
+ assert.deepEqual(a.words.word.review,b.words.word.review);
 });
