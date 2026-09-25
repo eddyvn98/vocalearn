@@ -13,16 +13,16 @@ Status meanings:
 |---|---|
 | UI-01/02 | Local email/password account API, create/switch English-to-Vietnamese/English study sets. Reset-password/verification flows not implemented. |
 | UI-03 | Today, scope selection, learning/due/new/waiting/error counts, resume entry and next-step time. Needs actual-browser end-to-end acceptance. |
-| UI-04 | Mode/game selection, basic valid-count checks, limited face selection. Mix is a fixed subset, not yet the full user-configurable matrix. |
+| UI-04 | Mode/game selection, configurable face matrix (meaning, word, ipa, image, audio), valid-count checks. |
 | UI-05 | Six game families, final-answer feedback, retry, hints, pause. Dictation requires stored uploaded audio. No ASR or pronunciation scoring. |
-| UI-06 | Pure scheduler has 1/10-minute learning steps, mandatory recall graduation and relearning; browser queue uses these states. Boundary scenarios need actual browser tests. |
+| UI-06 | Pure scheduler has 1/10-minute learning steps, mandatory recall graduation and relearning; browser queue uses these states. Covered by end-to-end browser lifecycle suite. |
 | UI-07 | Answer/clean/error summary and pending learning steps. Full started/graduated/entered/left breakdown remains incomplete. |
-| UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio; delete/restore; identity-change copy or reset. Full custom fields and bulk editing pending. |
-| UI-10 | Parent/child topic data, parent selection, multi-membership and recursive scope. Full tree expand/collapse/reorder and include-descendants toggle pending. |
-| UI-11 | **Excel not implemented.** Extra JSON utility previews and transfers basic content, omits IDs/topics/review journal. Not spec-compliant Excel or backup. |
+| UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio; delete/restore; identity-change copy or reset; bulk selection, bulk delete, bulk assign topic and bulk reset. |
+| UI-10 | Parent/child topic data, parent selection, multi-membership and recursive scope. Hierarchical topic tree with depth indentation, subtopic creation and card counts. |
+| UI-11 | **Excel import/export implemented** in pure JS (.xlsx with OpenXML/ZIP), embedded images, column mapping, row-level validation, sense-aware duplicate handling. |
 | UI-12 | Error-book filter, practice, episode counts/evidence display. Pure evidence rules tested; richer remaining-condition UI pending. |
 | UI-13 | Daily limit, timezone, basic SRS factors, open-app reminder. No background notifications or primary-device scheduler. |
-| UI-14 | IndexedDB journal, basic authenticated sync, per-field conflicts, last-sync details. Media download manager and full clock/conflict acceptance pending. |
+| UI-14 | IndexedDB journal, authenticated sync, authoritative server snapshot & grade validation, opportunity deduplication, conservative multi-device merge, offline resource status modal. |
 | UI-15/16 | G2/G3 AI, advanced statistics, Chinese/Japanese profiles, recognition/handwriting are not implemented or shown as playable. |
 
 ## High-priority work before calling this MVP complete

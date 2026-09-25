@@ -3,6 +3,7 @@ import {mkdirSync} from 'node:fs';
 import {dirname} from 'node:path';
 import {replay} from '../core/model.js';
 import {validateEvent} from '../core/validation.js';
+import {RECOGNITION} from '../core/grading.js';
 export function openDatabase(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
@@ -40,7 +41,7 @@ export function synchronize(db, userId, input, now = Date.now()) {
       const event = {id: raw.id, kind: raw.kind, data: raw.data, at: raw.at,
         deviceId: raw.deviceId, localOrder: raw.localOrder, effectiveAt, receivedAt: now};
       const model = replay(existing);
-      assertReferences(model, event);
+      assertReferences(model, event, existing);
       const row = db.prepare('INSERT INTO events(user_id,event_id,payload) VALUES(?,?,?)').run(userId, event.id, JSON.stringify(event));
       event.seq = Number(row.lastInsertRowid); existing.push(event); received.push(event.id);
     }
@@ -52,7 +53,7 @@ export function synchronize(db, userId, input, now = Date.now()) {
     cursor: existing.at(-1)?.seq ?? 0, serverNow: now,
     anchorServer: anchor?.server_at ?? now, anchorClient: anchor?.client_at ?? input.clientNow};
 }
-function assertReferences(state, event) {
+function assertReferences(state, event, existing = []) {
   const {kind, data: d} = event;
   if (['category','word'].includes(kind) && !state.sets[d.setId]) throw new Error('Unknown study set');
   if (kind === 'word' && !state.words[d.id] && !d.patch.word) throw new Error('A word is required');
@@ -71,9 +72,23 @@ function assertReferences(state, event) {
   if (['answer','attempt','link','unlink'].includes(kind) && !state.words[d.wordId]) throw new Error('Unknown word');
   if (['link','unlink'].includes(kind) && (!state.categories[d.categoryId]
     || state.categories[d.categoryId].setId !== state.words[d.wordId].setId)) throw new Error('Invalid word category');
-  if (kind === 'answer' && !['free','errors'].includes(d.mode)) {
-    // Historical parent revisions remain acceptable: domain replay resolves late
-    // competing results conservatively and retains invalid descendants as practice.
-    if (!d.baseRev) throw new Error('Missing schedule revision');
+  if (kind === 'answer') {
+    if (!['free','errors'].includes(d.mode) && !d.baseRev) throw new Error('Missing schedule revision');
+    if (RECOGNITION.has(d.game) && ['good','easy'].includes(d.grade)) throw new Error('Recognition games cannot produce good or easy grade');
+    if ((d.hadError || d.hint || d.assisted) && ['good','easy'].includes(d.grade)) throw new Error('Assisted answers cannot produce good or easy grade');
+    if (d.grade === 'forget' && d.assisted) throw new Error('Forget grade cannot be assisted');
+    if (d.interrupted && d.grade === 'easy') throw new Error('Interrupted answers cannot produce easy grade');
+    if (d.question && typeof d.question === 'object' && d.question.word) {
+      const curWord = state.words[d.wordId];
+      if (curWord && curWord.word && curWord.word !== d.question.word) throw new Error('Question snapshot word mismatch');
+    }
+    if (existing.some(e => e.kind === 'answer' && e.data.questionId === d.questionId && e.id !== event.id)) {
+      throw new Error('Duplicate final answer for question');
+    }
+  }
+  if (kind === 'attempt') {
+    if (existing.some(e => e.kind === 'answer' && e.data.questionId === d.questionId)) {
+      throw new Error('Cannot add attempt to completed question');
+    }
   }
 }

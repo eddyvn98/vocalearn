@@ -1,20 +1,26 @@
 import {normalize} from './grading.js';
 import {isDue, dayAt} from './time.js';
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'];
+export const FACES = ['meaning','word','ipa','image','audio'];
 export function requiredGame(w) {
   if (w.review.phase === 'new') return 'flash';
   if (w.review.phase === 'relearn') return 'typing';
   return ['flash','quiz','spell','typing'][w.review.step];
 }
-export function reasons(w, game, face, pool) {
+export function reasons(w, game, face = 'meaning', pool = []) {
   if (!w.word || !w.ready) return ['missingPrompt'];
-  if (['typing','flash'].includes(game) && !w[face]) return ['missingPrompt'];
+  if (['typing','flash'].includes(game)) {
+    if (face === 'word' && !w.meaning) return ['missingMeaning'];
+    if (face !== 'word' && !w[face]) return ['missingPrompt'];
+  }
   if (['quiz','match'].includes(game)) {
     if (!w.meaning) return ['missingMeaning'];
     const others = pool.filter(x => x.id !== w.id && x.meaning && normalize(x.meaning) !== normalize(w.meaning) && normalize(x.word) !== normalize(w.word));
     if (!others.length) return ['missingChoices'];
   }
-  if (['spell','dictation'].includes(game) && !w.audio) return ['missingAudio'];
+  if ((['spell','dictation'].includes(game) || face === 'audio') && !w.audio) return ['missingAudio'];
+  if (face === 'image' && !w.image) return ['missingImage'];
+  if (face === 'ipa' && !w.ipa) return ['missingPrompt'];
   if (['cloze','clozeChoice'].includes(game) && (!w.sentence || w.sentence.split('___').length !== 2 || !w.answers?.length)) return ['missingSentence'];
   if (game === 'clozeChoice' && pool.filter(x => x.id !== w.id && !w.answers.map(normalize).includes(normalize(x.word))).length < 1) return ['missingChoices'];
   return [];
@@ -30,7 +36,7 @@ export function learningAllowed(model, scoped, now) {
   const used = Object.values(model.words).filter(w => w.review.startedDay === day).length;
   return used >= model.settings.newLimit ? 'dailyLimit' : null;
 }
-export function question(w, pool, game, face, mode, config, uuid) {
+export function question(w, pool, game, face = 'meaning', mode = 'review', config = {}, uuid = crypto.randomUUID) {
   const learning = mode === 'new' || mode === 'review' && w.review.phase !== 'review';
   let fallback = null, familiarize = false;
   if (learning) {
@@ -44,14 +50,15 @@ export function question(w, pool, game, face, mode, config, uuid) {
   }
   const why = reasons(w, game, face, pool);
   if (why.length) return {blocked: why, wordId: w.id};
-  const answers = game.startsWith('cloze') ? w.answers : [w.word];
-  const prompt = game.startsWith('cloze') ? w.sentence : game === 'quiz' || game === 'match' ? w.word : w[face];
-  const correctChoice = game === 'quiz' ? w.meaning : answers[0];
+  const isReverse = face === 'word';
+  const answers = game.startsWith('cloze') ? w.answers : isReverse ? [w.meaning] : [w.word];
+  const prompt = game.startsWith('cloze') ? w.sentence : game === 'match' ? w.word : (isReverse ? w.word : w[face] || w.word);
+  const correctChoice = game === 'quiz' ? (isReverse ? w.meaning : w.word) : answers[0];
   const distractors = pool.filter(x => x.id !== w.id && normalize(x.word) !== normalize(w.word))
-    .map(x => game === 'quiz' ? x.meaning : x.word)
+    .map(x => game === 'quiz' ? (isReverse ? x.meaning : x.word) : x.word)
     .filter(x => x && normalize(x) !== normalize(correctChoice) && !answers.map(normalize).includes(normalize(x)));
   const choices = [...new Set([correctChoice, ...distractors])].slice(0, 4).map((label, index) => ({label, correct: index === 0}));
-  const rotation = w.word.length % choices.length;
+  const rotation = w.word.length % Math.max(1, choices.length);
   choices.push(...choices.splice(0, rotation));
   return {id: uuid(), eventId: uuid(), wordId: w.id, baseRev: w.review.rev, mode, game, face,
     config: {...config}, snapshot: structuredClone(w), prompt, answers, choices, fallback, familiarize,

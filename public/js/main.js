@@ -3,11 +3,11 @@ import {api,openStore,model,prepare,transact,setMeta,getMeta,refresh,sync,pendin
 import {t,notify,closeModal} from './ui.js';
 import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
-import {libraryView,rows} from './views/library.js';
+import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';
 import {setup,studyAction,submitInput,startClock,stopClock} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
-import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction} from './settings.js';
+import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport} from './content.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
@@ -69,6 +69,28 @@ async function click(action,el){
   if(action==='export')return exportContent();
   if(action==='import')return importDialog();
   if(action==='confirmImport')return confirmImport();
+  if(action==='offlineResources')return offlineResources();
+  if(action==='toggleSelect'){
+    const id=el.dataset.id;if(app.selectedCards.has(id))app.selectedCards.delete(id);else app.selectedCards.add(id);
+    return app.render();
+  }
+  if(action==='toggleSelectAll'){
+    const list=filtered();if(app.selectedCards.size===list.length)app.selectedCards.clear();else list.forEach(w=>app.selectedCards.add(w.id));
+    return app.render();
+  }
+  if(action==='clearSelect'){app.selectedCards.clear();return app.render();}
+  if(action==='bulkDelete'){
+    if(!confirm(`Xóa ${app.selectedCards.size} thẻ đã chọn?`))return;
+    await commit(Array.from(app.selectedCards).map(id=>prepare('deleteWord',{id})));app.selectedCards.clear();return app.render();
+  }
+  if(action==='bulkReset'){
+    if(!confirm(`Đặt lại lịch ôn cho ${app.selectedCards.size} thẻ đã chọn?`))return;
+    await commit(Array.from(app.selectedCards).map(id=>prepare('resetWord',{id})));app.selectedCards.clear();return app.render();
+  }
+  if(action==='bulkTopic'){
+    const cs=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
+    return modal('Gán chủ đề hàng loạt',`<form id="bulk-topic-form" class="stack"><label>Chủ đề<select name="categoryId">${cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">Gán cho ${app.selectedCards.size} thẻ</button></form>`);
+  }
   if(action==='trash')return trash();
   if(action==='restoreWord'){await commit([prepare('restoreWord',{id:el.dataset.id})]);trash();app.render();}
   if(action==='restoreField'){
@@ -103,6 +125,11 @@ document.addEventListener('submit',async e=>{
       const f=new FormData(form);await commit([prepare('category',{id:form.dataset.id||uuid(),setId:app.setId,name:f.get('name').trim(),parentId:f.get('parentId')||null})]);
       closeModal();app.render();
     }
+    if(form.id==='bulk-topic-form'){
+      const catId=new FormData(form).get('categoryId');
+      await commit(Array.from(app.selectedCards).map(wordId=>prepare('link',{wordId,categoryId:catId})));
+      app.selectedCards.clear();closeModal();return app.render();
+    }
   }catch(error){showError(error);}finally{app.busy=false;if(submit?.isConnected)submit.disabled=false;}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.isComposing)e.preventDefault();});
@@ -116,7 +143,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='setup-game'){app.game=e.target.value;setup();}
     if(e.target.id==='setup-face'){app.face=e.target.value;setup();}
     if(e.target.id==='image-upload'||e.target.id==='audio-upload')await mediaFile(e.target.files[0],e.target.id==='image-upload'?'image':'audio');
-    if(e.target.id==='json-file')await readImport(e.target.files[0]);
+    if(e.target.id==='json-file'||e.target.id==='import-file')await readImport(e.target.files[0]);
   }catch(error){showError(error);}
 });
 document.querySelector('#modal').addEventListener('cancel',e=>{

@@ -47,7 +47,7 @@ export function setup(mode=app.mode,game=app.game) {
   const limited=app.game==='match'&&good.length<2;
   modal(t('setup'),`<div class="stack"><p>${t(mode)} \u00b7 ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
     ${mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...GAMES].map(g=>`<option value="${g}" ${g===app.game?'selected':''}>${t(g)}</option>`).join('')}</select></label>`}
-    <label ${['mix','typing','flash'].includes(app.game)?'':'hidden'}>${t('face')}<select id="setup-face">${['meaning','ipa','image'].map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
+    <label ${['mix','typing','flash','quiz'].includes(app.game)?'':'hidden'}>${t('face')}<select id="setup-face">${['meaning','word','ipa','image','audio'].map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
     <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>${errors.map(e=>`<p class="info">${t(e)}</p>`).join('')}
     ${blocked||limited?`<p class="error-text">${t(blocked||'missingChoices')}</p>`:''}
     ${button(t('start'),'startSession','primary full',!good.length||blocked||limited?'disabled':'')}</div>`);
@@ -65,23 +65,28 @@ export async function beginSession() {
     matchOrder:queue.map((_,i)=>i).reverse(),selected:null,error:''};
   await setMeta('session',session);app.session=session;closeModal();app.page='study';app.render();startClock();
 }
+let submitting=false;
 async function writeAnswer(q,correct) {
-  stopClock();
-  const result=gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,
-    activeMs:q.activeMs,interrupted:q.interrupted,answer:q.answers[0],easyMs:q.config.easyMs});
-  const next=structuredClone(app.session),target=next.queue.find(x=>x.id===q.id);
-  target.result=result;if(!correct)target.hadError=true;
-  next.error='';
-  const data={wordId:q.wordId,questionId:q.id,baseRev:q.baseRev,mode:q.mode,game:q.game,
-    ...result,hadError:target.hadError,config:q.config,familiarize:q.familiarize,
-    activeMs:Math.round(q.activeMs),input:q.input,question:{prompt:q.face==='image'?'[image]':q.prompt,answers:q.answers,
-      word:q.snapshot.word,meaning:q.snapshot.meaning,fields:q.snapshot.fields}};
-  const event=prepare('answer',data,q.eventId);
-  try {await transact([event],next);app.session=next;app.model=model();app.render('#feedback');}
-  catch(error){app.session.error=t('saveError')+' '+error.message;app.render();throw error;}
+  if(submitting||q.result)return;
+  submitting=true;
+  try {
+    stopClock();
+    const result=gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,
+      activeMs:q.activeMs,interrupted:q.interrupted,answer:q.answers[0],easyMs:q.config.easyMs});
+    const next=structuredClone(app.session),target=next.queue.find(x=>x.id===q.id);
+    target.result=result;if(!correct)target.hadError=true;
+    next.error='';
+    const data={wordId:q.wordId,questionId:q.id,baseRev:q.baseRev,mode:q.mode,game:q.game,
+      ...result,hadError:target.hadError,config:q.config,familiarize:q.familiarize,
+      activeMs:Math.round(q.activeMs),input:q.input,question:{prompt:q.face==='image'?'[image]':q.prompt,answers:q.answers,
+        word:q.snapshot.word,meaning:q.snapshot.meaning,fields:q.snapshot.fields}};
+    const event=prepare('answer',data,q.eventId);
+    await transact([event],next);app.session=next;app.model=model();app.render('#feedback');
+  } catch(error){app.session.error=t('saveError')+' '+error.message;app.render();throw error;}
+  finally{submitting=false;}
 }
 export async function submitInput(value) {
-  const q=current();if(q.result)return;
+  const q=current();if(!q||q.result||submitting)return;
   q.input=value;
   const result=checkAnswer(value,q.answers,q.retry);
   if(result.kind==='empty'){q.inputError=t('inputFirst');app.render('#answer');return;}

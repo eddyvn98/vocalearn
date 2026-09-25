@@ -14,12 +14,20 @@ export function filtered() {
   });
 }
 export function rows() {
-  return filtered().map(w=>`<article class="word-row"><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}</div>${button(t('edit'),'edit','quiet',`data-id="${w.id}"`)}</article>`).join('')||`<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
+  app.selectedCards = app.selectedCards || new Set();
+  const list = filtered();
+  return list.map(w => `<article class="word-row ${app.selectedCards.has(w.id) ? 'selected' : ''}"><div class="row items-center"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id) ? 'checked' : ''} aria-label="Chọn ${esc(w.word)}"><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}</div>${button(t('edit'),'edit','quiet',`data-id="${w.id}"`)}</article>`).join('') || `<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
 }
+
 export function libraryView() {
+  app.selectedCards = app.selectedCards || new Set();
+  const list = filtered();
+  const selectedCount = app.selectedCards.size;
   return shell(`<header class="page-heading row between wrap"><div><span class="eyebrow">${esc(app.model.sets[app.setId]?.name)}</span><h1 tabindex="-1">${t(app.page==='errors'?'errors':'library')}</h1></div>${button(t('chooseScope'),'scope')}</header>
-  <div class="row wrap toolbar"><input id="search" type="search" class="search" placeholder="${t('search')}" aria-label="${t('search')}" value="${esc(app.query)}">${button('+ '+t('add'),'add','primary')}${button(t('topics'),'topics')}${button(t('export'),'export')}</div>
+  <div class="row wrap toolbar"><input id="search" type="search" class="search" placeholder="${t('search')}" aria-label="${t('search')}" value="${esc(app.query)}">${button('+ '+t('add'),'add','primary')}${button(t('topics'),'topics')}${button('Xuất Excel','export')}${button('Tài nguyên','offlineResources','quiet')}</div>
   <div class="tabs">${['all','due','new','learning','waiting','errors'].map(f=>button(t(f),'filter',app.filter===f?'active':'',`data-filter="${f}" aria-pressed="${app.filter===f}"`)).join('')}</div>
+  ${selectedCount ? `<section class="resume row between wrap"><div><strong>${selectedCount} thẻ đã chọn</strong></div><div class="row wrap">${button('Gán chủ đề','bulkTopic')}${button('Đặt lại lịch','bulkReset')}${button('Xóa','bulkDelete','danger')}${button('Bỏ chọn','clearSelect','quiet')}</div></section>` : ''}
+  <div class="row between items-center sub-toolbar"><small class="muted">${list.length} thẻ</small>${list.length ? button(selectedCount === list.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả', 'toggleSelectAll', 'quiet small') : ''}</div>
   ${app.page==='errors'?`<section class="resume"><p>${t('evidenceHelp')}</p>${button(t('free'),'setupErrors','primary')}</section>`:''}<div id="word-rows" class="word-list">${rows()}</div>
-  <div class="row wrap foot-actions">${button(t('import'),'import')}${!words().length?button(t('loadSamples'),'samples'):''}${button(t('deleted'),'trash','quiet')}</div><p class="muted small">${t('jsonHelp')}</p>`);
+  <div class="row wrap foot-actions">${button(t('import'),'import')}${!words().length?button(t('loadSamples'),'samples'):''}${button(t('deleted'),'trash','quiet')}</div>`);
 }
