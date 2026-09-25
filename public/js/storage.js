@@ -77,10 +77,9 @@ export async function api(path, body) {
   if(!response.ok)throw new Error(payload.error || `HTTP ${response.status}`);
   return payload;
 }
-let syncing = false;
-export async function sync() {
-  if(syncing)return;
-  syncing=true;
+let syncPromise = null;
+export function sync() {
+  if(syncPromise)return syncPromise;
   const run = async()=>{
     await refresh();
     // Bound batches by serialized size, not only count (media may be large).
@@ -98,8 +97,11 @@ export async function sync() {
     tx.objectStore('meta').put(Date.now(),'lastSync');
     await done(tx);await refresh();channel?.postMessage({owner});
   };
-  try {await queue.catch(()=>{});await(navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());}
-  finally {syncing=false;}
+  syncPromise=(async()=>{
+    await queue.catch(()=>{});
+    await(navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());
+  })().finally(()=>{syncPromise=null;});
+  return syncPromise;
 }
 channel?.addEventListener('message',e=>{if(e.data.owner===owner)window.dispatchEvent(new CustomEvent('voca-external'));});
 if (typeof window !== 'undefined') window.addEventListener('online', () => sync().catch(() => {}));

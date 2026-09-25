@@ -41,7 +41,10 @@ export function replay(input) {
     const schedule = scheduleFor(w.generation, afterReset);
     w.review = schedule.state;
     w.accepted = schedule.accepted;
-    w.errors = errorBook(related);
+    w.practiceReclassified = related.filter(e=>e.kind==='answer'
+      && !['free','errors'].includes(e.data.mode) && !schedule.accepted.has(e.id)).map(e=>e.id);
+    const errorEvents=related.map(e=>w.practiceReclassified.includes(e.id)?{...e,scheduleEligible:false}:e);
+    w.errors = errorBook(errorEvents);
     w.categoryIds = Object.values(state.links).filter(l => !l.removed && l.wordId === w.id && state.categories[l.categoryId]).map(l => l.categoryId);
     w.ready = !!(w.word?.trim() && (w.meaning?.trim() || w.ipa?.trim() || w.image));
   }
