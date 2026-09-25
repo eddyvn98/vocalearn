@@ -121,7 +121,7 @@ def main():
                 tab.locator('[name="easyMs"]').fill("9000")
                 tab.locator('#settings-form [type="submit"]').click()
                 expect(tab.locator("dialog")).not_to_be_visible()
-                expect.poll(lambda: question_state(page)["modelEasyMs"]).to_be(9000)
+                page.wait_for_function("() => import(\'/js/state.js\').then(m => m.app.model.settings.easyMs === 9000)")
                 after=question_state(page)
                 assert after["prompt"]==before["prompt"]
                 assert after["answers"]==before["answers"]
