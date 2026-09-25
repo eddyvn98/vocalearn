@@ -237,7 +237,9 @@ def main():
                 browser = p.chromium.launch()
                 context = browser.new_context(viewport={"width": 1280, "height": 900})
                 page = context.new_page()
-                page.clock.install(time=datetime.fromtimestamp(START_MS / 1000, tz=timezone.utc))
+                start_time = datetime.fromtimestamp(START_MS / 1000, tz=timezone.utc)
+                page.clock.install(time=start_time)
+                page.clock.pause_at(start_time)
                 page.goto(origin, wait_until="networkidle")
                 expect(page.locator("#auth-form")).to_be_visible()
                 email = "next-e2e@example.test"
