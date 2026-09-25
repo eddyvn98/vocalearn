@@ -1,0 +1,37 @@
+[
+  {
+    "view": "home",
+    "width": 1440,
+    "height": 1000,
+    "horizontalOverflow": false,
+    "kind": "static fixture, not interactive E2E"
+  },
+  {
+    "view": "home",
+    "width": 390,
+    "height": 844,
+    "horizontalOverflow": false,
+    "kind": "static fixture, not interactive E2E"
+  },
+  {
+    "view": "study",
+    "width": 1440,
+    "height": 1000,
+    "horizontalOverflow": false,
+    "kind": "static fixture, not interactive E2E"
+  },
+  {
+    "view": "study",
+    "width": 320,
+    "height": 780,
+    "horizontalOverflow": false,
+    "kind": "static fixture, not interactive E2E"
+  },
+  {
+    "view": "library",
+    "width": 390,
+    "height": 844,
+    "horizontalOverflow": false,
+    "kind": "static fixture, not interactive E2E"
+  }
+]

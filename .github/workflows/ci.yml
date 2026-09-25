@@ -1,0 +1,20 @@
+name: Verify
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: npm run verify
+      - name: Check generated offline manifest
+        run: |
+          npm run build:sw
+          git diff --exit-code -- public/sw.js

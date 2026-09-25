@@ -1,0 +1,295 @@
+
+> vocalearn@0.1.0 verify
+> npm run check && npm test
+
+
+> vocalearn@0.1.0 check
+> node scripts/check.js
+
+Syntax and file-size checks passed for 31 JavaScript modules.
+
+> vocalearn@0.1.0 test
+> node --test tests/*.test.js
+
+TAP version 13
+# (node:3595) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Authenticated session is HttpOnly, account owns its data
+ok 1 - Authenticated session is HttpOnly, account owns its data
+  ---
+  duration_ms: 115.944589
+  type: 'test'
+  ...
+# Subtest: Unauthenticated sync is rejected
+ok 2 - Unauthenticated sync is rejected
+  ---
+  duration_ms: 2.505811
+  type: 'test'
+  ...
+# Subtest: Incorrect password is rejected
+ok 3 - Incorrect password is rejected
+  ---
+  duration_ms: 42.49735
+  type: 'test'
+  ...
+# Subtest: Cross-origin writes and malformed JSON media type are rejected
+ok 4 - Cross-origin writes and malformed JSON media type are rejected
+  ---
+  duration_ms: 5.221427
+  type: 'test'
+  ...
+# Subtest: Idempotent event append and offline sync round trip
+ok 5 - Idempotent event append and offline sync round trip
+  ---
+  duration_ms: 9.850633
+  type: 'test'
+  ...
+# Subtest: Failed batches are atomic, malformed item cannot partially import
+ok 6 - Failed batches are atomic, malformed item cannot partially import
+  ---
+  duration_ms: 4.276479
+  type: 'test'
+  ...
+# Subtest: Category cycles are rejected without corrupting data
+ok 7 - Category cycles are rejected without corrupting data
+  ---
+  duration_ms: 4.447185
+  type: 'test'
+  ...
+# Subtest: Separate accounts cannot read another account events
+ok 8 - Separate accounts cannot read another account events
+  ---
+  duration_ms: 43.269479
+  type: 'test'
+  ...
+# Subtest: Server rejects event from another device in the batch
+ok 9 - Server rejects event from another device in the batch
+  ---
+  duration_ms: 2.474113
+  type: 'test'
+  ...
+# Subtest: Record time is bounded; returning same ID preserves effective timestamp
+ok 10 - Record time is bounded; returning same ID preserves effective timestamp
+  ---
+  duration_ms: 2.987854
+  type: 'test'
+  ...
+# Subtest: Private files cannot be served; security headers are present
+ok 11 - Private files cannot be served; security headers are present
+  ---
+  duration_ms: 5.478001
+  type: 'test'
+  ...
+# Subtest: An event ID cannot be reused with different data
+ok 12 - An event ID cannot be reused with different data
+  ---
+  duration_ms: 2.516927
+  type: 'test'
+  ...
+# Subtest: Logout invalidates server session
+ok 13 - Logout invalidates server session
+  ---
+  duration_ms: 1.824338
+  type: 'test'
+  ...
+# Subtest: AT-06: per-sentence answers, not every word form
+ok 14 - AT-06: per-sentence answers, not every word form
+  ---
+  duration_ms: 1.145068
+  type: 'test'
+  ...
+# Subtest: AT-07: typo can retry once, never silently correct
+ok 15 - AT-07: typo can retry once, never silently correct
+  ---
+  duration_ms: 0.311848
+  type: 'test'
+  ...
+# Subtest: Unicode normalization and no transposition-as-one
+ok 16 - Unicode normalization and no transposition-as-one
+  ---
+  duration_ms: 0.147392
+  type: 'test'
+  ...
+# Subtest: Recognition cap, equality threshold, hints and interruptions
+ok 17 - Recognition cap, equality threshold, hints and interruptions
+  ---
+  duration_ms: 0.537547
+  type: 'test'
+  ...
+# Subtest: AT-16: requires different games, recall and at least 10 minutes
+ok 18 - AT-16: requires different games, recall and at least 10 minutes
+  ---
+  duration_ms: 0.534862
+  type: 'test'
+  ...
+# Subtest: AT-17: six completed errors persistent, recovery resets episode but not lifetime
+ok 19 - AT-17: six completed errors persistent, recovery resets episode but not lifetime
+  ---
+  duration_ms: 0.212529
+  type: 'test'
+  ...
+# Subtest: Retry enters book; one final answer counts one failure
+ok 20 - Retry enters book; one final answer counts one failure
+  ---
+  duration_ms: 0.360501
+  type: 'test'
+  ...
+# Subtest: Hint breaks evidence without adding a failure
+ok 21 - Hint breaks evidence without adding a failure
+  ---
+  duration_ms: 0.169344
+  type: 'test'
+  ...
+# Subtest: AT-04: small decks produce 2/3 options and reject ambiguous duplicates
+ok 22 - AT-04: small decks produce 2/3 options and reject ambiguous duplicates
+  ---
+  duration_ms: 1.338639
+  type: 'test'
+  ...
+# Subtest: Audio-dependent games require actual offline audio
+ok 23 - Audio-dependent games require actual offline audio
+  ---
+  duration_ms: 0.335753
+  type: 'test'
+  ...
+# Subtest: Learning falls back from missing audio to typing; no audio claim
+ok 24 - Learning falls back from missing audio to typing; no audio claim
+  ---
+  duration_ms: 0.210125
+  type: 'test'
+  ...
+# Subtest: Learning daily cap does not block saving words
+ok 25 - Learning daily cap does not block saving words
+  ---
+  duration_ms: 4.67101
+  type: 'test'
+  ...
+# Subtest: AT-01: bare word saves as waiting without a due date
+ok 26 - AT-01: bare word saves as waiting without a due date
+  ---
+  duration_ms: 1.118128
+  type: 'test'
+  ...
+# Subtest: AT-02: equal spelling, different senses maintain independent IDs
+ok 27 - AT-02: equal spelling, different senses maintain independent IDs
+  ---
+  duration_ms: 0.199319
+  type: 'test'
+  ...
+# Subtest: AT-20: per-field edits merge, conflicting same field retains old value
+ok 28 - AT-20: per-field edits merge, conflicting same field retains old value
+  ---
+  duration_ms: 0.287522
+  type: 'test'
+  ...
+# Subtest: AT-21: tombstone stops stale edits; restoration explicit
+ok 29 - AT-21: tombstone stops stale edits; restoration explicit
+  ---
+  duration_ms: 0.203976
+  type: 'test'
+  ...
+# Subtest: AT-27: categories do not clone schedule; deleting categories does not delete words
+ok 30 - AT-27: categories do not clone schedule; deleting categories does not delete words
+  ---
+  duration_ms: 0.478599
+  type: 'test'
+  ...
+# Subtest: Concurrent unlink wins; explicit re-add after observed removal works
+ok 31 - Concurrent unlink wins; explicit re-add after observed removal works
+  ---
+  duration_ms: 0.175794
+  type: 'test'
+  ...
+# Subtest: Reject unsafe media, prototype fields, invalid clocks/settings
+ok 32 - Reject unsafe media, prototype fields, invalid clocks/settings
+  ---
+  duration_ms: 4.359813
+  type: 'test'
+  ...
+# Subtest: AT-12: recognition interval and old EF
+ok 33 - AT-12: recognition interval and old EF
+  ---
+  duration_ms: 12.787992
+  type: 'test'
+  ...
+# Subtest: AT-12: assisted interval and old EF
+ok 34 - AT-12: assisted interval and old EF
+  ---
+  duration_ms: 0.311377
+  type: 'test'
+  ...
+# Subtest: AT-12: good interval and old EF
+ok 35 - AT-12: good interval and old EF
+  ---
+  duration_ms: 0.206189
+  type: 'test'
+  ...
+# Subtest: AT-12: easy interval and old EF
+ok 36 - AT-12: easy interval and old EF
+  ---
+  duration_ms: 0.191928
+  type: 'test'
+  ...
+# Subtest: AT-13: overdue and half-up rounding
+ok 37 - AT-13: overdue and half-up rounding
+  ---
+  duration_ms: 0.284487
+  type: 'test'
+  ...
+# Subtest: AT-14: lapse penalizes EF once, relearn failures do not
+ok 38 - AT-14: lapse penalizes EF once, relearn failures do not
+  ---
+  duration_ms: 0.455634
+  type: 'test'
+  ...
+# Subtest: EF floor and interval ceiling
+ok 39 - EF floor and interval ceiling
+  ---
+  duration_ms: 0.389555
+  type: 'test'
+  ...
+# Subtest: AT-15: exact learning steps 1,10,10 minutes and preserved step on failure
+ok 40 - AT-15: exact learning steps 1,10,10 minutes and preserved step on failure
+  ---
+  duration_ms: 0.551578
+  type: 'test'
+  ...
+# Subtest: AT-18: duplicate opportunity produces one transition, conservative winner
+ok 41 - AT-18: duplicate opportunity produces one transition, conservative winner
+  ---
+  duration_ms: 1.164998
+  type: 'test'
+  ...
+# Subtest: AT-19: late parent contradiction reclassifies dependent answers
+ok 42 - AT-19: late parent contradiction reclassifies dependent answers
+  ---
+  duration_ms: 0.793821
+  type: 'test'
+  ...
+# Subtest: AT-11: free practice does not change schedule
+ok 43 - AT-11: free practice does not change schedule
+  ---
+  duration_ms: 0.865058
+  type: 'test'
+  ...
+# Subtest: Hard from help is more conservative than hard from recognition
+ok 44 - Hard from help is more conservative than hard from recognition
+  ---
+  duration_ms: 0.109624
+  type: 'test'
+  ...
+# Subtest: Account timezone and due dates
+ok 45 - Account timezone and due dates
+  ---
+  duration_ms: 0.266831
+  type: 'test'
+  ...
+1..45
+# tests 45
+# suites 0
+# pass 45
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 328.713643

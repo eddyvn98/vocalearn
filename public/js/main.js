@@ -1,0 +1,150 @@
+import {app,current} from './state.js';
+import {api,openStore,model,prepare,transact,setMeta,getMeta,refresh,sync,pendingCount,uuid} from './storage.js';
+import {t,notify,closeModal} from './ui.js';
+import {authView,setView} from './views/shell.js';
+import {homeView} from './views/home.js';
+import {libraryView,rows} from './views/library.js';
+import {studyView,resultsView} from './views/study.js';
+import {setup,studyAction,submitInput,startClock,stopClock} from './study.js';
+import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
+import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction} from './settings.js';
+import {samples,exportContent,importDialog,readImport,confirmImport} from './content.js';
+const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
+app.render=(focus)=>{
+  document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
+    :app.page==='study'?studyView():app.page==='results'?resultsView():['library','errors'].includes(app.page)?libraryView():homeView();
+  if(focus)requestAnimationFrame(()=>document.querySelector(focus)?.focus());
+};
+async function persistView(){await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});}
+function showError(error){
+  const el=document.querySelector('#form-error')||document.querySelector('#auth-error')||document.querySelector('#study-error');
+  if(el)el.textContent=error.message;notify(error.message,true);
+}
+async function commit(events){await transact(events);app.model=model();}
+async function navigate(page){
+  if(app.page==='study'){stopClock(true);await setMeta('session',app.session);}
+  app.page=page;app.render('h1');await persistView();
+}
+async function authenticated(user){
+  app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
+  try{await sync();}catch(error){notify(t('syncError')+': '+error.message,true);}
+  app.model=model();const saved=await getMeta('view');
+  if(saved)Object.assign(app,saved);
+  if(!app.model.sets[app.setId])app.setId=Object.keys(app.model.sets)[0]||null;
+  app.session=await getMeta('session')||null;
+  if(app.session&&!app.session.finished){for(const q of app.session.queue)if(!q.result)q.interrupted=true;await setMeta('session',app.session);}
+  app.page='home';app.render();
+}
+async function click(action,el){
+  if(studyActions.has(action))return studyAction(action,el);
+  if(action==='toggleAuth'){app.register=!app.register;app.render();return;}
+  if(action==='close'){if(app.dirty&&!confirm(t('unsaved')))return;app.dirty=false;closeModal();return;}
+  if(['home','library','errors','sets'].includes(action)){
+    if(action==='errors')app.filter='errors';if(action==='library')app.filter='all';return navigate(action);
+  }
+  if(action==='filter'){app.filter=el.dataset.filter;return navigate(app.filter==='errors'?'errors':'library');}
+  if(action==='clearFilter'){app.filter='all';app.query='';app.scope=[];return navigate('library');}
+  if(action==='selectSet'){app.setId=el.dataset.id;app.scope=[];return navigate('home');}
+  if(action==='setupReview')return setup('review','mix');
+  if(action==='setupNew')return setup('new','mix');
+  if(action==='setupFree')return setup('free','typing');
+  if(action==='setupErrors')return setup('errors','mix');
+  if(action==='practice')return setup('free',el.dataset.game);
+  if(action==='add'||action==='edit')return openEditor(el.dataset.id);
+  if(action==='deleteWord')return deleteWord(el.dataset.id);
+  if(action==='clearImage'||action==='clearAudio')return clearMedia(action==='clearImage'?'image':'audio');
+  if(action==='settings')return settings();
+  if(action==='syncInfo')return syncInfo();
+  if(action==='sync'){await syncNow();return syncInfo();}
+  if(action==='logout')return logoutAction();
+  if(action==='scope')return scopeModal();
+  if(action==='clearScope'){app.scope=[];closeModal();app.render();return persistView();}
+  if(action==='topicScope'){app.scope=[el.dataset.id];app.render();return persistView();}
+  if(action==='topics'||action==='editTopic')return topics(el.dataset.id);
+  if(action==='deleteTopic'){
+    if(!confirm('Delete this topic and its subtopics? Cards will be kept.'))return;
+    await commit([prepare('deleteCategory',{id:el.dataset.id})]);topics();return app.render();
+  }
+  if(action==='samples')return samples();
+  if(action==='export')return exportContent();
+  if(action==='import')return importDialog();
+  if(action==='confirmImport')return confirmImport();
+  if(action==='trash')return trash();
+  if(action==='restoreWord'){await commit([prepare('restoreWord',{id:el.dataset.id})]);trash();app.render();}
+  if(action==='restoreField'){
+    const conflict=app.model.conflicts.find(c=>c.eventId===el.dataset.id&&c.field===el.dataset.field);
+    const word=app.model.words[conflict.wordId];
+    if(['word','meaning'].includes(conflict.field)){closeModal();return openEditor(word.id);}
+    await commit([prepare('word',{id:word.id,setId:word.setId,patch:{[conflict.field]:conflict.before},baseFields:word.fields})]);return syncInfo();
+  }
+}
+document.addEventListener('click',async e=>{
+  const el=e.target.closest('[data-action]');if(!el||el.disabled||app.busy)return;
+  app.busy=true;try{await click(el.dataset.action,el);}catch(error){showError(error);}finally{app.busy=false;}
+});
+document.addEventListener('submit',async e=>{
+  e.preventDefault();if(app.busy)return;app.busy=true;
+  const form=e.target,submit=form.querySelector('[type="submit"]');if(submit)submit.disabled=true;
+  try{
+    if(form.id==='auth-form'){
+      const f=new FormData(form);const data=await api(app.register?'register':'login',{email:f.get('email'),password:f.get('password')});
+      await authenticated(data.user);
+    }
+    if(form.id==='set-form'){
+      const f=new FormData(form),id=uuid();
+      await commit([prepare('set',{id,name:f.get('name').trim(),language:'en',meaningLanguage:f.get('meaningLanguage')})]);
+      app.setId=id;await navigate('home');
+    }
+    if(form.id==='word-form')await saveWord(form);
+    if(form.id==='answer-form')await submitInput(new FormData(form).get('answer'));
+    if(form.id==='settings-form')await saveSettings(form);
+    if(form.id==='scope-form'){app.scope=new FormData(form).getAll('scope');closeModal();app.render();await persistView();}
+    if(form.id==='topic-form'){
+      const f=new FormData(form);await commit([prepare('category',{id:form.dataset.id||uuid(),setId:app.setId,name:f.get('name').trim(),parentId:f.get('parentId')||null})]);
+      closeModal();app.render();
+    }
+  }catch(error){showError(error);}finally{app.busy=false;if(submit?.isConnected)submit.disabled=false;}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.isComposing)e.preventDefault();});
+document.addEventListener('input',e=>{
+  if(e.target.closest('#word-form'))app.dirty=true;
+  if(e.target.id==='search'){app.query=e.target.value;document.querySelector('#word-rows').innerHTML=rows();}
+  if(e.target.id==='answer'&&current()){current().input=e.target.value;current().inputError='';setMeta('session',app.session).catch(showError);}
+});
+document.addEventListener('change',async e=>{
+  try{
+    if(e.target.id==='setup-game'){app.game=e.target.value;setup();}
+    if(e.target.id==='setup-face'){app.face=e.target.value;setup();}
+    if(e.target.id==='image-upload'||e.target.id==='audio-upload')await mediaFile(e.target.files[0],e.target.id==='image-upload'?'image':'audio');
+    if(e.target.id==='json-file')await readImport(e.target.files[0]);
+  }catch(error){showError(error);}
+});
+document.querySelector('#modal').addEventListener('cancel',e=>{
+  if(app.dirty&&!confirm(t('unsaved')))e.preventDefault();else app.dirty=false;
+});
+document.addEventListener('visibilitychange',()=>{
+  if(app.page==='study'&&app.session){stopClock(document.hidden);setMeta('session',app.session).catch(showError);if(!document.hidden)startClock();}
+});
+window.addEventListener('voca-external',async()=>{
+  await refresh();app.model=model();if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();
+});
+window.addEventListener('online',()=>{if(app.user)syncNow().catch(error=>notify(t('syncError')+': '+error.message,true));});
+setInterval(async()=>{
+  if(!app.user||app.busy||app.page==='study'||document.querySelector('#modal').open)return;
+  try{
+    if(navigator.onLine)await syncNow();
+    const m=app.model,s=m.settings,now=new Date();
+    if(s.reminder){
+      const day=(await import('/core/time.js')).dayAt(now.valueOf(),s.zone);
+      const clock=new Intl.DateTimeFormat('en-GB',{timeZone:s.zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now);
+      const due=Object.values(m.words).some(w=>!w.deleted&&w.ready&&(w.review.dueDate<=day&&w.review.dueDate||w.review.dueAt&&w.review.dueAt<=now.valueOf()));
+      if(due&&clock>=s.reminderTime&&await getMeta('reminded')!==day){notify(t('reviewHint'));await setMeta('reminded',day);}
+    }
+  }catch{}
+},30000);
+try{
+  const cached=JSON.parse(localStorage.getItem('vocalearn-user')||'null');
+  let user;try{user=(await api('me')).user;}catch{user=cached;}
+  if(user)await authenticated(user);else app.render();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}catch(error){document.querySelector('#app').textContent=t('loadError');showError(error);}
