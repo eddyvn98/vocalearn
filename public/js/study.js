@@ -1,8 +1,9 @@
 import {app,current,words} from './state.js';
 import {t,notify,modal,button,esc,closeModal} from './ui.js';
 import {prepare,transact,transactAnswer,model,setMeta,getMeta,uuid} from './storage.js';
-import {availablePool,learningAllowed,question,GAMES,GAME_FACES,usesAudio} from '/core/questions.js';
+import {learningAllowed,usesAudio} from '/core/questions.js';
 import {inScope} from '/core/model.js';
+import {previewQueue,setup as setupDialog,applyStudySetup,saveStudySetup} from './study-setup.js';
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
 import {pushHistory} from './navigation.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
@@ -16,44 +17,8 @@ export function stopClock(interrupt=false) {
   if(q&&!q.result){if(started)q.activeMs+=performance.now()-started;if(interrupt)q.interrupted=true;}
   started=0;
 }
-export function previewQueue() {
-  const pool=availablePool(app.model,app.setId,inCurrentScope,app.mode,Date.now());
-  const all=words();
-  const selected=app.game==='match'?pool.slice(0,6):pool;
-  const seenWords=new Set(),seenMeanings=new Set();
-  return selected.map((w,i)=>{
-    if(app.game==='match'){
-      const left=w.word?.toLowerCase(),right=w.meaning?.toLowerCase();
-      if(seenWords.has(left)||seenMeanings.has(right))return {blocked:['ambiguousMatch'],wordId:w.id};
-      seenWords.add(left);seenMeanings.add(right);
-    }
-    let game=app.game;
-    if(game==='mix'){
-      const choices=['quiz','typing','cloze','flash'];
-      for(let n=0;n<choices.length;n++){
-        const candidate=question(w,all,choices[(i+n)%choices.length],app.face,app.mode,app.model.settings,uuid);
-        if(!candidate.blocked)return candidate;
-      }
-      game='typing';
-    }
-    return question(w,app.game==='match'?selected:all,game,app.face,app.mode,app.model.settings,uuid);
-  });
-}
-export function setup(mode=app.mode,game=app.game) {
-  if(app.session&&!app.session.finished){notify(t('paused'));return;}
-  app.mode=mode;app.game=game;
-  if(!GAME_FACES[game]?.includes(app.face))app.face=GAME_FACES[game]?.[0]||'meaning';
-  const blocked=mode==='new'?learningAllowed(app.model,words().filter(inCurrentScope),Date.now()):null;
-  const queue=previewQueue(),good=queue.filter(q=>!q.blocked);
-  const errors=[...new Set(queue.flatMap(q=>q.blocked||[]))];
-  const limited=app.game==='match'&&good.length<2;
-  modal(t('setup'),`<div class="stack"><p>${t(mode)} \u00b7 ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
-    ${mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...GAMES].map(g=>`<option value="${g}" ${g===app.game?'selected':''}>${t(g)}</option>`).join('')}</select></label>`}
-    <label ${['mix','typing','flash','quiz'].includes(app.game)?'':'hidden'}>${t('face')}<select id="setup-face">${(GAME_FACES[app.game]||[]).map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
-    <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>${errors.map(e=>`<p class="info">${t(e)}</p>`).join('')}
-    ${blocked||limited?`<p class="error-text">${t(blocked||'missingChoices')}</p>`:''}
-    ${button(t('start'),'startSession','primary full',!good.length||blocked||limited?'disabled':'')}</div>`);
-}
+export {applyStudySetup,saveStudySetup};
+export function setup(mode=app.mode,game=app.game){return setupDialog(mode,game);}
 export async function beginSession() {
   if(app.mode==='new'&&learningAllowed(app.model,words().filter(inCurrentScope),Date.now()))return;
   let queue=previewQueue().filter(q=>!q.blocked);
@@ -64,6 +29,7 @@ export async function beginSession() {
   }
   if(!queue.length)return;
   const session={id:uuid(),setId:app.setId,mode:app.mode,queue,index:0,finished:false,match:queue.every(q=>q.game==='match'),
+    setup:{game:app.game,face:app.face,answerFace:app.answerFace,mixGames:[...app.mixGames]},
     matchOrder:queue.map((_,i)=>i).reverse(),selected:null,error:''};
   await setMeta('session',session);app.session=session;closeModal();app.page='study';app.render();pushHistory();startClock();
 }
@@ -80,6 +46,7 @@ async function writeAnswer(q,correct) {
     target.result=result;if(!correct)target.hadError=true;
     next.error='';
     const data={schemaVersion:2,wordId:q.wordId,questionId:q.id,opportunityId:q.opportunityId,baseRev:q.baseRev,mode:q.mode,game:q.game,
+      answerFace:q.answerFace,
       ...result,hadError:target.hadError,config:q.config,familiarize:q.familiarize,
       activeMs:Math.round(q.activeMs),input:q.input,face:q.face,hint:q.hint,interrupted:q.interrupted,
       unknown:!correct,selectedWordId:q.selectedWordId,question:{prompt:['image','audio'].includes(q.face)?`[${q.face}]`:q.prompt,answers:q.answers,
