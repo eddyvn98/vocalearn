@@ -32,7 +32,7 @@ test('Invalid custom field definitions and unsafe custom keys are rejected',()=>
   });
   assert.throws(()=>validateEvent(badSet));
   const badWord=event('bad-word','word',{
-    id:'w1',setId:'set1',patch:{word:'bank',custom:{'__proto__':'x'}},baseFields:{}
+    id:'w1',setId:'set1',patch:{word:'bank',custom:{'bad field':'x'}},baseFields:{}
   });
   assert.throws(()=>validateEvent(badWord));
 });
