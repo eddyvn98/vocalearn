@@ -61,6 +61,9 @@ def login(page, origin, email):
 
 
 def add_card(page, word, meaning, wav_path):
+    if page.locator('[data-action="add"]:visible').count() == 0:
+        page.locator('[data-action="library"]').click()
+        expect(page.locator("#word-rows")).to_be_visible()
     page.locator('[data-action="add"]:visible').first.click()
     expect(page.locator("#word-form")).to_be_visible()
     page.locator('#word-form [name="word"]').fill(word)
@@ -100,6 +103,8 @@ def advance(page, clock_file, now_ms, delta_ms):
 
 
 def complete_timed_learning(page, clock_file, now_ms):
+    page.locator('[data-action="home"]').click()
+    expect(page.locator(".game-grid")).to_be_visible()
     page.locator('[data-action="setupNew"]').click()
     page.locator('[data-action="startSession"]').click()
     expect(page.locator(".question-panel")).to_be_visible()
@@ -230,7 +235,7 @@ def main():
                 register_and_create_set(page, email)
                 add_card(page, "deploy", "triển khai", wav_path)
                 add_card(page, "confirm", "xác nhận", wav_path)
-                page.evaluate("navigator.serviceWorker.ready")
+                page.evaluate("() => navigator.serviceWorker.ready.then(() => true)")
                 now_ms = complete_timed_learning(page, clock_file, START_MS)
                 offline_reconnect(page, context)
                 clock_file.write_text(str(now_ms))
