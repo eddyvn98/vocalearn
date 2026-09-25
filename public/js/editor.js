@@ -92,5 +92,6 @@ export async function deleteWord(id) {
 }
 export function trash() {
   const deleted=Object.values(app.model.words).filter(w=>w.deleted&&w.setId===app.setId);
-  modal(t('deleted'),deleted.map(w=>`<div class="topic-row"><span>${esc(w.word)} \u00b7 ${esc(w.meaning)}</span>${button(t('restore'),'restoreWord','',`data-id="${w.id}"`)}</div>`).join('')||`<p>${t('noResults')}</p>`);
+  modal(t('deleted'),`${deleted.length?`<div class="row between"><strong>${deleted.length} thẻ</strong>${button('Khôi phục tất cả','restoreAllDeleted','primary')}</div>`:''}
+    ${deleted.map(w=>`<div class="topic-row"><span>${esc(w.word)} · ${esc(w.meaning)}</span>${button(t('restore'),'restoreWord','',`data-id="${w.id}"`)}</div>`).join('')||`<p>${t('noResults')}</p>`}`);
 }
