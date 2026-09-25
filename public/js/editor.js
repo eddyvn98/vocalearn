@@ -38,7 +38,7 @@ export function openEditor(id) {
 }
 export async function saveWord(form) {
   const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean);
-  const custom={};
+  const custom={...(editing?.custom||{})};
   for(const def of app.model.sets[app.setId]?.customFields||[]){
     const raw=f.get(`custom:${def.id}`),value=raw==null?'':String(raw).trim();
     custom[def.id]=def.type==='number'?(value===''?null:Number(value)):value;
