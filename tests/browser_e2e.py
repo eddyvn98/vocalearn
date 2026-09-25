@@ -69,7 +69,7 @@ def main():
                         page.locator('[data-action="samples"]').click()
                         expect(page.locator(".metric")).to_have_count(4)
 
-                        settings = page.locator('[data-action="settings"]').first
+                        settings = page.locator('[data-action="settings"]:visible').first
                         settings.focus(); settings.click()
                         expect(page.locator("dialog")).to_be_visible()
                         assert page.evaluate("document.querySelector('#modal').contains(document.activeElement)")
