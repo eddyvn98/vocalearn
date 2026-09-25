@@ -42,7 +42,6 @@ def make_wav(path):
 
 
 def register_and_create_set(page, email):
-    page.goto(page.url or "about:blank")
     page.locator('[data-action="toggleAuth"]').click()
     page.locator('[name="email"]').fill(email)
     page.locator('[name="password"]').fill("disposable-password-123")
