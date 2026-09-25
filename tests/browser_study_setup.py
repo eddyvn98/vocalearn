@@ -78,6 +78,7 @@ def main():
                     expect(page.locator(f'[data-mix-game="{game}"]')).to_be_checked()
                 expect(page.locator('[data-action="startSession"]')).to_be_enabled()
                 page.locator('[data-action="startSession"]').click()
+                expect(page.locator(".question-panel")).to_be_visible()
                 state=question_state(page)
                 assert set(state["queueGames"]).issubset({"flash","quiz","typing"})
                 assert len(set(state["queueGames"]))>=2
@@ -106,6 +107,7 @@ def main():
                 page.locator("#setup-answer-face").select_option("word")
                 expect(page.locator('[data-action="startSession"]')).to_be_enabled()
                 page.locator('[data-action="startSession"]').click()
+                expect(page.locator(".question-panel")).to_be_visible()
                 before=question_state(page)
                 assert before["game"]=="quiz"
                 assert before["face"]=="meaning"
