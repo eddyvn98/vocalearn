@@ -37,6 +37,7 @@ export function validateEvent(e) {
       for (const [key, min, max] of [['newLimit',0,200],['hardFactor',1,3],['easyFactor',1,3],['easyMs',1000,120000],['maxInterval',1,3650]]) {
         if (key in d && (!Number.isFinite(d[key]) || d[key] < min || d[key] > max)) fail(`Invalid ${key}`);
       }
+      if ('maxInterval' in d && !Number.isInteger(d.maxInterval)) fail('Invalid interval');
       if ('newLimit' in d && !Number.isInteger(d.newLimit)) fail('Invalid daily limit');
       if ('reminder' in d && typeof d.reminder !== 'boolean') fail('Invalid reminder');
       if (d.reminderTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(d.reminderTime)) fail('Invalid reminder time');

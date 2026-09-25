@@ -1,4 +1,4 @@
-export const vi = {
+export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt thẻ không hợp lệ",
   "noTopics": "Ch\u01b0a c\u00f3 ch\u1ee7 \u0111\u1ec1. Th\u1ebb hi\u1ec7n n\u1eb1m trong Ch\u01b0a ph\u00e2n lo\u1ea1i.",
   "ambiguousMatch": "C\u1eb7p tr\u00f9ng m\u1eb7t h\u1ecfi ho\u1eb7c m\u1eb7t \u0111\u00e1p, c\u1ea7n b\u1ed5 sung ng\u1eef c\u1ea3nh.",
   "home": "Hôm nay",
@@ -157,9 +157,9 @@ export const vi = {
   "loadSamples": "Thêm 8 thẻ mẫu",
   "noData": "Kho từ đang trống.",
   "samplesHelp": "Thẻ mẫu là từ mới thật, không tạo lịch sử giả.",
-  "export": "Xuất JSON nội dung thẻ",
-  "import": "Nhập JSON nội dung thẻ",
-  "jsonHelp": "JSON là tiện ích bổ sung, chưa thay thế nhập/xuất Excel theo đặc tả.",
+  "export": "Xuất Excel nội dung thẻ",
+  "import": "Nhập Excel / JSON",
+  "jsonHelp": "Xuất nội dung thẻ và ảnh nổi; không phải sao lưu lịch ôn. Ảnh Place in Cell chưa hỗ trợ.",
   "phaseNotice": "Bản phát triển 0.1 · Chưa nghiệm thu đầy đủ MVP",
   "logoutBlocked": "Hãy đồng bộ các thay đổi trước khi đăng xuất.",
   "audioError": "Chưa phát được audio. Không tính lỗi học.",

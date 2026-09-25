@@ -1,4 +1,4 @@
-import {addDays, dayAt, daysBetween, revision} from './time.js';
+import {addDays, dayAt, daysBetween, revision, isDue} from './time.js';
 export const DEFAULTS = Object.freeze({zone: 'Asia/Ho_Chi_Minh', newLimit: 15,
   hardFactor: 1.2, easyFactor: 1.3, easyMs: 5000, maxInterval: 3650, reminder: false, reminderTime: '20:00'});
 export function initialState(id) {
@@ -41,18 +41,32 @@ export function conservative(events) {
     || (a.effectiveAt ?? a.at) - (b.effectiveAt ?? b.at)
     || a.id.localeCompare(b.id))[0];
 }
+/** Server-derived facts permit deferred children only after their real parent exists. */
+function allowedAtBase(event, base) {
+  const gate=event.reviewGate,d=event.data;
+  if(!gate)return true; // Historical records retain their original replay semantics.
+  if(!gate.ready || (base.phase==='new' ? d.mode!=='new' : d.mode!=='review'))return false;
+  if(base.phase!=='new' && !isDue(base,event.effectiveAt,d.config?.zone||DEFAULTS.zone))return false;
+  if(base.phase==='review')return true;
+  let expected=base.phase==='new'?'flash':base.phase==='relearn'?'typing':['flash','quiz','spell','typing'][base.step];
+  let familiar=base.phase==='new';
+  if(expected==='quiz'&&!gate.quizAvailable){expected='flash';familiar=true;}
+  if(expected==='spell'&&!gate.hasAudio)expected='typing';
+  return d.game===expected && !!d.familiarize===familiar && (!familiar || d.grade==='hard'&&!d.hadError&&!d.assisted);
+}
 /** Replay from root; late contradictory parents invalidate dependent descendants. */
 export function scheduleFor(id, events) {
   let state = initialState(id);
-  const eligible = events.filter(e => e.kind === 'answer' && e.data.mode !== 'free' && e.data.mode !== 'errors');
-  const accepted = new Set();
+  const eligible = events.filter(e => e.scheduleEligible !== false && e.kind === 'answer' && e.data.mode !== 'free' && e.data.mode !== 'errors');
+  const accepted = new Set(), states = new Map([[state.rev,{...state}]]);
   for (let i = 0; i < eligible.length; i++) {
-    const group = eligible.filter(e => e.data.baseRev === state.rev);
+    const group = eligible.filter(e => e.data.baseRev === state.rev && allowedAtBase(e,state));
     if (!group.length) break;
     const winner = conservative(group);
     const at = Math.min(...group.map(e => e.effectiveAt ?? e.at));
     state = advance(state, winner.data, at, winner.data.config);
+    states.set(state.rev,{...state});
     group.forEach(e => accepted.add(e.id));
   }
-  return {state, accepted};
+  return {state, accepted, states};
 }

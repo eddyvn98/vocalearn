@@ -14,10 +14,14 @@ export function notify(text,error=false) {
   const el=document.querySelector('#notice');el.textContent=text;el.className=error?'notice error':'notice';
   if(!error)setTimeout(()=>{if(el.textContent===text)el.textContent='';},4500);
 }
-let opener;
+let opener,trigger,bound=false;
+export function setModalTrigger(el){trigger=el;}
+export function clearModalTrigger(){trigger=null;}
 export function modal(title,html) {
-  const d=document.querySelector('#modal');opener=document.activeElement;
+  const d=document.querySelector('#modal');opener=trigger?.isConnected?trigger:document.activeElement;
   d.innerHTML=`<header class="row between"><h2 id="dialog-title">${esc(title)}</h2>${button('&times;','close','icon-button',`aria-label="${t('close')}"`)}</header>${html}<p id="form-error" class="error-text" role="alert"></p>`;
+  if(!bound){d.addEventListener('close',()=>{const target=opener;setTimeout(()=>{if(target?.isConnected)target.focus();},50);});bound=true;}
   d.showModal();
+  requestAnimationFrame(()=>d.querySelector('input,select,textarea,button,[href]')?.focus());
 }
-export function closeModal(){document.querySelector('#modal').close();if(opener?.isConnected)opener.focus();}
+export function closeModal(){const d=document.querySelector('#modal'),target=opener;if(d.open)d.close();setTimeout(()=>{if(target?.isConnected)target.focus();},50);}

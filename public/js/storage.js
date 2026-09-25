@@ -34,7 +34,7 @@ export function prepare(kind,data,id=uuid()) {
   const at=Date.now();lastOrder=Math.max(lastOrder+1,at*1000);
   return {id,deviceId,kind,data,at,effectiveAt:at+offset,localOrder:lastOrder};
 }
-export async function transact(events,session) {
+export async function transact(events,session,metadata={}) {
   const run = async()=>{
     events.forEach(validateEvent);
     const tx = db.transaction(['events','meta'],'readwrite');
@@ -46,6 +46,7 @@ export async function transact(events,session) {
       };
     }
     if (session !== undefined) tx.objectStore('meta').put(session,'session');
+    for(const [key,value] of Object.entries(metadata))tx.objectStore('meta').put(value,key);
     await done(tx);await refresh();channel?.postMessage({owner});
   };
   queue=queue.catch(()=>{}).then(()=>navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());
@@ -84,3 +85,4 @@ export async function sync() {
   finally {syncing=false;}
 }
 channel?.addEventListener('message',e=>{if(e.data.owner===owner)window.dispatchEvent(new CustomEvent('voca-external'));});
+if (typeof window !== 'undefined') window.addEventListener('online', () => sync().catch(() => {}));

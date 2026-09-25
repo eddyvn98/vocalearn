@@ -12,42 +12,42 @@ Status meanings:
 | Area | Implementation and qualification |
 |---|---|
 | UI-01/02 | Local email/password account API, create/switch English-to-Vietnamese/English study sets. Reset-password/verification flows not implemented. |
-| UI-03 | Today, scope selection, learning/due/new/waiting/error counts, resume entry and next-step time. Needs actual-browser end-to-end acceptance. |
-| UI-04 | Mode/game selection, basic valid-count checks, limited face selection. Mix is a fixed subset, not yet the full user-configurable matrix. |
+| UI-03 | Today, scope selection, learning/due/new/waiting/error counts, resume entry and next-step time. Live-browser smoke and pause/resume reload coverage now run in CI; timed new-learning acceptance still needs dedicated coverage. |
+| UI-04 | Mode/game selection, configurable face matrix (meaning, word, ipa, image, audio), valid-count checks. |
 | UI-05 | Six game families, final-answer feedback, retry, hints, pause. Dictation requires stored uploaded audio. No ASR or pronunciation scoring. |
-| UI-06 | Pure scheduler has 1/10-minute learning steps, mandatory recall graduation and relearning; browser queue uses these states. Boundary scenarios need actual browser tests. |
+| UI-06 | Pure scheduler has 1/10-minute learning steps, mandatory recall graduation and relearning; browser queue uses these states. Scheduler timing is covered by domain tests; the live-browser suite covers session persistence but not the full timed new-learning chain. |
 | UI-07 | Answer/clean/error summary and pending learning steps. Full started/graduated/entered/left breakdown remains incomplete. |
-| UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio; delete/restore; identity-change copy or reset. Full custom fields and bulk editing pending. |
-| UI-10 | Parent/child topic data, parent selection, multi-membership and recursive scope. Full tree expand/collapse/reorder and include-descendants toggle pending. |
-| UI-11 | **Excel not implemented.** Extra JSON utility previews and transfers basic content, omits IDs/topics/review journal. Not spec-compliant Excel or backup. |
+| UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio; delete/restore; identity-change copy or reset; bulk selection, bulk delete, bulk assign topic and bulk reset. |
+| UI-10 | Parent/child topic data, parent selection, multi-membership and recursive scope. Hierarchical topic tree with depth indentation, subtopic creation and card counts. |
+| UI-11 | **Excel import/export implemented** in pure JS (.xlsx with OpenXML/ZIP), embedded images, column mapping, row-level validation, sense-aware duplicate handling. |
 | UI-12 | Error-book filter, practice, episode counts/evidence display. Pure evidence rules tested; richer remaining-condition UI pending. |
 | UI-13 | Daily limit, timezone, basic SRS factors, open-app reminder. No background notifications or primary-device scheduler. |
-| UI-14 | IndexedDB journal, basic authenticated sync, per-field conflicts, last-sync details. Media download manager and full clock/conflict acceptance pending. |
+| UI-14 | IndexedDB journal, authenticated sync, authoritative server snapshot & grade validation, opportunity deduplication, conservative multi-device merge, offline resource status modal. |
 | UI-15/16 | G2/G3 AI, advanced statistics, Chinese/Japanese profiles, recognition/handwriting are not implemented or shown as playable. |
 
 ## High-priority work before calling this MVP complete
 
-1. Run real-browser end-to-end tests of account creation, set creation, new-card steps with fake clock, reload during retry, offline reload, reconnection, duplicate submissions, two devices, multiple tabs, image/audio loading and browser Back.
+1. Extend live-browser acceptance to the timed new-card chain with a controlled clock, offline reload/reconnection, duplicate submissions, two devices, multiple tabs and browser Back. Account/set creation, six free-practice games, audio loading, pause/resume reload and Excel export now run in CI.
 2. Make the server validate question/opportunity snapshots, allowed state transitions and eligibility independently. Harden initial clock reconciliation and late-parent replay with adversarial/out-of-order histories. Add deterministic per-question uniqueness beyond client event ID.
-3. Implement the required Excel import/export: embedded images, column mapping, row-level errors, sense-aware duplicate handling, stable import IDs and resumable retries. Do not rename the JSON utility to Excel.
+3. Add live-browser Excel import acceptance, including embedded-image import, conflict choices and restart/retry behavior. Core import/export round trips and UI export are automated.
 4. Complete the user-configurable face matrix and game mix, card custom fields, valid question disambiguation, advanced settings/time rules, topic tree interactions and scoped bulk operations.
 5. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
-6. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Complete keyboard focus, IME, screen-reader, zoom/contrast and mobile virtual-keyboard checks on declared devices.
+6. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Automated coverage now includes modal focus return, IME Enter protection, responsive reflow smoke checks and multi-engine/OS browser jobs. Real screen-reader, measured contrast, real virtual keyboard and declared physical-device checks still require manual/device evidence.
 7. Establish production migrations, secret handling, backup/restore, account recovery, throttling/observability and tested scale limits before public hosting.
 
 ## Important known behavior differences
 
-- The JSON transfer is whole-set basic content, not a full filtered/selected export; no images-in-Excel support.
+- Excel transfer is content interchange, not a full backup: review schedule/logs are excluded, and Excel Place in Cell images remain unsupported.
 - The core SRS formula is implemented, but not every configurable per-language/game threshold is exposed. Full late clock correction can reclassify dependent local attempts.
 - A new learning step is resumed through a new due session rather than an always-updating in-session scheduler. The waiting indicator shows a timestamp, not a per-second timer.
 - English alternatives are constructed from local cards. Semantic synonym ambiguity is not comprehensively detected; the author should verify candidate meanings. Exact duplicate checks are not semantic validation.
 - A new card is identified as ready by word + meaning/IPA/image. Missing meaning prevents some games; unsupported combinations stay unavailable. Full semantic disambiguation/readiness per language is pending.
 - Browser edits retain hidden fields in the journal, but the UI exposes only a subset of all spec fields.
-- On this environment actual app navigation in Chromium was blocked by policy. Static view screenshots are not proof of functioning IndexedDB, reload persistence, audio, accessibility or full flows.
+- Local restricted environments may still block browser navigation. GitHub Actions now launches the live app on Chromium/WebKit across Linux, Windows and macOS. WebKit coverage is useful engine coverage but is not proof of real Safari/iPhone/iPad acceptance.
 
 ## Suggested issue titles for the repository
 
-- [P0] Actual-browser session/persistence/offline acceptance suite
+- [P0] Timed-learning, offline/reconnect and multi-client browser acceptance
 - [P0] Authoritative opportunity validation and clock-conflict replay
 - [P1] Excel import/export with embedded images and stable row IDs
 - [P1] Full game-face setup, topic tree and bulk card management
