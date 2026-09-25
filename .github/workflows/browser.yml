@@ -71,6 +71,11 @@ jobs:
         env:
           PW_BROWSER: ${{ matrix.browser }}
         run: python tests/browser_study_setup.py
+      - name: Run card/topic/bulk acceptance
+        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
+        env:
+          PW_BROWSER: ${{ matrix.browser }}
+        run: python tests/browser_card_management.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
