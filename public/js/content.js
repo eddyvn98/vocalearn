@@ -21,7 +21,7 @@ import {cardsToXlsx,readWorkbook,workbookToCards,detectMapping,COLUMNS} from '/c
 import {inspectCards,createImportEvents} from '/core/import-plan.js';
 import {getMeta,setMeta} from './storage.js';
 import {filtered} from './views/library.js';
-import {convertImportMedia,hydrateMedia,mediaMarkup,toDataUri} from './media-store.js';
+import {convertImportCards,convertImportMedia,hydrateMedia,mediaMarkup,toDataUri} from './media-store.js';
 let draft=null,workbook=null;
 export async function exportContent() {
   const visible=filtered(), selected=visible.filter(w=>app.selectedCards.has(w.id));
@@ -73,6 +73,7 @@ export async function previewImport() {
   await setDraft(workbookToCards(workbook,mapping));
 }
 async function setDraft(result) {
+  await convertImportCards(result.cards);
   draft={id:uuid(),setId:app.setId,rows:inspectCards(result.cards,model(),app.setId),errors:result.errors,warnings:result.warnings,events:null};
   await setMeta('importDraft',draft);renderPreview();
 }
