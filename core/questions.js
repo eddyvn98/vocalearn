@@ -112,7 +112,8 @@ export function question(w,pool,game,face='meaning',mode='review',config={},uuid
     ['quiz','match'].includes(game)?[valueFor(w,answerFace)]:[w.word];
   const prompt=game.startsWith('cloze')?w.sentence:valueFor(w,face);
   const choices=['quiz','clozeChoice'].includes(game)?[answers[0],...alternatives(w,pool,game,face,answerFace)].slice(0,4)
-    .map((label,index)=>({label,correct:index===0})):[];
+    .map((label,index)=>({label,correct:index===0,wordId:game==='quiz'
+      ?(index===0?w.id:pool.find(x=>x.id!==w.id&&answerValue(x,game,answerFace)===label)?.id):undefined})):[];
   const rotation=w.word.length%Math.max(1,choices.length);choices.push(...choices.splice(0,rotation));
   const id=uuid(),eventId=uuid(),baseRev=w.review.rev;
   return {id,eventId,opportunityId:opportunityId({wordId:w.id,baseRev,mode,questionId:id}),
