@@ -111,7 +111,7 @@ def main():
                 expect(page.locator('[name="level"]')).to_have_value("B1")
                 expect(page.locator('[name="variants"]')).to_have_value("banks, banking")
                 expect(page.locator('[name="tags"]')).to_have_value("finance, office")
-                expect(page.locator('[name="custom"]')).to_contain_text("Source: Internal notes")
+                expect(page.locator('[name="custom"]')).to_have_value("Source: Internal notes\\nPriority: high")
                 expect(page.locator('label:has-text("Work") input[name="category"]')).to_be_checked()
                 expect(page.locator('label:has-text("Meetings") input[name="category"]')).to_be_checked()
                 page.locator('[data-action="close"]').click()
