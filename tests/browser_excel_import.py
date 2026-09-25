@@ -182,6 +182,22 @@ def main():
                 page.keyboard.press("Escape")
                 expect(page.locator(".word-row").filter(has_text="deploy")).to_have_count(1)
 
+                # A failed replacement workbook must clear the prior preview instead of leaving stale rows importable.
+                preview_xlsx(page, xlsx)
+                expect(page.locator('[data-action="confirmImport"]')).to_be_enabled()
+                page.locator("#import-file").set_input_files(
+                    {
+                        "name": "corrupt.xlsx",
+                        "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "buffer": b"not-a-zip",
+                    }
+                )
+                expect(page.locator("#form-error")).to_contain_text("Invalid or unsupported ZIP archive")
+                expect(page.locator("#import-preview")).to_be_empty()
+                expect(page.locator('[data-action="confirmImport"]')).to_be_disabled()
+                page.locator('[data-action="close"]').click()
+                print("PASS: corrupt replacement workbook clears stale preview and cannot import old rows")
+
                 print("PASS: Excel import preserves embedded image, draft reload, conflict choice and retry dedup")
                 context.close()
                 browser.close()
