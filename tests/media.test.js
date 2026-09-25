@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {openDatabase,synchronize} from '../server/database.js';
 import {cleanupMedia,getMedia,mediaStats,putMedia} from '../server/media.js';
-import {allowedMedia,MAX_AUDIO_BYTES,MAX_IMAGE_BYTES} from '../core/media.js';
+import {allowedMedia,MAX_AUDIO_BYTES,MAX_IMAGE_BYTES,MAX_USER_MEDIA_BYTES} from '../core/media.js';
 import {validateEvent} from '../core/validation.js';
 
 const idFor=bytes=>`media:${createHash('sha256').update(bytes).digest('hex')}`;
@@ -39,6 +39,16 @@ test('Media rejects forged hashes and enforces type/size bounds',()=>{
     assert.equal(allowedMedia('audio/wav',MAX_AUDIO_BYTES),true);
     assert.equal(allowedMedia('audio/wav',MAX_AUDIO_BYTES+1),false);
     assert.equal(allowedMedia('text/plain',1),false);
+  }finally{db.close();}
+});
+
+test('Per-user media quota rejects new unique blobs at the configured bound',()=>{
+  const db=dbWithUser();
+  try{
+    db.prepare('INSERT INTO media(user_id,media_id,mime,size,bytes,created) VALUES(?,?,?,?,?,?)')
+      .run('u','media:'+'1'.repeat(64),'image/webp',MAX_USER_MEDIA_BYTES,Buffer.from('x'),1);
+    const bytes=Buffer.from('next'),id=idFor(bytes);
+    assert.throws(()=>putMedia(db,'u',{id,mime:'image/webp',data:bytes.toString('base64')}),/storage limit/i);
   }finally{db.close();}
 });
 
