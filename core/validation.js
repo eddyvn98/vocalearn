@@ -1,5 +1,5 @@
 import {DEFAULTS} from './srs.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -19,6 +19,9 @@ export function validateEvent(e) {
         if (!WORD_FIELDS.has(key)) fail('Unexpected word field');
         if (['answers','variants','tags'].includes(key)) {
           if (!Array.isArray(v) || v.length > 100 || v.some(x => !text(x, 500))) fail('Invalid list');
+        } else if (key === 'custom') {
+          if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).length > 30) fail('Invalid custom fields');
+          for (const [name,value] of Object.entries(v)) if (!text(name,80) || !name.trim() || !text(value,1000)) fail('Invalid custom field');
         } else if (['image','audio'].includes(key)) {
           if (!text(v, 2200000) || (v && !/^data:(image\/(png|jpeg|webp)|audio\/(mpeg|wav|ogg|webm|mp4));base64,[A-Za-z0-9+/=]+$/.test(v))) fail('Invalid media');
         } else if (!text(v, key === 'word' ? 100 : 5000)) fail('Invalid word text');
