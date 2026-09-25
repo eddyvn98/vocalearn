@@ -108,6 +108,9 @@ def main():
                 # A fresh device downloads once, then renders the same blob while offline.
                 second=browser.new_context(viewport={"width":1280,"height":900})
                 device=second.new_page();login(device,origin,email)
+                device.locator('[data-action="offlineResources"]').click()
+                expect(device.locator("dialog")).to_contain_text("1 chưa tải trên thiết bị")
+                device.locator('[data-action="close"]').click()
                 device.locator('[data-action="library"]').click()
                 device.locator(".word-row").filter(has_text="cat").first.locator('[data-action="edit"]').click()
                 pic=device.locator("#media-image .editor-image")
