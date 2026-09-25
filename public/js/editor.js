@@ -57,7 +57,11 @@ export async function saveWord(form) {
   const copy=identity&&f.get('identity')!=='reset';
   const id=editing&&!copy?editing.id:uuid();
   if(Object.values(app.model.words).some(w=>!w.deleted&&w.id!==id&&w.setId===app.setId&&normalize(w.word)===normalize(patch.word)&&normalize(w.meaning)===normalize(patch.meaning)&&normalize(w.pos)===normalize(patch.pos)))throw new Error(t('duplicate'));
-  const actual=copy?Object.fromEntries(Object.entries({...editing,...patch}).filter(([k])=>WORD_FIELDS.has(k))):patch;
+  let actual=copy?Object.fromEntries(Object.entries({...editing,...patch}).filter(([k])=>WORD_FIELDS.has(k))):patch;
+  if(copy){
+    const allowed=new Set((app.model.sets[app.setId]?.customFields||[]).map(def=>def.id));
+    actual={...actual,custom:Object.fromEntries(Object.entries(actual.custom||{}).filter(([id])=>allowed.has(id)))};
+  }
   const changed=editing&&!copy?Object.fromEntries(Object.entries(actual).filter(([k,v])=>JSON.stringify(v)!==JSON.stringify(editing[k]??''))):actual;
   const events=[prepare('word',{id,setId:app.setId,patch:changed,baseFields:editing&&!copy?editing.fields:{}})];
   if(identity&&!copy)events.push(prepare('resetWord',{id}));
