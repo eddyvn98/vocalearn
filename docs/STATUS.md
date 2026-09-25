@@ -12,10 +12,10 @@ Status meanings:
 | Area | Implementation and qualification |
 |---|---|
 | UI-01/02 | Local email/password account API, create/switch English-to-Vietnamese/English study sets. Reset-password/verification flows not implemented. |
-| UI-03 | Today, scope selection, learning/due/new/waiting/error counts, resume entry and next-step time. Live-browser smoke and pause/resume reload coverage now run in CI; timed new-learning acceptance still needs dedicated coverage. |
+| UI-03 | Today, scope selection, learning/due/new/waiting/error counts, resume entry and next-step time. Live-browser CI covers pause/resume reload plus the controlled-clock 1/10/10-minute new-learning chain, including reload while waiting. |
 | UI-04 | Mode/game selection, configurable face matrix (meaning, word, ipa, image, audio), valid-count checks. |
 | UI-05 | Six game families, final-answer feedback, retry, hints, pause. Dictation requires stored uploaded audio. No ASR or pronunciation scoring. |
-| UI-06 | Pure scheduler has 1/10-minute learning steps, mandatory recall graduation and relearning; browser queue uses these states. Scheduler timing is covered by domain tests; the live-browser suite covers session persistence but not the full timed new-learning chain. |
+| UI-06 | Pure scheduler has 1/10-minute learning steps, mandatory recall graduation and relearning; browser queue uses these states. Scheduler timing is covered by domain tests and the live-browser suite verifies the full 1/10/10-minute new-learning chain with a shared controlled browser/server clock. |
 | UI-07 | Answer/clean/error summary and pending learning steps. Full started/graduated/entered/left breakdown remains incomplete. |
 | UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio; delete/restore; identity-change copy or reset; bulk selection, bulk delete, bulk assign topic and bulk reset. |
 | UI-10 | Parent/child topic data, parent selection, multi-membership and recursive scope. Hierarchical topic tree with depth indentation, subtopic creation and card counts. |
@@ -27,8 +27,8 @@ Status meanings:
 
 ## High-priority work before calling this MVP complete
 
-1. Extend live-browser acceptance to the timed new-card chain with a controlled clock, offline reload/reconnection, duplicate submissions, two devices, multiple tabs and browser Back. Account/set creation, six free-practice games, audio loading, pause/resume reload and Excel export now run in CI.
-2. Make the server validate question/opportunity snapshots, allowed state transitions and eligibility independently. Harden initial clock reconciliation and late-parent replay with adversarial/out-of-order histories. Add deterministic per-question uniqueness beyond client event ID.
+1. Finish the remaining navigation/contention acceptance around browser Back and deliberately competing same-question submissions. Controlled-clock new learning, offline reload/reconnect, multi-tab propagation and isolated-profile account sync now run in CI.
+2. Continue authoritative review hardening. The server validates v2 question/config snapshots, allowed learning transitions, deterministic opportunity identity, same-device duplicate scheduled submissions, anchored clock bounds and deferred child-before-parent replay. Add more adversarial late-parent contradiction histories and conflict-detail evidence.
 3. Add live-browser Excel import acceptance, including embedded-image import, conflict choices and restart/retry behavior. Core import/export round trips and UI export are automated.
 4. Complete the user-configurable face matrix and game mix, card custom fields, valid question disambiguation, advanced settings/time rules, topic tree interactions and scoped bulk operations.
 5. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
