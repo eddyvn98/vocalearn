@@ -1,4 +1,4 @@
-import {descendants} from '/core/model.js';
+import {descendants,categoryPath} from '/core/model.js';
 import {app,current} from './state.js';
 import {api,openStore,model,prepare,transact,setMeta,getMeta,refresh,sync,pendingCount,uuid} from './storage.js';
 import {t,notify,closeModal,modal,esc,setModalTrigger,clearModalTrigger} from './ui.js';
@@ -9,7 +9,7 @@ import {studyView,resultsView} from './views/study.js';
 import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {customFields,saveCustomField,deleteCustomField} from './card-schema.js';
-import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
+import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,moveTopic,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 import {installAccessibility,isComposing} from './a11y.js';
 import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './navigation.js';
@@ -69,6 +69,8 @@ async function click(action,el){
   if(action==='topicScope'){app.selectedCards.clear();app.scope=[el.dataset.id];app.render();return persistView();}
   if(action==='topics'||action==='editTopic')return topics(el.dataset.id);
   if(action==='addSubtopic')return topics(null,el.dataset.id);
+  if(action==='moveTopicUp')return moveTopic(el.dataset.id,-1);
+  if(action==='moveTopicDown')return moveTopic(el.dataset.id,1);
   if(action==='customFields'||action==='editCustomField')return customFields(el.dataset.id);
   if(action==='deleteCustomField')return deleteCustomField(el.dataset.id);
   if(action==='deleteTopic'){
@@ -105,7 +107,7 @@ async function click(action,el){
     const cs=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
     if(!cs.length)throw new Error(t('noTopics'));
     return modal(t('topics'),`<form id="bulk-topic-form" class="stack">
-      <label>${t('topics')}<select name="categoryId">${cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
+      <label>${t('topics')}<select name="categoryId">${cs.map(c=>`<option value="${c.id}">${esc(categoryPath(app.model.categories,c.id))}</option>`).join('')}</select></label>
       <label>${t('mode')}<select name="operation"><option value="assign">${t('assignTopic')}</option><option value="remove">${t('removeTopic')}</option></select></label>
       <button type="submit" class="btn primary">${t('save')} · ${app.selectedCards.size} thẻ</button></form>`);
   }
