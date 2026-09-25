@@ -163,6 +163,8 @@ export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidF
   "selectVisible": "Chọn tất cả trong phạm vi hiện tại",
   "restoreAll": "Khôi phục tất cả",
   "addSubtopic": "Thêm chủ đề con",
+  "moveUp": "Di chuyển lên",
+  "moveDown": "Di chuyển xuống",
   "advanced": "Trường bổ sung",
   "imageFile": "Thêm ảnh (PNG/JPG/WebP)",
   "audioFile": "Audio offline (MP3/WAV, tối đa 1,5 MB)",
