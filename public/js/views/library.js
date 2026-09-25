@@ -6,7 +6,8 @@ import {shell} from './shell.js';
 export function filtered() {
   const query=app.query.toLocaleLowerCase('vi');
   return scoped().filter(w=>{
-    const text=[w.word,w.meaning,...w.categoryIds.map(id=>app.model.categories[id]?.name)].join(' ').toLocaleLowerCase('vi');
+    const text=[w.word,w.meaning,w.pos,w.ipa,w.level,...(w.variants||[]),...(w.tags||[]),w.note,
+      ...Object.entries(w.custom||{}).flat(),...w.categoryIds.map(id=>app.model.categories[id]?.name)].join(' ').toLocaleLowerCase('vi');
     const status=app.filter==='all'||app.filter==='due'&&isDue(w.review,Date.now(),app.model.settings.zone)
       ||app.filter==='waiting'&&!w.ready||app.filter==='new'&&w.review.phase==='new'&&w.ready
       ||app.filter==='learning'&&['learning','relearn'].includes(w.review.phase)||app.filter==='errors'&&w.errors.inBook;
@@ -35,7 +36,7 @@ export function libraryView() {
   <div class="row wrap toolbar"><input id="search" type="search" class="search" placeholder="${t('search')}" aria-label="${t('search')}" value="${esc(app.query)}">${button('+ '+t('add'),'add','primary')}${button(t('topics'),'topics')}${button('Xuất Excel','export')}${button('Tài nguyên','offlineResources','quiet')}</div>
   <div class="tabs">${['all','due','new','learning','waiting','errors'].map(f=>button(t(f),'filter',app.filter===f?'active':'',`data-filter="${f}" aria-pressed="${app.filter===f}"`)).join('')}</div>
   ${selectedCount ? `<section class="resume row between wrap"><div><strong>${selectedCount} thẻ đã chọn</strong></div><div class="row wrap">${button('Gán chủ đề','bulkTopic')}${button('Đặt lại lịch','bulkReset')}${button('Xóa','bulkDelete','danger')}${button('Bỏ chọn','clearSelect','quiet')}</div></section>` : ''}
-  <div class="row between items-center sub-toolbar"><small class="muted">${list.length} thẻ</small>${list.length ? button(selectedCount === list.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả', 'toggleSelectAll', 'quiet small') : ''}</div>
+  <div class="row between items-center sub-toolbar"><small class="muted">${list.length} thẻ</small><div class="row wrap">${app.scope.length&&list.length?button('Chọn phạm vi hiện tại','selectScope','quiet small'):''}${list.length ? button(selectedCount === list.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả', 'toggleSelectAll', 'quiet small') : ''}</div></div>
   ${app.page==='errors'?`<section class="resume"><p>${t('evidenceHelp')}</p>${button(t('free'),'setupErrors','primary')}</section>`:''}<div id="word-rows" class="word-list">${rows()}</div>
   <div class="row wrap foot-actions">${button(t('import'),'import')}${!words().length?button(t('loadSamples'),'samples'):''}${button(t('deleted'),'trash','quiet')}</div>`);
 }
