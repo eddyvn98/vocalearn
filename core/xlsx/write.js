@@ -22,7 +22,8 @@ export function writeWorkbook(cards, categories, columns) {
   for (const [i, card] of cards.entries()) {
     const row = {...card, word_id:card.word_id || card.id || '', category:card.category ||
       (card.categoryIds || []).map(id => topicPath(id,categories)).join(' | ')};
-    rows.push(columns.map(c => c.key === 'image' ? '' : Array.isArray(row[c.key]) ? JSON.stringify(row[c.key]) : row[c.key] ?? ''));
+    rows.push(columns.map(c => c.key === 'image' ? '' : Array.isArray(row[c.key]) || row[c.key] && typeof row[c.key] === 'object'
+      ? JSON.stringify(row[c.key]) : row[c.key] ?? ''));
     if (!card.image) continue;
     const image = card.image.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/);
     if (!image) throw new Error(`Unsupported image in row ${i + 2}`);
