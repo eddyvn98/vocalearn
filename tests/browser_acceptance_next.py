@@ -118,6 +118,7 @@ def complete_timed_learning(page, clock_file, now_ms):
     expect(page.locator(".wait-panel")).to_be_visible()
 
     now_ms = advance(page, clock_file, now_ms, 60_000)
+    page.reload(wait_until="networkidle")
     start_due(page)
     expect(page.locator(".study-meta")).to_contain_text("Trắc nghiệm")
     prompt = page.locator(".prompt h1").inner_text().strip()
@@ -125,9 +126,9 @@ def complete_timed_learning(page, clock_file, now_ms):
     expect(page.locator("#feedback")).to_be_visible()
     finish_early(page)
 
-    page.reload(wait_until="networkidle")
     expect(page.locator(".wait-panel")).to_be_visible()
     now_ms = advance(page, clock_file, now_ms, 600_000)
+    page.reload(wait_until="networkidle")
     start_due(page)
     expect(page.locator(".study-meta")).to_contain_text("Chính tả")
     page.locator('[data-action="playAudio"]').click()
@@ -139,6 +140,7 @@ def complete_timed_learning(page, clock_file, now_ms):
     finish_early(page)
 
     now_ms = advance(page, clock_file, now_ms, 600_000)
+    page.reload(wait_until="networkidle")
     start_due(page)
     expect(page.locator(".study-meta")).to_contain_text("Gõ từ")
     prompt = page.locator(".prompt h1").inner_text().strip()
@@ -192,6 +194,11 @@ def multi_client(browser, context, page, origin, email):
     expect(tab.locator(".metric")).to_be_visible()
     tab.locator('[data-action="library"]').click()
     expect(tab.locator(".word-row").filter(has_text="handoff")).to_be_visible(timeout=10000)
+
+    page.locator('[data-action="syncInfo"]:visible').first.click()
+    expect(page.locator("dialog")).to_be_visible()
+    page.locator('[data-action="sync"]').click()
+    page.locator('[data-action="close"]').click()
 
     device = browser.new_context(viewport={"width": 1280, "height": 900})
     other = device.new_page()
