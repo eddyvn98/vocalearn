@@ -43,6 +43,16 @@ export async function putMediaRecord(record) {
 export async function deleteMediaRecord(id) {
   const tx=db.transaction('media','readwrite');tx.objectStore('media').delete(id);await done(tx);
 }
+export async function rewritePendingEvents(events) {
+  events.forEach(validateEvent);
+  const current=new Map(cached.map(event=>[event.id,event])),tx=db.transaction('events','readwrite'),store=tx.objectStore('events');
+  for(const event of events){
+    const prior=current.get(event.id);
+    if(!prior||prior.seq)throw new Error('Only unsynced events may be migrated');
+    store.put(event);
+  }
+  await done(tx);await refresh();
+}
 function collectMediaRefs(value,out=new Set()) {
   if(typeof value==='string'){if(/^media:[a-f0-9]{64}$/.test(value))out.add(value);return out;}
   if(Array.isArray(value)){for(const item of value)collectMediaRefs(item,out);return out;}
