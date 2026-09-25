@@ -31,7 +31,6 @@ def add_card(page,word,meaning,topics=(),extended=False):
     page.locator('#word-form [name="word"]').fill(word)
     page.locator('#word-form [name="meaning"]').fill(meaning)
     for topic in topics:
-        page.locator(f'#word-form input[name="category"]').filter(has=page.locator("xpath=..")).count()
         page.locator(f'label:has-text("{topic}") input[name="category"]').check()
     if extended:
         page.locator("#word-form details summary").click()
