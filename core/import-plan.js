@@ -2,6 +2,12 @@ import {WORD_FIELDS, validateEvent} from './validation.js';
 import {identity} from './excel.js';
 import {normalize} from './grading.js';
 const empty = v => v == null || v === '' || Array.isArray(v) && !v.length;
+function hashPart(value) {
+  let hash=2166136261;
+  for(const ch of String(value ?? '')){hash^=ch.codePointAt(0);hash=Math.imul(hash,16777619);}
+  return (hash>>>0).toString(36);
+}
+const stableId=(prefix,importId,...parts)=>[prefix,hashPart(importId),...parts.map(hashPart)].join('-');
 export function inspectCards(cards, model, setId) {
   const existing = Object.values(model.words).filter(w=>!w.deleted&&w.setId===setId);
   const seen = new Set();
@@ -30,7 +36,7 @@ export function inspectCards(cards, model, setId) {
     return row;
   });
 }
-export function createImportEvents(rows, model, setId, prepare, uuid, importId) {
+export function createImportEvents(rows, model, setId, prepare, _uuid, importId='import') {
   const events = [], categories = {...model.categories};
   for(const row of rows) {
     if(row.error||row.action==='skip')continue;
@@ -39,17 +45,17 @@ export function createImportEvents(rows, model, setId, prepare, uuid, importId) 
     if(row.action==='merge'&&(!target||target.deleted||target.setId!==setId||row.identityConflict))throw new Error('Reopen preview: merge target has changed');
     if(target && JSON.stringify(target.fields)!==JSON.stringify(row.baseFields))throw new Error('Card edited since preview. Reopen preview before merging.');
     const patch = target ? Object.fromEntries(Object.entries(row.patch).filter(([k,v])=>!empty(v)&&(empty(target[k])||row.take[k]))) : row.patch;
-    const id = target?.id || uuid();
-    if(Object.keys(patch).length)events.push(prepare('word',{id,setId,patch,baseFields:target?.fields || {},importId,row:row.row}));
+    const id = target?.id || stableId('iw',importId,row.row,identity(row.patch));
+    if(Object.keys(patch).length)events.push(prepare('word',{id,setId,patch,baseFields:target?.fields || {},importId,row:row.row},stableId('ie',importId,row.row,'word',id)));
     for(const path of row.category.split('|').map(s=>s.trim()).filter(Boolean)) {
       let parentId=null;
       for(const name of path.split('>').map(s=>s.trim()).filter(Boolean)) {
         let cat=Object.values(categories).find(c=>c.setId===setId&&(c.parentId||null)===parentId&&c.name===name);
-        if(!cat){cat={id:uuid(),setId,name,parentId};categories[cat.id]=cat;events.push(prepare('category',cat));}
+        if(!cat){cat={id:stableId('ic',importId,setId,parentId||'root',name),setId,name,parentId};categories[cat.id]=cat;events.push(prepare('category',cat,stableId('ie',importId,'category',cat.id)));}
         parentId=cat.id;
       }
       if(parentId&&!target?.categoryIds.includes(parentId))events.push(prepare('link',{
-        wordId:id,categoryId:parentId,base:model.links[`${id}/${parentId}`]?.rev || null}));
+        wordId:id,categoryId:parentId,base:model.links[`${id}/${parentId}`]?.rev || null},stableId('ie',importId,row.row,'link',id,parentId)));
     }
   }
   return events;
