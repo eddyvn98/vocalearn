@@ -1,0 +1,31 @@
+name: Diagnostic
+on:
+  push:
+    branches: ['feature/library-content-management']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Capture verify
+        shell: bash
+        run: |
+          set +e
+          npm run verify > verify.txt 2>&1
+          echo $? > verify.exit
+          set -e
+      - name: Generate manifest
+        run: npm run build:sw
+      - uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-output
+          path: |
+            verify.txt
+            verify.exit
+            public/sw.js
