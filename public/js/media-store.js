@@ -16,7 +16,7 @@ async function normalizeImage(blob) {
   if(blob.size>MAX_IMAGE_INPUT||!IMAGE_TYPES.has(blob.type))throw new Error('PNG, JPEG hoặc WebP; ảnh nguồn tối đa 12 MB');
   const bitmap=await createImageBitmap(blob),scale=Math.min(1,800/Math.max(bitmap.width,bitmap.height));
   const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
-  canvas.getContext('2d',{alpha:false}).drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
   let output=null;
   for(const quality of [0.82,0.68,0.52]){output=await canvasBlob(canvas,'image/webp',quality);if(output&&output.size<=MAX_IMAGE_BYTES)break;}
   if(!output||output.size>MAX_IMAGE_BYTES)throw new Error('Ảnh sau khi nén vẫn vượt quá 1,5 MB');
