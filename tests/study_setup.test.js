@@ -31,6 +31,11 @@ test('Quiz and matching reject an answer face equal to the prompt face',()=>{
   assert.equal(answerFaces('quiz','meaning').includes('meaning'),false);
 });
 
+test('Quiz blocks a prompt shared by cards with different correct answers',()=>{
+  const senses=[make('a','bank','ngân hàng'),make('b','bank','bờ sông'),make('c','shore','bờ')];
+  assert.deepEqual(reasons(senses[0],'quiz','word',senses,'meaning'),['ambiguousPrompt']);
+});
+
 test('Matching requires a one-to-one distinguishable prompt and answer mapping',()=>{
   const ambiguous=[
     make('a','bank','ngân hàng'),
