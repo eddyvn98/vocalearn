@@ -22,12 +22,13 @@ import {inspectCards,createImportEvents} from '/core/import-plan.js';
 import {getMeta,setMeta} from './storage.js';
 import {filtered} from './views/library.js';
 let draft=null,workbook=null;
-export function exportContent() {
+export async function exportContent() {
   const visible=filtered(), selected=visible.filter(w=>app.selectedCards.has(w.id));
   const content=selected.length?selected:visible;
   if(!content.length)throw new Error('Kh\u00f4ng c\u00f3 th\u1ebb \u0111\u1ec3 xu\u1ea5t.');
   if(!confirm(`Xu\u1ea5t n\u1ed9i dung ${content.length} th\u1ebb? Kh\u00f4ng bao g\u1ed3m l\u1ecbch \u00f4n v\u00e0 log.`))return;
-  const blob=new Blob([cardsToXlsx(content,app.model.categories)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const binary=await cardsToXlsx(content,app.model.categories);
+  const blob=new Blob([binary],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;
   link.download=`${app.model.sets[app.setId]?.name || 'vocalearn'}.xlsx`;
   link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
