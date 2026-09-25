@@ -61,6 +61,14 @@ export function descendants(categories, root) {
   }
   return found;
 }
+export function categoryPath(categories,id) {
+  const names=[],seen=new Set();
+  let current=categories[id];
+  while(current&&!seen.has(current.id)){
+    seen.add(current.id);names.unshift(current.name);current=current.parentId?categories[current.parentId]:null;
+  }
+  return names.join(' > ');
+}
 export function inScope(w, scope, categories) {
   if (!scope?.length) return true;
   if (scope.includes('uncategorized') && !w.categoryIds.length) return true;
