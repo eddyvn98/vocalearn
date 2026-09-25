@@ -85,6 +85,7 @@ async function click(action,el){
     const list=filtered();if(list.every(w=>app.selectedCards.has(w.id)))list.forEach(w=>app.selectedCards.delete(w.id));else list.forEach(w=>app.selectedCards.add(w.id));
     return app.render();
   }
+  if(action==='selectScope'){filtered().forEach(w=>app.selectedCards.add(w.id));return app.render();}
   if(action==='clearSelect'){app.selectedCards.clear();return app.render();}
   if(action==='bulkDelete'){
     pruneSelection();
@@ -99,10 +100,19 @@ async function click(action,el){
   if(action==='bulkTopic'){
     pruneSelection();
     const cs=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
-    return modal('Gán chủ đề hàng loạt',`<form id="bulk-topic-form" class="stack"><label>Chủ đề<select name="categoryId">${cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">Gán cho ${app.selectedCards.size} thẻ</button></form>`);
+    return modal('Chủ đề hàng loạt',`<form id="bulk-topic-form" class="stack">
+      <label>Thao tác<select name="operation"><option value="add">Gán chủ đề</option><option value="remove">Bỏ chủ đề</option></select></label>
+      <label>Chủ đề<select name="categoryId">${cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
+      <button type="submit" class="btn primary">Áp dụng cho ${app.selectedCards.size} thẻ</button></form>`);
   }
   if(action==='trash')return trash();
   if(action==='restoreWord'){await commit([prepare('restoreWord',{id:el.dataset.id})]);trash();app.render();}
+  if(action==='restoreAllDeleted'){
+    const ids=Object.values(app.model.words).filter(w=>w.deleted&&w.setId===app.setId).map(w=>w.id);
+    if(!ids.length)return;
+    if(!confirm(`Khôi phục ${ids.length} thẻ đã xóa?`))return;
+    await commit(ids.map(id=>prepare('restoreWord',{id})));trash();app.render();return;
+  }
   if(action==='restoreField'){
     const conflict=app.model.conflicts.find(c=>c.eventId===el.dataset.id&&c.field===el.dataset.field);
     const word=app.model.words[conflict.wordId];
@@ -140,8 +150,13 @@ document.addEventListener('submit',async e=>{
     }
     if(form.id==='bulk-topic-form'){
       pruneSelection();
-      const catId=new FormData(form).get('categoryId');
-      await commit(Array.from(app.selectedCards).map(wordId=>prepare('link',{wordId,categoryId:catId,base:app.model.links[`${wordId}/${catId}`]?.rev||null})));
+      const data=new FormData(form),catId=data.get('categoryId'),operation=data.get('operation');
+      const events=Array.from(app.selectedCards).flatMap(wordId=>{
+        const current=app.model.links[`${wordId}/${catId}`],linked=current&&!current.removed;
+        if(operation==='add'&&linked||operation==='remove'&&!linked)return [];
+        return [prepare(operation==='remove'?'unlink':'link',{wordId,categoryId:catId,base:current?.rev||null})];
+      });
+      if(events.length)await commit(events);
       app.selectedCards.clear();closeModal();return app.render();
     }
   }catch(error){showError(error);}finally{app.busy=false;if(submit?.isConnected)submit.disabled=false;}
