@@ -14,10 +14,12 @@ export function notify(text,error=false) {
   const el=document.querySelector('#notice');el.textContent=text;el.className=error?'notice error':'notice';
   if(!error)setTimeout(()=>{if(el.textContent===text)el.textContent='';},4500);
 }
-let opener;
+let opener,bound=false;
 export function modal(title,html) {
   const d=document.querySelector('#modal');opener=document.activeElement;
   d.innerHTML=`<header class="row between"><h2 id="dialog-title">${esc(title)}</h2>${button('&times;','close','icon-button',`aria-label="${t('close')}"`)}</header>${html}<p id="form-error" class="error-text" role="alert"></p>`;
+  if(!bound){d.addEventListener('close',()=>{if(opener?.isConnected)opener.focus();});bound=true;}
   d.showModal();
+  requestAnimationFrame(()=>d.querySelector('input,select,textarea,button,[href]')?.focus());
 }
-export function closeModal(){document.querySelector('#modal').close();if(opener?.isConnected)opener.focus();}
+export function closeModal(){document.querySelector('#modal').close();}
