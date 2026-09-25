@@ -179,6 +179,7 @@ export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidF
   "serverMediaStore": "Kho media máy chủ",
   "mediaResourceHelp": "Ảnh được nén tối đa khoảng 800 px; media trùng nhau dùng chung một bản theo SHA-256.",
   "mediaFailureSafe": "Thiếu hoặc lỗi media chỉ chặn câu cần tài nguyên đó; không được tính là trả lời sai.",
+  "mediaUnavailable": "Tài nguyên của câu này chưa có hoặc bị lỗi. Hãy tải lại tài nguyên hoặc chọn game khác.",
   "cleanupLocal": "Dọn cache cục bộ",
   "cleanupServer": "Dọn media máy chủ không được lịch sử tham chiếu",
   "cleaned": "Đã dọn",
