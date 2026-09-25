@@ -13,10 +13,12 @@ import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,moveTopic,logou
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 import {installAccessibility,isComposing} from './a11y.js';
 import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './navigation.js';
+import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
     :app.page==='study'?studyView():app.page==='results'?resultsView():['library','errors'].includes(app.page)?libraryView():homeView();
+  hydrateMedia(document.querySelector('#app')).catch(()=>{});
   if(focus)requestAnimationFrame(()=>document.querySelector(focus)?.focus());
 };
 async function persistView(){await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});}
@@ -33,7 +35,9 @@ async function navigate(page){
 async function authenticated(user){
   app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
   try{await sync();}catch(error){notify(t('syncError')+': '+error.message,true);}
-  app.model=model();const saved=await getMeta('view');
+  app.model=model();
+  try{if(await migrateLegacyMedia()){app.model=model();if(navigator.onLine)sync().catch(()=>{});}}catch(error){notify(t('mediaMigrationError')+': '+error.message,true);}
+  const saved=await getMeta('view');
   if(saved)Object.assign(app,saved);
   if(!app.model.sets[app.setId])app.setId=Object.keys(app.model.sets)[0]||null;
   applyStudySetup(await getMeta('studySetup'));
