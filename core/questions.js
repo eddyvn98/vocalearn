@@ -1,4 +1,5 @@
 import {normalize} from './grading.js';
+import {opportunityId} from './opportunity.js';
 import {isDue, dayAt} from './time.js';
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'];
 // Only expose implemented, valid pairs. Typing always answers the target word.
@@ -75,7 +76,8 @@ export function question(w, pool, game, face = 'meaning', mode = 'review', confi
   const choices = ['quiz','clozeChoice'].includes(game) ? [answers[0],...alternatives(w,pool,game,face)].slice(0,4)
     .map((label,index) => ({label,correct:index === 0})) : [];
   const rotation = w.word.length % Math.max(1,choices.length); choices.push(...choices.splice(0,rotation));
-  return {id:uuid(),eventId:uuid(),wordId:w.id,baseRev:w.review.rev,mode,game,face,
+  const id=uuid(),eventId=uuid(),baseRev=w.review.rev;
+  return {id,eventId,opportunityId:opportunityId({wordId:w.id,baseRev,mode,questionId:id}),wordId:w.id,baseRev,mode,game,face,
     config:{...config},snapshot:structuredClone(w),prompt,answers,choices,fallback,familiarize,
     input:'',hadError:false,hint:false,retry:false,flipped:false,result:null,
     activeMs:0,interrupted:false,audioPlayed:false};
