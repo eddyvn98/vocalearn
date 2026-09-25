@@ -54,3 +54,10 @@ Machine-readable results: `test-evidence/layout-results.json`. Screenshots were 
 8. Test 320/390/768/1024/1440 CSS px, keyboard-only operation, IME composition, zoom, real mobile keyboard and a screen reader.
 
 Record outcomes against every applicable AT/UX code before promoting the version to MVP status.
+
+
+## Acceptance-gap hardening update
+
+A follow-up branch adds live-app checks for modal focus restoration, IME composition Enter handling and page-level responsive reflow, plus a GitHub Actions matrix for Chromium/WebKit on Linux, Windows and macOS. The UI also adds VisualViewport-based virtual-keyboard accommodation, clearer error-book evidence requirements and remaining wait-time text.
+
+The Node verification suite currently contains 54 tests in this repository and passes on the acceptance-gap branch. This report does not label real screen-reader, measured WCAG contrast, real mobile virtual-keyboard, Safari on iPhone/iPad, or physical-device PWA behavior as passed until those are executed and evidence is recorded.
