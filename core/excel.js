@@ -49,7 +49,7 @@ export function workbookToCards(book, mapping = detectMapping(book.rows[0]?.cell
     }catch(error){errors.push({row,message:error.message});continue;}
     const embedded=book.imageRows.get(row),images=Array.isArray(embedded)?embedded:embedded?[embedded]:[];
     cards.push({...card,answers,variants,synonyms,antonyms,collocations,wordFamily,tags,custom,
-      image:images.length===1?images[0]:card.image||'',imageCandidates:images.length>1?images:[],row});
+      image:images.length===1?images[0]:images.length?'':card.image||'',imageCandidates:images.length>1?images:[],row});
   }
   return {cards,errors,warnings:book.warnings,skipped:0,mapping};
 }
