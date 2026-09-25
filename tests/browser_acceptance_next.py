@@ -193,7 +193,7 @@ def multi_client(browser, context, page, origin, email):
     page.locator('#word-form [name="word"]').fill("handoff")
     page.locator('#word-form [name="meaning"]').fill("bàn giao")
     page.locator('#word-form [type="submit"]').click()
-    expect(tab.locator(".metric")).to_be_visible()
+    expect(tab.locator(".metric").first).to_be_visible()
     tab.locator('[data-action="library"]').click()
     expect(tab.locator(".word-row").filter(has_text="handoff")).to_be_visible(timeout=10000)
 
