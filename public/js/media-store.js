@@ -46,7 +46,10 @@ export async function ingestDataUri(uri,kind) {
 }
 async function verifiedRemote(ref) {
   const response=await fetch(`/api/media/${encodeURIComponent(ref)}`,{credentials:'same-origin',cache:'no-store'});
-  if(!response.ok)throw new Error(response.status===404?'not-downloaded':'media-fetch-failed');
+  if(!response.ok){
+    if(response.status===404)await putMediaRecord({id:ref,mime:'',size:0,status:'not-downloaded',version:MEDIA_VERSION,updatedAt:Date.now()});
+    throw new Error(response.status===404?'not-downloaded':'media-fetch-failed');
+  }
   const blob=await response.blob();
   if(!allowedMedia(blob.type,blob.size)||await hashBlob(blob)!==mediaHash(ref)){
     await putMediaRecord({id:ref,mime:blob.type,size:blob.size,status:'corrupt',version:MEDIA_VERSION,updatedAt:Date.now()});
@@ -63,7 +66,11 @@ export async function mediaBlob(value) {
   }
   const local=await getMediaRecord(value);
   if(local?.blob)return local.blob;
-  if(!navigator.onLine)throw new Error('not-downloaded');
+  if(local?.status==='corrupt')throw new Error('corrupt');
+  if(!navigator.onLine){
+    if(!local)await putMediaRecord({id:value,mime:'',size:0,status:'not-downloaded',version:MEDIA_VERSION,updatedAt:Date.now()});
+    throw new Error('not-downloaded');
+  }
   return verifiedRemote(value);
 }
 export async function mediaUrl(value) {
@@ -111,7 +118,19 @@ export async function convertImportMedia(rows) {
 export async function localMediaStats() {
   const records=await allMediaRecords();
   return records.reduce((out,r)=>{out.count++;out.bytes+=r.size||0;out[r.status||'local']=(out[r.status||'local']||0)+1;return out;},
-    {count:0,bytes:0,local:0,synced:0,missing:0,corrupt:0});
+    {count:0,bytes:0,local:0,synced:0,'not-downloaded':0,corrupt:0});
+}
+export async function currentMediaStatus(words) {
+  const unique=new Set();for(const word of words)for(const value of [word.image,word.audio])if(value)unique.add(value);
+  const out={total:unique.size,available:0,legacy:0,'not-downloaded':0,corrupt:0};
+  for(const value of unique){
+    if(!isMediaRef(value)){out.legacy++;out.available++;continue;}
+    const record=await getMediaRecord(value);
+    if(record?.blob)out.available++;
+    else if(record?.status==='corrupt')out.corrupt++;
+    else out['not-downloaded']++;
+  }
+  return out;
 }
 export async function cleanupLocalMedia() {
   const keep=new Set(),state=model();refs(Object.values(state.words).map(w=>({image:w.image,audio:w.audio})),keep);
