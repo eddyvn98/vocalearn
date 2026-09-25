@@ -98,3 +98,50 @@ test('Same scheduled opportunity from two devices keeps both logs but advances o
     assert.equal(state.words.word1.errors.total,0);
   } finally {db.close();}
 });
+
+
+function reviewAnswer(id,questionId,baseRev,grade,game,deviceId,at,hadError=false) {
+  const input=grade==='forget'?'wrong':'apple';
+  return raw(id,'answer',{
+    schemaVersion:2,wordId:'word1',questionId,opportunityId:`schedule:word1:${baseRev}`,
+    baseRev,mode:'review',game,face:'meaning',grade,hadError,assisted:false,hint:false,
+    unknown:grade==='forget',activeMs:game==='typing'?6000:1000,input,config:DEFAULTS,familiarize:false,
+    question:{prompt:'fruit',answers:['apple'],word:'apple',meaning:'fruit',fields:{word:'w1',meaning:'w1'}}
+  },deviceId,at);
+}
+
+test('Late conservative parent keeps invalid child log but removes its schedule effect',()=>{
+  const db=dbWithUser();
+  try {
+    synchronize(db,'u',batch([],'a',t0),t0);
+    const setup=[
+      raw('set','set',{id:'set',name:'Deck',language:'en',meaningLanguage:'vi'},'a'),
+      raw('w1','word',{id:'word1',setId:'set',patch:{word:'apple',meaning:'fruit'}},'a'),
+      raw('w2','word',{id:'word2',setId:'set',patch:{word:'book',meaning:'object'}},'a')
+    ];
+    synchronize(db,'u',batch(setup,'a',t0),t0);
+    synchronize(db,'u',batch([flash('root','q-root','word1','apple','fruit','w1','a',t0)],'a',t0),t0);
+    let state=replay(allEvents(db,'u')),rev1=state.words.word1.review.rev;
+
+    const parent=reviewAnswer('parent-hard','q-parent-hard',rev1,'hard','quiz','a',t0+60000);
+    synchronize(db,'u',batch([parent],'a',t0+60000),t0+60000);
+    state=replay(allEvents(db,'u'));const hardRev=state.words.word1.review.rev;
+    assert.equal(state.words.word1.review.step,2);
+
+    const child=reviewAnswer('child-good','q-child-good',hardRev,'good','typing','a',t0+660000);
+    synchronize(db,'u',batch([child],'a',t0+660000),t0+660000);
+    state=replay(allEvents(db,'u'));
+    assert.equal(state.words.word1.review.step,3);
+    assert.equal(state.words.word1.accepted.has('child-good'),true);
+
+    const late=reviewAnswer('late-forget','q-late-forget',rev1,'forget','quiz','b',t0+660000,true);
+    synchronize(db,'u',batch([late],'b',t0+660000),t0+660000);
+    const events=allEvents(db,'u'),final=replay(events),word=final.words.word1;
+    assert.equal(events.some(e=>e.id==='child-good'),true);
+    assert.equal(word.review.step,1);
+    assert.equal(word.accepted.has('child-good'),false);
+    assert.deepEqual(word.practiceReclassified,['child-good']);
+    assert.equal(word.errors.failures,1);
+    assert.equal(word.errors.total,1);
+  } finally {db.close();}
+});
