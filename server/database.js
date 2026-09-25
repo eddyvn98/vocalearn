@@ -4,6 +4,7 @@ import {dirname} from 'node:path';
 import {replay} from '../core/model.js';
 import {validateEvent} from '../core/validation.js';
 import {RECOGNITION} from '../core/grading.js';
+import {validateReview} from './reviews.js';
 export function openDatabase(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
@@ -33,7 +34,7 @@ export function synchronize(db, userId, input, now = Date.now()) {
       const prior = db.prepare('SELECT payload FROM events WHERE user_id=? AND event_id=?').get(userId, raw.id);
       if (prior) {
         const original=JSON.parse(prior.payload);
-        if(original.kind!==raw.kind||JSON.stringify(original.data)!==JSON.stringify(raw.data))throw new Error('Event ID already used with different content');
+        if(original.deviceId!==raw.deviceId||original.kind!==raw.kind||JSON.stringify(original.data)!==JSON.stringify(raw.data))throw new Error('Event ID already used with different content');
         received.push(raw.id); continue;
       }
       const effectiveAt = anchor
@@ -42,6 +43,7 @@ export function synchronize(db, userId, input, now = Date.now()) {
         deviceId: raw.deviceId, localOrder: raw.localOrder, effectiveAt, receivedAt: now};
       const model = replay(existing);
       assertReferences(model, event, existing);
+      if(event.kind==='answer')validateReview(model,event,existing);
       const row = db.prepare('INSERT INTO events(user_id,event_id,payload) VALUES(?,?,?)').run(userId, event.id, JSON.stringify(event));
       event.seq = Number(row.lastInsertRowid); existing.push(event); received.push(event.id);
     }
@@ -78,10 +80,6 @@ function assertReferences(state, event, existing = []) {
     if ((d.hadError || d.hint || d.assisted) && ['good','easy'].includes(d.grade)) throw new Error('Assisted answers cannot produce good or easy grade');
     if (d.grade === 'forget' && d.assisted) throw new Error('Forget grade cannot be assisted');
     if (d.interrupted && d.grade === 'easy') throw new Error('Interrupted answers cannot produce easy grade');
-    if (d.question && typeof d.question === 'object' && d.question.word) {
-      const curWord = state.words[d.wordId];
-      if (curWord && curWord.word && curWord.word !== d.question.word) throw new Error('Question snapshot word mismatch');
-    }
     if (existing.some(e => e.kind === 'answer' && e.data.questionId === d.questionId && e.id !== event.id)) {
       throw new Error('Duplicate final answer for question');
     }

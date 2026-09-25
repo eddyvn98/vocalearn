@@ -1,8 +1,6 @@
 import {app,words} from './state.js';
 import {prepare,transact,model,uuid} from './storage.js';
 import {esc,t,button,modal,closeModal,notify} from './ui.js';
-import {normalize} from '/core/grading.js';
-import {validateEvent} from '/core/validation.js';
 const ENTRIES=[
  ['deploy','tri\u1ec3n khai','verb','We will ___ the app tomorrow.','deploy'],
  ['confirm','x\u00e1c nh\u1eadn','verb','Please ___ the meeting time.','confirm'],
@@ -19,56 +17,83 @@ export async function samples() {
     id:uuid(),setId:app.setId,patch:{word,meaning:app.model.sets[app.setId].meaningLanguage==='en'?meanings[ENTRIES.findIndex(e=>e[0]===word)]:meaning,pos,sentence,answers:[answer],note:''}}));
   await transact(events);app.model=model();app.render();notify(t('samplesHelp'));
 }
-import {cardsToXlsx, xlsxToCards} from '/core/excel.js';
-
+import {cardsToXlsx,readWorkbook,workbookToCards,detectMapping,COLUMNS} from '/core/excel.js';
+import {inspectCards,createImportEvents} from '/core/import-plan.js';
+import {getMeta,setMeta} from './storage.js';
+import {filtered} from './views/library.js';
+let draft=null,workbook=null;
 export function exportContent() {
-  const content = words().map(w => ({
-    word: w.word, meaning: w.meaning, ipa: w.ipa, pos: w.pos,
-    sentence: w.sentence, answers: w.answers, image: w.image, audio: w.audio,
-    note: w.note, categoryIds: w.categoryIds
-  }));
-  const xlsxBuf = cardsToXlsx(content, app.model.categories);
-  const blob = new Blob([xlsxBuf], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a'); link.href = url;
-  link.download = `${app.model.sets[app.setId]?.name || 'vocalearn'}.xlsx`;
-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const visible=filtered(), selected=visible.filter(w=>app.selectedCards.has(w.id));
+  const content=selected.length?selected:visible;
+  if(!content.length)throw new Error('Kh\u00f4ng c\u00f3 th\u1ebb \u0111\u1ec3 xu\u1ea5t.');
+  if(!confirm(`Xu\u1ea5t n\u1ed9i dung ${content.length} th\u1ebb? Kh\u00f4ng bao g\u1ed3m l\u1ecbch \u00f4n v\u00e0 log.`))return;
+  const blob=new Blob([cardsToXlsx(content,app.model.categories)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;
+  link.download=`${app.model.sets[app.setId]?.name || 'vocalearn'}.xlsx`;
+  link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-
-let draft = [];
-export function importDialog() {
-  draft = [];
-  modal(t('import'), `<div class="stack"><p>${t('importHelp') || 'Chọn tệp Excel (.xlsx) hoặc JSON để nhập thẻ từ vựng kèm ảnh:'}</p><input id="import-file" type="file" accept=".xlsx,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/json"><div id="import-preview"></div>${button(t('import'), 'confirmImport', 'primary', 'disabled')}</div>`);
+export async function importDialog() {
+  workbook=null;draft=await getMeta('importDraft');
+  if(draft?.setId!==app.setId)draft=null;
+  modal(t('import'),`<div class="stack"><p>Nh\u1eadp .xlsx (\u1ea3nh n\u1ed5i) ho\u1eb7c JSON. Ch\u1ec9 l\u01b0u sau khi x\u00e1c nh\u1eadn b\u1ea3n xem tr\u01b0\u1edbc.</p>
+  <input id="import-file" type="file" accept=".xlsx,.json"><div id="import-mapping"></div><div id="import-preview"></div>
+  ${button('Xem tr\u01b0\u1edbc','previewImport','', 'id="preview-import" hidden')}
+  ${button(t('import'),'confirmImport','primary','disabled')}</div>`);
+  if(draft)renderPreview();
 }
-
 export async function readImport(file) {
-  if (!file || file.size > 10000000) throw new Error('Maximum file size: 10 MB');
-  draft = []; let skipped = 0;
-  if (file.name.endsWith('.xlsx')) {
-    const buffer = await file.arrayBuffer();
-    const result = xlsxToCards(buffer, words());
-    skipped = result.skipped;
-    for (const card of result.cards) {
-      const e = prepare('word', {id: uuid(), setId: app.setId, patch: card});
-      validateEvent(e); draft.push(e);
-    }
+  if(!file||file.size>20000000)throw new Error('Maximum file size: 20 MB');
+  // Immediately invalidate the old preview so a failed new file cannot import old rows.
+  draft=null;workbook=null;await setMeta('importDraft',null);
+  document.querySelector('#import-preview').textContent='';
+  document.querySelector('[data-action="confirmImport"]').disabled=true;
+  document.querySelector('#import-mapping').textContent='';
+  document.querySelector('#preview-import').hidden=true;
+  if(/\.xlsx$/i.test(file.name)) {
+    workbook=await readWorkbook(await file.arrayBuffer());
+    const headers=workbook.rows[0]?.cells||{},mapping=detectMapping(headers);
+    document.querySelector('#import-mapping').innerHTML=`<p>Sheet: ${esc(workbook.sheets[0])}</p>${COLUMNS.map(c=>
+      `<label>${esc(c.headers[0])}<select data-map="${c.key}"><option value="">B\u1ecf qua</option>${Object.entries(headers).map(([col,label])=>
+      `<option value="${col}" ${mapping[c.key]===col?'selected':''}>${col}: ${esc(label)}</option>`).join('')}</select></label>`).join('')}`;
+    document.querySelector('#preview-import').hidden=false;
   } else {
-    const data = JSON.parse(await file.text());
-    const cards = data.cards || data;
-    if (!Array.isArray(cards)) throw new Error('Invalid format');
-    const seen = new Set(words().map(w => normalize(w.word) + '|' + normalize(w.meaning || '')));
-    for (const card of cards) {
-      const key = normalize(card.word) + '|' + normalize(card.meaning || '');
-      if (seen.has(key)) {skipped++; continue;}
-      const e = prepare('word', {id: uuid(), setId: app.setId, patch: card});
-      validateEvent(e); draft.push(e); seen.add(key);
-    }
+    const parsed=JSON.parse(await file.text()),cards=parsed.cards||parsed;
+    if(!Array.isArray(cards)||cards.length>2000)throw new Error('Invalid JSON card list (maximum 2000 rows)');
+    await setDraft({cards,errors:[],warnings:[]});
   }
-  const preview = document.querySelector('#import-preview');
-  if (preview) {
-    preview.innerHTML = `<p><strong>${draft.length}</strong> ${t('cards')} \u00b7 ${skipped} trùng lặp đã bỏ qua</p>${draft.slice(0, 10).map(e => `<p>${esc(e.data.patch.word)} \u2014 ${esc(e.data.patch.meaning || '')} ${e.data.patch.image ? '📷' : ''}</p>`).join('')}`;
-  }
-  const btn = document.querySelector('[data-action="confirmImport"]');
-  if (btn) btn.disabled = !draft.length;
 }
-export async function confirmImport(){await transact(draft);draft=[];app.model=model();closeModal();app.render();notify(t('saved'));}
+export async function previewImport() {
+  if(!workbook)return;
+  const mapping=Object.fromEntries([...document.querySelectorAll('[data-map]')].filter(e=>e.value).map(e=>[e.dataset.map,e.value]));
+  if(new Set(Object.values(mapping)).size!==Object.keys(mapping).length)throw new Error('One column cannot map to two fields');
+  await setDraft(workbookToCards(workbook,mapping));
+}
+async function setDraft(result) {
+  draft={id:uuid(),setId:app.setId,rows:inspectCards(result.cards,model(),app.setId),errors:result.errors,warnings:result.warnings,events:null};
+  await setMeta('importDraft',draft);renderPreview();
+}
+function renderPreview() {
+  const body=document.querySelector('#import-preview');
+  body.innerHTML=`<p>${draft.rows.length} th\u1ebb \u00b7 ${draft.errors.length+draft.rows.filter(r=>r.error).length} l\u1ed7i. M\u00e3 nh\u1eadp: ${esc(draft.id)}</p>
+  ${[...draft.errors,...draft.warnings].map(e=>`<p class="error-text">D\u00f2ng ${e.row}: ${esc(e.message)}</p>`).join('')}
+  ${draft.rows.map((r,i)=>`<div class="conflict"><strong>D\u00f2ng ${r.row}: ${esc(r.patch.word)}</strong> \u2014 ${esc(r.patch.meaning)}
+  ${!r.error&&r.patch.image?`<img class="editor-image" src="${esc(r.patch.image)}" alt="\u1ea2nh nh\u1eadp">`:''}
+  ${r.error?`<p class="error-text">${esc(r.error)}</p>`:`<label>Thao t\u00e1c<select data-import-row="${i}">${[['skip','B\u1ecf qua'],['add','Th\u1ebb ri\u00eang'],...(r.targetId&&!r.identityConflict?[['merge','G\u1ed9p, gi\u1eef ti\u1ebfn \u0111\u1ed9']]:[])].map(([v,label])=>`<option value="${v}" ${r.action===v?'selected':''}>${label}</option>`).join('')}</select></label>`}
+  ${r.reason?`<p>${esc(r.reason)}</p>`:''}
+  ${!r.identityConflict?r.conflicts.map(c=>`<label class="check-label"><input type="checkbox" data-import-field="${c.key}" data-row="${i}" ${r.take[c.key]?'checked':''}>Thay ${esc(c.key)}: ${esc(String(c.before).slice(0,100))} \u2192 ${esc(String(c.after).slice(0,100))}</label>`).join(''):''}</div>`).join('')}`;
+  document.querySelector('[data-action="confirmImport"]').disabled=!draft.rows.some(r=>!r.error&&r.action!=='skip');
+  body.onchange=async e=>{
+    const row=e.target.dataset.importRow,field=e.target.dataset.importField;
+    if(row!==undefined)draft.rows[Number(row)].action=e.target.value;
+    if(field)draft.rows[Number(e.target.dataset.row)].take[field]=e.target.checked;
+    draft.events=null;
+    try{await setMeta('importDraft',draft);renderPreview();}catch(error){notify(error.message,true);}
+  };
+}
+export async function confirmImport() {
+  if(!draft||draft.setId!==app.setId)throw new Error('Reopen the import preview');
+  if(draft.warnings.length&&!confirm('T\u1ec7p c\u00f3 c\u1ea3nh b\u00e1o \u1ea3nh/c\u00f4ng th\u1ee9c. Nh\u1eadp ph\u1ea7n \u0111\u1ecdc \u0111\u01b0\u1ee3c?'))return;
+  if(!draft.events){draft.events=createImportEvents(draft.rows,model(),draft.setId,prepare,uuid,draft.id);await setMeta('importDraft',draft);}
+  await transact(draft.events,undefined,{importDraft:null});
+  draft=null;app.model=model();closeModal();app.render();notify(t('saved'));
+}

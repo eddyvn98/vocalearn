@@ -21,7 +21,7 @@ export async function syncNow() {
   await sync();app.model=model();
   const changed=Object.values(app.model.words).some(w=>prior[w.id]&&prior[w.id]!==w.review.rev);
   if(changed)notify(t('scheduleAdjusted'));
-  app.render();return changed;
+  if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();return changed;
 }
 export async function syncInfo() {
   const at=await getMeta('lastSync');
@@ -72,7 +72,7 @@ export function offlineResources() {
     <p>📷 <strong>${withImg}</strong> thẻ có hình ảnh</p>
     <p>🔊 <strong>${withAud}</strong> thẻ có âm thanh</p>
     <div class="info"><p>✓ Dữ liệu văn bản, phiên âm và thẻ học đã được lưu cục bộ trong IndexedDB để học offline.</p>
-    <p>✓ Quy tắc: Nếu thiếu file âm thanh khi offline, hệ thống sẽ tự động chuyển sang chế độ gõ từ (typing) và không bao giờ tự động ghi nhận là câu trả lời sai.</p></div>
+    <p>Thiếu hoặc lỗi audio không tính là trả lời sai. Chỉ bước học mới có phương án thay thế tự động; khi luyện riêng, hãy chọn game khác.</p><p>Các số trên là thẻ có dữ liệu đã lưu, chưa xác nhận file phát/hiển thị được trên thiết bị.</p></div>
     ${button('Đóng','close','primary')}</div>`);
 }
 

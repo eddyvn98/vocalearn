@@ -4,7 +4,7 @@ export function errorBook(events) {
   const groups = new Map();
   for (const event of events.filter(e => e.kind === 'answer')) {
     const d = event.data;
-    const key = d.mode === 'free' || d.mode === 'errors' ? d.questionId : d.baseRev;
+    const key = event.scheduleEligible === false || d.mode === 'free' || d.mode === 'errors' ? d.questionId : d.baseRev;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(event);
   }

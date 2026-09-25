@@ -1,6 +1,7 @@
+import {descendants} from '/core/model.js';
 import {app,current} from './state.js';
 import {api,openStore,model,prepare,transact,setMeta,getMeta,refresh,sync,pendingCount,uuid} from './storage.js';
-import {t,notify,closeModal} from './ui.js';
+import {t,notify,closeModal,modal,esc} from './ui.js';
 import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
@@ -8,7 +9,7 @@ import {studyView,resultsView} from './views/study.js';
 import {setup,studyAction,submitInput,startClock,stopClock} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
-import {samples,exportContent,importDialog,readImport,confirmImport} from './content.js';
+import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -22,6 +23,7 @@ function showError(error){
 }
 async function commit(events){await transact(events);app.model=model();}
 async function navigate(page){
+  app.selectedCards.clear();
   if(app.page==='study'){stopClock(true);await setMeta('session',app.session);}
   app.page=page;app.render('h1');await persistView();
 }
@@ -35,6 +37,7 @@ async function authenticated(user){
   if(app.session&&!app.session.finished){for(const q of app.session.queue)if(!q.result)q.interrupted=true;await setMeta('session',app.session);}
   app.page='home';app.render();
 }
+function pruneSelection(){const ids=new Set(filtered().map(w=>w.id));for(const id of app.selectedCards)if(!ids.has(id))app.selectedCards.delete(id);}
 async function click(action,el){
   if(studyActions.has(action))return studyAction(action,el);
   if(action==='toggleAuth'){app.register=!app.register;app.render();return;}
@@ -58,8 +61,8 @@ async function click(action,el){
   if(action==='sync'){await syncNow();return syncInfo();}
   if(action==='logout')return logoutAction();
   if(action==='scope')return scopeModal();
-  if(action==='clearScope'){app.scope=[];closeModal();app.render();return persistView();}
-  if(action==='topicScope'){app.scope=[el.dataset.id];app.render();return persistView();}
+  if(action==='clearScope'){app.selectedCards.clear();app.scope=[];closeModal();app.render();return persistView();}
+  if(action==='topicScope'){app.selectedCards.clear();app.scope=[el.dataset.id];app.render();return persistView();}
   if(action==='topics'||action==='editTopic')return topics(el.dataset.id);
   if(action==='deleteTopic'){
     if(!confirm('Delete this topic and its subtopics? Cards will be kept.'))return;
@@ -68,6 +71,7 @@ async function click(action,el){
   if(action==='samples')return samples();
   if(action==='export')return exportContent();
   if(action==='import')return importDialog();
+  if(action==='previewImport')return previewImport();
   if(action==='confirmImport')return confirmImport();
   if(action==='offlineResources')return offlineResources();
   if(action==='toggleSelect'){
@@ -75,19 +79,22 @@ async function click(action,el){
     return app.render();
   }
   if(action==='toggleSelectAll'){
-    const list=filtered();if(app.selectedCards.size===list.length)app.selectedCards.clear();else list.forEach(w=>app.selectedCards.add(w.id));
+    const list=filtered();if(list.every(w=>app.selectedCards.has(w.id)))list.forEach(w=>app.selectedCards.delete(w.id));else list.forEach(w=>app.selectedCards.add(w.id));
     return app.render();
   }
   if(action==='clearSelect'){app.selectedCards.clear();return app.render();}
   if(action==='bulkDelete'){
+    pruneSelection();
     if(!confirm(`Xóa ${app.selectedCards.size} thẻ đã chọn?`))return;
     await commit(Array.from(app.selectedCards).map(id=>prepare('deleteWord',{id})));app.selectedCards.clear();return app.render();
   }
   if(action==='bulkReset'){
+    pruneSelection();
     if(!confirm(`Đặt lại lịch ôn cho ${app.selectedCards.size} thẻ đã chọn?`))return;
     await commit(Array.from(app.selectedCards).map(id=>prepare('resetWord',{id})));app.selectedCards.clear();return app.render();
   }
   if(action==='bulkTopic'){
+    pruneSelection();
     const cs=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
     return modal('Gán chủ đề hàng loạt',`<form id="bulk-topic-form" class="stack"><label>Chủ đề<select name="categoryId">${cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">Gán cho ${app.selectedCards.size} thẻ</button></form>`);
   }
@@ -120,14 +127,17 @@ document.addEventListener('submit',async e=>{
     if(form.id==='word-form')await saveWord(form);
     if(form.id==='answer-form')await submitInput(new FormData(form).get('answer'));
     if(form.id==='settings-form')await saveSettings(form);
-    if(form.id==='scope-form'){app.scope=new FormData(form).getAll('scope');closeModal();app.render();await persistView();}
+    if(form.id==='scope-form'){app.selectedCards.clear();app.scope=new FormData(form).getAll('scope');closeModal();app.render();await persistView();}
     if(form.id==='topic-form'){
-      const f=new FormData(form);await commit([prepare('category',{id:form.dataset.id||uuid(),setId:app.setId,name:f.get('name').trim(),parentId:f.get('parentId')||null})]);
+      const f=new FormData(form),id=form.dataset.id||uuid(),parentId=f.get('parentId')||null;
+      if(parentId&&descendants(app.model.categories,id).has(parentId))throw new Error('Chủ đề không thể tạo vòng lặp');
+      await commit([prepare('category',{id,setId:app.setId,name:f.get('name').trim(),parentId})]);
       closeModal();app.render();
     }
     if(form.id==='bulk-topic-form'){
+      pruneSelection();
       const catId=new FormData(form).get('categoryId');
-      await commit(Array.from(app.selectedCards).map(wordId=>prepare('link',{wordId,categoryId:catId})));
+      await commit(Array.from(app.selectedCards).map(wordId=>prepare('link',{wordId,categoryId:catId,base:app.model.links[`${wordId}/${catId}`]?.rev||null})));
       app.selectedCards.clear();closeModal();return app.render();
     }
   }catch(error){showError(error);}finally{app.busy=false;if(submit?.isConnected)submit.disabled=false;}
@@ -135,7 +145,7 @@ document.addEventListener('submit',async e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.isComposing)e.preventDefault();});
 document.addEventListener('input',e=>{
   if(e.target.closest('#word-form'))app.dirty=true;
-  if(e.target.id==='search'){app.query=e.target.value;document.querySelector('#word-rows').innerHTML=rows();}
+  if(e.target.id==='search'){const pos=e.target.selectionStart;app.selectedCards.clear();app.query=e.target.value;app.render();const search=document.querySelector('#search');search.focus();try{search.setSelectionRange(pos,pos);}catch{}}
   if(e.target.id==='answer'&&current()){current().input=e.target.value;current().inputError='';setMeta('session',app.session).catch(showError);}
 });
 document.addEventListener('change',async e=>{
