@@ -37,7 +37,9 @@ export function workbookToCards(book, mapping = detectMapping(book.rows[0]?.cell
       catch {errors.push({row,message:'Invalid answers list'});continue;}
     }
     if(!Array.isArray(answers)||answers.some(a=>typeof a!=='string')) {errors.push({row,message:'Invalid answers list'});continue;}
-    cards.push({...card,answers,image:book.imageRows.get(row)||card.image||'',row});
+    const embedded=book.imageRows.get(row),images=Array.isArray(embedded)?embedded:embedded?[embedded]:[];
+    cards.push({...card,answers,image:images.length===1?images[0]:card.image||'',
+      imageCandidates:images.length>1?images:[],row});
   }
   return {cards,errors,warnings:book.warnings,skipped:0,mapping};
 }
