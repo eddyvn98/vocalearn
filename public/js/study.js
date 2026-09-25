@@ -103,7 +103,7 @@ export async function studyAction(action,element) {
   if(action==='hint'){q.hint=true;await setMeta('session',app.session);app.render('#answer');}
   if(action==='unknown')await writeAnswer(q,false);
   if(action==='remember')await writeAnswer(q,true);
-  if(action==='choose'){q.chosen=Number(element.dataset.index);q.input=q.choices[q.chosen].label;await writeAnswer(q,q.choices[q.chosen].correct);}
+  if(action==='choose'){q.chosen=Number(element.dataset.index);const choice=q.choices[q.chosen];q.selectedWordId=choice.wordId;q.input=q.answerFace==='image'?'[image]':choice.label;await writeAnswer(q,choice.correct);}
   if(action==='next'){
     if(!q.result)return;
     if(app.session.index+1>=app.session.queue.length)return studyAction('finish');
