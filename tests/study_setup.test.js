@@ -42,7 +42,7 @@ test('Matching requires a one-to-one distinguishable prompt and answer mapping',
     make('b','bank','bờ sông'),
     make('c','shore','ngân hàng'),
   ];
-  assert.deepEqual(reasons(ambiguous[0],'match','word',ambiguous,'meaning'),['missingChoices']);
+  assert.deepEqual(reasons(ambiguous[0],'match','word',ambiguous,'meaning'),['ambiguousPrompt']);
 });
 
 test('Learning steps keep their required game regardless of a free-practice selection',()=>{
