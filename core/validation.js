@@ -48,6 +48,7 @@ export function validateEvent(e) {
         || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'].includes(d.game)
         || !['forget','hard','good','easy'].includes(d.grade)
         || typeof d.hadError !== 'boolean' || typeof d.assisted !== 'boolean') fail('Invalid answer');
+      if (d.schemaVersion === 2 && (!text(d.opportunityId, 500) || !d.opportunityId)) fail('Invalid opportunity');
       if (d.config) validateEvent({...e, kind: 'settings', data: d.config});
       break;
     case 'attempt':

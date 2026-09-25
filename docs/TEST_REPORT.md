@@ -7,7 +7,7 @@ Date: 2026-09-25. Scope: source in this archive. Environment: Linux, Node **22.1
 `npm run verify`:
 
 - Syntax checks and below-300-line policy: **31 JavaScript source/test/tool modules**.
-- **54 automated tests passed; 0 failed.**
+- **61 automated tests passed; 0 failed** on the current hardening branch before the generated-manifest check.
 
 Raw output: `test-evidence/automated-tests.txt`. These are not a claim that all specification acceptance cases passed.
 
@@ -33,7 +33,7 @@ Machine-readable results: `test-evidence/layout-results.json`. Screenshots were 
 
 ## Not executed / not proven
 
-- First offline launch, installed PWA lifecycle, browser Back, multi-tab contention, multi-device browser sync and the full timed new-learning chain are **not yet browser-verified**.
+- Installed PWA lifecycle, browser Back and deliberately competing same-question submissions across tabs are **not yet browser-verified**. Offline reload/reconnect, multi-tab propagation, isolated-profile sync and the full timed new-learning chain are covered by the automated browser acceptance slice.
 - No accessibility certification; no full WCAG A/AA audit, screen-reader test, iPhone/iPad test or virtual-keyboard test.
 - Dockerfile is an optional template; Docker was not available to build it.
 - No independent penetration test, large-dataset load test, backup restore drill or production environment test.
@@ -61,4 +61,4 @@ GitHub Actions now launches the live app against a disposable server/database an
 
 The live-browser suite verifies account/set creation, dialog focus restoration, IME-safe Enter handling, all six MVP game families (Lật thẻ, Trắc nghiệm, Ghép cặp, Gõ từ, Chính tả xếp chữ, Điền câu), audio-resource loading, pause/resume across reload, real XLSX download, and page-level responsive overflow. The latest branch run passes in all four matrix environments.
 
-The Node verification suite contains 54 tests and passes together with the generated service-worker manifest check. This still does **not** certify real Safari on iPhone/iPad, a physical mobile virtual keyboard, screen readers, measured WCAG contrast, first-launch offline PWA behavior, multi-tab/device contention, or the complete 1/10/10-minute new-learning chain in a real browser.
+The Node verification suite now contains 61 tests, including deterministic opportunity identity, same-device scheduled-answer deduplication, multi-device same-opportunity merge semantics, initial/anchored clock bounds and child-before-parent replay. The browser suite also covers the complete 1/10/10-minute chain, offline reload/reconnect, same-account multi-tab propagation and sync into an isolated browser profile. This still does **not** certify real Safari on iPhone/iPad, a physical mobile virtual keyboard, screen readers, measured WCAG contrast, installed/first-launch PWA behavior, browser Back, or deliberate same-question tab contention.

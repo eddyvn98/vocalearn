@@ -37,7 +37,7 @@ const event = (id, kind, data, deviceId = 'dev1', at = Date.now()) => ({id, kind
 const batch = (events, deviceId = 'dev1', cursor = 0) => ({events, deviceId, cursor, clientNow: Date.now()});
 const snapshot=(word,meaning,eventId)=>({prompt:meaning,answers:[word],word,meaning,fields:{word:eventId,meaning:eventId}});
 const freeTyping=(id,questionId,wordId,word,meaning,eventId,grade='good',deviceId='dev1',at=Date.now())=>event(id,'answer',{
-  schemaVersion:2,wordId,questionId,baseRev:`root-${wordId}`,mode:'free',game:'typing',face:'meaning',
+  schemaVersion:2,wordId,questionId,opportunityId:`question:${questionId}`,baseRev:`root-${wordId}`,mode:'free',game:'typing',face:'meaning',
   grade,hadError:grade==='forget',assisted:false,hint:false,unknown:grade==='forget',
   activeMs:grade==='easy'?1000:6000,input:grade==='forget'?'wrong':word,config:DEFAULTS,
   question:snapshot(word,meaning,eventId)
@@ -110,4 +110,42 @@ test('Two devices can submit independent answers without dropping either log', a
   const syncState = await request('/api/sync', batch([], 'dev1'));
   const word2Events = syncState.data.events.filter(e => e.data.wordId === 'word2');
   assert.equal(word2Events.filter(e => e.kind === 'answer').length, 2);
+});
+
+
+test('Server rejects forged deterministic opportunity identity', async () => {
+  const forged=freeTyping('forged-op','q-forged','word1','cat','con meo','w1');
+  forged.data.opportunityId='question:not-the-same-question';
+  const r=await request('/api/sync',batch([forged]));
+  assert.equal(r.status,400);
+});
+
+test('Same device cannot create a second final log for one scheduled opportunity', async () => {
+  const makeFlash=(id,questionId,deviceId='dev1')=>event(id,'answer',{
+    schemaVersion:2,wordId:'word1',questionId,opportunityId:'schedule:word1:root-word1',
+    baseRev:'root-word1',mode:'new',game:'flash',face:'meaning',grade:'hard',
+    hadError:false,assisted:false,hint:false,unknown:false,activeMs:0,input:'cat',
+    config:DEFAULTS,familiarize:true,
+    question:{prompt:'con meo',answers:['cat'],word:'cat',meaning:'con meo',fields:{word:'w1',meaning:'w1'}}
+  },deviceId);
+  const first=await request('/api/sync',batch([makeFlash('sched-a','q-sched-a')]));
+  assert.equal(first.status,200);
+  const second=await request('/api/sync',batch([makeFlash('sched-b','q-sched-b')]));
+  assert.equal(second.status,400);
+});
+
+test('Different devices may report the same scheduled opportunity for conservative merge', async () => {
+  const makeFlash=(id,questionId,deviceId)=>event(id,'answer',{
+    schemaVersion:2,wordId:'word2',questionId,opportunityId:'schedule:word2:root-word2',
+    baseRev:'root-word2',mode:'new',game:'flash',face:'meaning',grade:'hard',
+    hadError:false,assisted:false,hint:false,unknown:false,activeMs:0,input:'dog',
+    config:DEFAULTS,familiarize:true,
+    question:{prompt:'con cho',answers:['dog'],word:'dog',meaning:'con cho',fields:{word:'w2',meaning:'w2'}}
+  },deviceId);
+  const a=await request('/api/sync',batch([makeFlash('merge-a','q-merge-a','dev1')],'dev1'));
+  assert.equal(a.status,200);
+  const b=await request('/api/sync',batch([makeFlash('merge-b','q-merge-b','dev2')],'dev2'));
+  assert.equal(b.status,200);
+  const all=await request('/api/sync',batch([], 'dev1'));
+  assert.equal(all.data.events.filter(e=>e.data.opportunityId==='schedule:word2:root-word2').length,2);
 });

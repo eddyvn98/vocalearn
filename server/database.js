@@ -5,6 +5,7 @@ import {replay} from '../core/model.js';
 import {validateEvent} from '../core/validation.js';
 import {RECOGNITION} from '../core/grading.js';
 import {validateReview} from './reviews.js';
+import {opportunityId} from '../core/opportunity.js';
 export function openDatabase(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
@@ -76,12 +77,17 @@ function assertReferences(state, event, existing = []) {
     || state.categories[d.categoryId].setId !== state.words[d.wordId].setId)) throw new Error('Invalid word category');
   if (kind === 'answer') {
     if (!['free','errors'].includes(d.mode) && !d.baseRev) throw new Error('Missing schedule revision');
+    if (d.schemaVersion === 2 && d.opportunityId !== opportunityId(d)) throw new Error('Invalid opportunity identity');
     if (RECOGNITION.has(d.game) && ['good','easy'].includes(d.grade)) throw new Error('Recognition games cannot produce good or easy grade');
     if ((d.hadError || d.hint || d.assisted) && ['good','easy'].includes(d.grade)) throw new Error('Assisted answers cannot produce good or easy grade');
     if (d.grade === 'forget' && d.assisted) throw new Error('Forget grade cannot be assisted');
     if (d.interrupted && d.grade === 'easy') throw new Error('Interrupted answers cannot produce easy grade');
     if (existing.some(e => e.kind === 'answer' && e.data.questionId === d.questionId && e.id !== event.id)) {
       throw new Error('Duplicate final answer for question');
+    }
+    if (!['free','errors'].includes(d.mode) && existing.some(e => e.kind === 'answer' && e.deviceId === event.deviceId
+      && e.data.opportunityId === d.opportunityId && e.id !== event.id)) {
+      throw new Error('Duplicate review opportunity on device');
     }
   }
   if (kind === 'attempt') {

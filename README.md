@@ -4,7 +4,7 @@
 
 A runnable **first implementation**, based on `docs/spec-v0.5.docx` and the approved vocabulary-app UI. Version **0.1.0**. This is not a completed or production-certified implementation of the 37-page specification.
 
-**GitHub status:** this archive was built locally. No remote repository was created or pushed by the assistant. Use the publishing script below from your authenticated computer.
+**GitHub status:** active private repository development is now occurring in this repository; CI runs the Node verification suite and cross-platform browser regression on pull requests.
 
 ## Run locally
 
