@@ -11,6 +11,7 @@ import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './edito
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 import {installAccessibility,isComposing} from './a11y.js';
+import {pushHistory,replaceHistory,restoreHistory} from './navigation.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -26,7 +27,7 @@ async function commit(events){await transact(events);app.model=model();}
 async function navigate(page){
   app.selectedCards.clear();
   if(app.page==='study'){stopClock(true);await setMeta('session',app.session);}
-  app.page=page;app.render('h1');await persistView();
+  app.page=page;app.render('h1');await persistView();pushHistory();
 }
 async function authenticated(user){
   app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
@@ -36,13 +37,13 @@ async function authenticated(user){
   if(!app.model.sets[app.setId])app.setId=Object.keys(app.model.sets)[0]||null;
   app.session=await getMeta('session')||null;
   if(app.session&&!app.session.finished){for(const q of app.session.queue)if(!q.result)q.interrupted=true;await setMeta('session',app.session);}
-  app.page='home';app.render();
+  app.page='home';app.render();replaceHistory();
 }
 function pruneSelection(){const ids=new Set(filtered().map(w=>w.id));for(const id of app.selectedCards)if(!ids.has(id))app.selectedCards.delete(id);}
 async function click(action,el){
   if(studyActions.has(action))return studyAction(action,el);
   if(action==='toggleAuth'){app.register=!app.register;app.render();return;}
-  if(action==='close'){if(app.dirty&&!confirm(t('unsaved')))return;app.dirty=false;closeModal();return;}
+  if(action==='close'){if(app.dirty&&!confirm(t('unsaved')))return;app.dirty=false;closeModal(true);return;}
   if(['home','library','errors','sets'].includes(action)){
     if(action==='errors')app.filter='errors';if(action==='library')app.filter='all';return navigate(action);
   }
@@ -160,7 +161,7 @@ document.addEventListener('change',async e=>{
 document.querySelector('#modal').addEventListener('cancel',e=>{
   e.preventDefault();
   if(app.dirty&&!confirm(t('unsaved')))return;
-  app.dirty=false;closeModal();
+  app.dirty=false;closeModal(true);
 });
 document.addEventListener('visibilitychange',()=>{
   if(app.page==='study'&&app.session){stopClock(document.hidden);setMeta('session',app.session).catch(showError);if(!document.hidden)startClock();}
@@ -169,6 +170,15 @@ window.addEventListener('voca-external',async()=>{
   await refresh();app.model=model();if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();
 });
 window.addEventListener('online',()=>{if(app.user)syncNow().catch(error=>notify(t('syncError')+': '+error.message,true));});
+window.addEventListener('popstate',async event=>{
+  if(!app.user||!event.state?.voca)return;
+  try {
+    if(app.page==='study'&&app.session){stopClock(true);await setMeta('session',app.session);}
+    if(!restoreHistory(event.state))return;
+    app.selectedCards.clear();app.render('h1');await persistView();
+    if(app.page==='study'&&app.session&&!app.session.finished)startClock();
+  } catch(error){showError(error);}
+});
 setInterval(async()=>{
   if(!app.user||app.busy||app.page==='study'||document.querySelector('#modal').open)return;
   try{
