@@ -61,6 +61,9 @@ export function reasons(w,game,face='meaning',pool=[],answerFace) {
     const requested=answerFace===undefined?defaultAnswerFace(game,face):answerFace;
     if(!answerFaces(game,face).includes(requested))return ['invalidAnswerFace'];
     if(!valueFor(w,requested))return [requested==='image'?'missingImage':requested==='meaning'?'missingMeaning':'missingAnswerFace'];
+    const promptKey=normalize(valueFor(w,face)),answerKey=normalize(valueFor(w,requested));
+    if(pool.some(x=>x.id!==w.id&&!x.deleted&&normalize(valueFor(x,face))===promptKey
+      &&normalize(valueFor(x,requested))&&normalize(valueFor(x,requested))!==answerKey))return ['ambiguousPrompt'];
     answerFace=requested;
   }
   if(['spell','dictation'].includes(game)&&!w.audio)return ['missingAudio'];
