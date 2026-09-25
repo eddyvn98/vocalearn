@@ -142,7 +142,7 @@ def main():
                 expect(page.locator(".topic-branch")).to_have_count(3)
                 work_branch=page.locator(".topic-branch").filter(has_text="Work").first
                 work_branch.locator("summary").click()
-                expect(work_branch).not_to_have_attribute("open","")
+                assert work_branch.evaluate("el => el.open") is False
                 work_branch.locator("summary").click()
                 finance_branch=page.locator(".topic-tree > .topic-branch").filter(has_text="Finance").first
                 finance_branch.locator('[data-action="moveTopicDown"]').click()
