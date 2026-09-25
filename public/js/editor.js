@@ -2,6 +2,7 @@ import {app} from './state.js';
 import {t,esc,button,badge,modal,closeModal,field,notify} from './ui.js';
 import {prepare,transact,model,uuid} from './storage.js';
 import {normalize} from '/core/grading.js';
+import {categoryPath} from '/core/model.js';
 import {WORD_FIELDS} from '/core/validation.js';
 let editing=null,media={};
 const listValue=value=>(value||[]).join(', ');
@@ -21,7 +22,7 @@ export function openEditor(id) {
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
   ${field('word','word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
-  <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(c.name)}</label>`).join('')||t('uncategorized')}</fieldset>
+  <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I ___ to school."')}${field('answers','answers',listValue(w.answers))}
   ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
   ${field('collocations','collocations',listValue(w.collocations))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
