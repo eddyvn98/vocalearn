@@ -7,7 +7,7 @@ Date: 2026-09-25. Scope: source in this archive. Environment: Linux, Node **22.1
 `npm run verify`:
 
 - Syntax checks and below-300-line policy: **31 JavaScript source/test/tool modules**.
-- **61 automated tests passed; 0 failed** on the current hardening branch before the generated-manifest check.
+- **64 automated tests passed; 0 failed** on the current hardening branch before the generated-manifest check.
 
 Raw output: `test-evidence/automated-tests.txt`. These are not a claim that all specification acceptance cases passed.
 
@@ -59,6 +59,6 @@ GitHub Actions now launches the live app against a disposable server/database an
 - macOS WebKit at 1280x900
 - Ubuntu WebKit at 390x844
 
-The live-browser suite verifies account/set creation, dialog focus restoration, IME-safe Enter handling, all six MVP game families (Lật thẻ, Trắc nghiệm, Ghép cặp, Gõ từ, Chính tả xếp chữ, Điền câu), audio-resource loading, pause/resume across reload, real XLSX download, and page-level responsive overflow. The latest branch run passes in all four matrix environments.
+The live-browser suite verifies account/set creation, dialog focus restoration, IME-safe Enter handling, all six MVP game families (Lật thẻ, Trắc nghiệm, Ghép cặp, Gõ từ, Chính tả xếp chữ, Điền câu), audio-resource loading, pause/resume across reload, real XLSX download, and page-level responsive overflow. A dedicated Ubuntu Chromium slice additionally exports a card with an embedded image, imports it into another set, restores the import preview after reload, retries the same workbook without duplicating the card, and exercises both keep-local and take-spreadsheet field-conflict choices. The latest branch run passes that Excel slice together with the existing matrix.
 
-The Node verification suite now contains 61 tests, including deterministic opportunity identity, same-device scheduled-answer deduplication, multi-device same-opportunity merge semantics, initial/anchored clock bounds and child-before-parent replay. The browser suite also covers the complete 1/10/10-minute chain, offline reload/reconnect, same-account multi-tab propagation and sync into an isolated browser profile. This still does **not** certify real Safari on iPhone/iPad, a physical mobile virtual keyboard, screen readers, measured WCAG contrast, installed/first-launch PWA behavior, browser Back, or deliberate same-question tab contention.
+The Node verification suite now contains 64 tests, including deterministic opportunity identity, same-device scheduled-answer deduplication, multi-device same-opportunity merge semantics, initial/anchored clock bounds, child-before-parent replay, and deterministic/idempotent Excel import planning. The browser suite also covers the complete 1/10/10-minute chain, offline reload/reconnect, same-account multi-tab propagation and sync into an isolated browser profile. This still does **not** certify real Safari on iPhone/iPad, a physical mobile virtual keyboard, screen readers, measured WCAG contrast, installed/first-launch PWA behavior, browser Back, or deliberate same-question tab contention.
