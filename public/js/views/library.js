@@ -13,10 +13,18 @@ export function filtered() {
     return text.includes(query)&&status;
   });
 }
+function evidenceHint(w,now=Date.now()) {
+  if(!w.errors?.inBook)return '';
+  const evidence=w.errors.evidence||[];
+  if(!evidence.length)return 'Cần 2 minh chứng đúng sạch từ 2 game khác nhau, cách nhau ít nhất 10 phút; ít nhất 1 game nhớ lại.';
+  const first=evidence[0],wait=Math.max(0,Math.ceil((first.at+600000-now)/60000));
+  const game=evidence.some(e=>e.recall)?'một game khác':'một game nhớ lại khác';
+  return `Cần thêm minh chứng đúng sạch ở ${game}${wait?` sau ít nhất ${wait} phút`:''}.`;
+}
 export function rows() {
   app.selectedCards = app.selectedCards || new Set();
   const list = filtered();
-  return list.map(w => `<article class="word-row ${app.selectedCards.has(w.id) ? 'selected' : ''}"><div class="row items-center"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id) ? 'checked' : ''} aria-label="Chọn ${esc(w.word)}"><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}</div>${button(t('edit'),'edit','quiet',`data-id="${w.id}"`)}</article>`).join('') || `<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
+  return list.map(w => `<article class="word-row ${app.selectedCards.has(w.id) ? 'selected' : ''}"><div class="row items-center"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id) ? 'checked' : ''} aria-label="Chọn ${esc(w.word)}"><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}${w.errors.inBook?`<small>${esc(evidenceHint(w))}</small>`:''}</div>${button(t('edit'),'edit','quiet',`data-id="${w.id}"`)}</article>`).join('') || `<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
 }
 
 export function libraryView() {
