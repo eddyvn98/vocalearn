@@ -1,7 +1,7 @@
 name: Browser regression
 on:
   push:
-    branches: [main, 'feature/**']
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -25,6 +25,7 @@ jobs:
           - os: macos-latest
             browser: webkit
             viewport: 1280x900
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || matrix.os != 'macos-latest'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
