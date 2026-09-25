@@ -92,8 +92,8 @@ test('Browser Flow: Đăng ký -> Tạo bộ học -> Thêm từ -> Học -> T�
   assert.equal(state.words.w2.ready, true);
 
   // 4. Học (Study session initiation)
-  const q1 = question(state.words.w1, Object.values(state.words), 'typing', 'meaning', 'new', DEFAULTS, () => 'q-id-1');
-  const q2 = question(state.words.w2, Object.values(state.words), 'typing', 'meaning', 'new', DEFAULTS, () => 'q-id-2');
+  const q1 = question(state.words.w1, Object.values(state.words), 'typing', 'meaning', 'free', DEFAULTS, () => 'q-id-1');
+  const q2 = question(state.words.w2, Object.values(state.words), 'typing', 'meaning', 'free', DEFAULTS, () => 'q-id-2');
   let session = {
     id: 'session-1',
     setId: 'set-1',
@@ -170,8 +170,8 @@ test('Browser Flow: Đăng ký -> Tạo bộ học -> Thêm từ -> Học -> T�
     correct: true, game: curQ.game, hint: false, hadError: false,
     activeMs: 3000, interrupted: false, answer: curQ.answers[0], easyMs: 5000
   });
-  // Game flash là recognition game nên điểm tối đa được tính là hard theo quy tắc chấm điểm
-  assert.equal(grade2.grade, 'hard');
+  // Gõ từ đúng nhanh, không trợ giúp trong luyện tự do có thể đạt Dễ.
+  assert.equal(grade2.grade, 'easy');
 
   const offlineAnswerEv = {
     id: 'ans-ev-2',
@@ -206,10 +206,11 @@ test('Browser Flow: Đăng ký -> Tạo bộ học -> Thêm từ -> Học -> T�
 
   // 8. Xác minh kết quả tổng thể
   const finalState = replay(clientEvents);
-  // w1: Đã tốt nghiệp bước 1 sau câu trả lời hard
-  assert.equal(finalState.words.w1.review.step, 1);
-  // w2: Đã tốt nghiệp bước 1 sau câu trả lời easy
-  assert.equal(finalState.words.w2.review.step, 1);
+  // Luyện tự do không được thay đổi lịch ôn.
+  assert.equal(finalState.words.w1.review.step, 0);
+  assert.equal(finalState.words.w1.review.phase, 'new');
+  assert.equal(finalState.words.w2.review.step, 0);
+  assert.equal(finalState.words.w2.review.phase, 'new');
   // Lỗi của w1 được theo dõi trong sổ lỗi (errorBook) với 1 completed failure sau khi nộp đáp án cuối
   assert.equal(finalState.words.w1.errors.failures, 1);
   assert.equal(finalState.words.w1.errors.inBook, true);
