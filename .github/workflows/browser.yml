@@ -56,6 +56,11 @@ jobs:
         env:
           PW_BROWSER: ${{ matrix.browser }}
         run: python tests/browser_excel_import.py
+      - name: Run Excel compatibility acceptance
+        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
+        env:
+          PW_BROWSER: ${{ matrix.browser }}
+        run: python tests/browser_excel_compat.py
       - name: Run browser navigation/contention acceptance
         if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
         env:
