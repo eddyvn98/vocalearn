@@ -4,6 +4,16 @@ import {prepare,transact,model,uuid} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {WORD_FIELDS} from '/core/validation.js';
 let editing=null,media={};
+const listValue=value=>(value||[]).join(', ');
+function customInputs(w) {
+  const defs=app.model.sets[app.setId]?.customFields||[],values=w.custom||{};
+  return defs.map(def=>{
+    const name=`custom:${def.id}`,value=values[def.id]??'';
+    if(def.type==='select')return `<label>${esc(def.label)}<select name="${name}"><option value=""></option>${def.options.map(option=>`<option value="${esc(option)}" ${value===option?'selected':''}>${esc(option)}</option>`).join('')}</select></label>`;
+    return field(def.label,name,value,def.type==='number'?'type="number" step="any"':'maxlength="5000"');
+  }).join('');
+}
+
 export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};app.dirty=false;
   const w=editing||{};
@@ -12,7 +22,12 @@ export function openEditor(id) {
   ${field('word','word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(c.name)}</label>`).join('')||t('uncategorized')}</fieldset>
-  <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I ___ to school."')}${field('answers','answers',w.answers?.join(', '))}
+  <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I ___ to school."')}${field('answers','answers',listValue(w.answers))}
+  ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
+  ${field('collocations','collocations',listValue(w.collocations))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
+  ${field('register','register',w.register)}${field('level','level',w.level)}${field('translation','translation',w.translation)}
+  ${field('mnemonic','mnemonic',w.mnemonic)}${field('source','source',w.source)}${field('tags','tags',listValue(w.tags))}
+  ${customInputs(w)}
   <label>${t('note')}<textarea name="note" rows="3">${esc(w.note||'')}</textarea></label>
   <label>${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label><div id="media-image">${w.image?`<img class="editor-image" src="${esc(w.image)}" alt="${t('image')}">`:''}</div>${button(t('clear'),'clearImage','quiet')}
   <label>${t('audioFile')}<input type="file" id="audio-upload" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"></label><small id="audio-status">${w.audio?t('saved'):t('missingAudio')}</small>${button(t('clear'),'clearAudio','quiet')}
@@ -22,9 +37,20 @@ export function openEditor(id) {
   <div class="row between wrap">${editing?button(t('delete'),'deleteWord','danger',`data-id="${editing.id}"`):button(t('cancel'),'close','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div></form>`);
 }
 export async function saveWord(form) {
-  const f=new FormData(form),patch={word:String(f.get('word')).trim(),meaning:String(f.get('meaning')).trim(),
+  const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const custom={};
+  for(const def of app.model.sets[app.setId]?.customFields||[]){
+    const raw=f.get(`custom:${def.id}`),value=raw==null?'':String(raw).trim();
+    custom[def.id]=def.type==='number'?(value===''?null:Number(value)):value;
+    if(def.type==='number'&&value!==''&&!Number.isFinite(custom[def.id]))throw new Error(def.label);
+  }
+  const patch={word:String(f.get('word')).trim(),meaning:String(f.get('meaning')).trim(),
     pos:String(f.get('pos')).trim(),ipa:String(f.get('ipa')).trim(),sentence:String(f.get('sentence')).trim(),
-    answers:String(f.get('answers')).split(',').map(s=>s.trim()).filter(Boolean),note:String(f.get('note')).trim(),...media};
+    answers:list('answers'),variants:list('variants'),synonyms:list('synonyms'),antonyms:list('antonyms'),
+    collocations:list('collocations'),wordFamily:list('wordFamily'),tags:list('tags'),
+    register:String(f.get('register')||'').trim(),level:String(f.get('level')||'').trim(),
+    translation:String(f.get('translation')||'').trim(),mnemonic:String(f.get('mnemonic')||'').trim(),
+    source:String(f.get('source')||'').trim(),custom,note:String(f.get('note')).trim(),...media};
   if(!patch.word)throw new Error(t('word'));
   if(patch.sentence&&(patch.sentence.split('___').length!==2||!patch.answers.length))throw new Error(t('missingSentence'));
   const identity=editing&&(normalize(editing.word)!==normalize(patch.word)||normalize(editing.meaning)!==normalize(patch.meaning));
