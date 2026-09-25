@@ -1,5 +1,5 @@
 import {allowedMedia,AUDIO_TYPES,IMAGE_TYPES,isMediaRef,MAX_AUDIO_BYTES,MAX_IMAGE_BYTES,MAX_IMAGE_INPUT,MEDIA_VERSION,mediaHash} from '/core/media.js';
-import {allMediaRecords,api,deleteMediaRecord,getMediaRecord,getMeta,localEvents,model,prepare,putMediaRecord,setMeta,transact} from './storage.js';
+import {allMediaRecords,api,deleteMediaRecord,getMediaRecord,getMeta,localEvents,model,prepare,putMediaRecord,rewritePendingEvents,transact} from './storage.js';
 
 const urls=new Map();
 const dataUri=/^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/;
@@ -94,6 +94,16 @@ export async function toDataUri(value) {
 export const mediaMarkup=value=>isMediaRef(value)?{src:'',ref:value}:{src:value||'',ref:''};
 
 export async function migrateLegacyMedia() {
+  const rewrites=[];
+  for(const event of localEvents().filter(event=>!event.seq&&event.kind==='word')){
+    const patch={...event.data.patch};let changed=false;
+    for(const kind of ['image','audio']){
+      const value=patch[kind];if(typeof value!=='string'||!value.startsWith('data:'))continue;
+      patch[kind]=await ingestDataUri(value,kind);changed=true;
+    }
+    if(changed)rewrites.push({...event,data:{...event.data,patch}});
+  }
+  if(rewrites.length)await rewritePendingEvents(rewrites);
   const state=model(),events=[];
   for(const word of Object.values(state.words)){
     if(word.deleted)continue;
@@ -105,7 +115,7 @@ export async function migrateLegacyMedia() {
     if(Object.keys(patch).length)events.push(prepare('word',{id:word.id,setId:word.setId,patch,baseFields:word.fields}));
   }
   if(events.length)await transact(events);
-  return events.length;
+  return rewrites.length+events.length;
 }
 export async function convertImportMedia(rows) {
   for(const row of rows){
