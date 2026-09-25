@@ -9,7 +9,7 @@ import {studyView,resultsView} from './views/study.js';
 import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {customFields,saveCustomField,deleteCustomField} from './card-schema.js';
-import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,moveTopic,logoutAction,offlineResources} from './settings.js';
+import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,moveTopic,logoutAction,offlineResources,cleanupResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 import {installAccessibility,isComposing} from './a11y.js';
 import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './navigation.js';
@@ -87,6 +87,8 @@ async function click(action,el){
   if(action==='previewImport')return previewImport();
   if(action==='confirmImport')return confirmImport();
   if(action==='offlineResources')return offlineResources();
+  if(action==='cleanupMediaLocal')return cleanupResources('local');
+  if(action==='cleanupMediaServer')return cleanupResources('server');
   if(action==='toggleSelect'){
     const id=el.dataset.id;if(app.selectedCards.has(id))app.selectedCards.delete(id);else app.selectedCards.add(id);
     return app.render();
