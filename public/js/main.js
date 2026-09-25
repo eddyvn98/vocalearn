@@ -157,7 +157,9 @@ document.addEventListener('change',async e=>{
   }catch(error){showError(error);}
 });
 document.querySelector('#modal').addEventListener('cancel',e=>{
-  if(app.dirty&&!confirm(t('unsaved')))e.preventDefault();else app.dirty=false;
+  e.preventDefault();
+  if(app.dirty&&!confirm(t('unsaved')))return;
+  app.dirty=false;closeModal();
 });
 document.addEventListener('visibilitychange',()=>{
   if(app.page==='study'&&app.session){stopClock(document.hidden);setMeta('session',app.session).catch(showError);if(!document.hidden)startClock();}
