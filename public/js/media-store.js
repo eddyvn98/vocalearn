@@ -107,6 +107,12 @@ export async function migrateLegacyMedia() {
   if(events.length)await transact(events);
   return events.length;
 }
+export async function convertImportCards(cards) {
+  for(const card of cards)for(const kind of ['image','audio']){
+    const value=card?.[kind];if(typeof value==='string'&&value.startsWith('data:'))card[kind]=await ingestDataUri(value,kind);
+  }
+  return cards;
+}
 export async function convertImportMedia(rows) {
   for(const row of rows){
     if(row.error)continue;
