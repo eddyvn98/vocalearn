@@ -71,16 +71,16 @@ export function scopeModal() {
     <div class="row"><button class="btn primary" type="submit">${t('save')}</button>${button(t('clear'),'clearScope')}</div></form>`);
 }
 
-export function topics(editId) {
+export function topics(editId,parentDefault=null) {
   const cs = Object.values(app.model.categories).filter(c => c.setId === app.setId), c = app.model.categories[editId];
   const tree = buildTopicTree(Object.fromEntries(cs.map(cat => [cat.id, cat])));
   const allCards = words();
   modal(t('topics'), `<div class="stack"><div class="topic-tree">${tree.map(cat => {
     const count = allCards.filter(w => inScope(w, [cat.id], app.model.categories)).length;
     const indent = '\u00a0\u00a0\u00a0\u00a0'.repeat(cat.depth) + (cat.depth ? '└─ ' : '');
-    return `<div class="topic-row"><span>${indent}${esc(cat.name)} <small class="muted">(${count} thẻ)</small></span><div class="row">${button(t('edit'),'editTopic','quiet',`data-id="${cat.id}"`)}${button('&times;','deleteTopic','icon-button',`data-id="${cat.id}" aria-label="${t('delete')} ${esc(cat.name)}"`)}</div></div>`;
+    return `<div class="topic-row"><span>${indent}${esc(cat.name)} <small class="muted">(${count} thẻ)</small></span><div class="row">${button('+','addSubtopic','quiet',`data-id="${cat.id}" aria-label="${t('addSubtopic')} ${esc(cat.name)}"`)}${button(t('edit'),'editTopic','quiet',`data-id="${cat.id}"`)}${button('&times;','deleteTopic','icon-button',`data-id="${cat.id}" aria-label="${t('delete')} ${esc(cat.name)}"`)}</div></div>`;
   }).join('') || `<p class="muted">${t('noTopics')}</p>`}</div>
-  <form id="topic-form" data-id="${c?.id||''}" class="stack">${field('topicName','name',c?.name||'','required maxlength="100"')}<label>${t('parent')}<select name="parentId"><option value="">${t('root')}</option>${cs.filter(cat=>!c||!descendants(app.model.categories,c.id).has(cat.id)).map(cat=>`<option value="${cat.id}" ${cat.id===c?.parentId?'selected':''}>${esc(cat.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">${t(c?'save':'addTopic')}</button></form></div>`);
+  <form id="topic-form" data-id="${c?.id||''}" class="stack">${field('topicName','name',c?.name||'','required maxlength="100"')}<label>${t('parent')}<select name="parentId"><option value="">${t('root')}</option>${cs.filter(cat=>!c||!descendants(app.model.categories,c.id).has(cat.id)).map(cat=>`<option value="${cat.id}" ${cat.id===(c?.parentId||parentDefault)?'selected':''}>${esc(cat.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">${t(c?'save':'addTopic')}</button></form></div>`);
 }
 
 export function offlineResources() {
