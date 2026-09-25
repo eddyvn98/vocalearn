@@ -4,6 +4,7 @@ import {prepare,transact,model,uuid} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {categoryPath} from '/core/model.js';
 import {WORD_FIELDS} from '/core/validation.js';
+import {hydrateMedia,ingestFile,mediaMarkup} from './media-store.js';
 let editing=null,media={};
 const listValue=value=>(value||[]).join(', ');
 function customInputs(w) {
@@ -13,6 +14,11 @@ function customInputs(w) {
     if(def.type==='select')return `<label>${esc(def.label)}<select name="${name}"><option value=""></option>${def.options.map(option=>`<option value="${esc(option)}" ${value===option?'selected':''}>${esc(option)}</option>`).join('')}</select></label>`;
     return field(def.label,name,value,def.type==='number'?'type="number" step="any"':'maxlength="5000"');
   }).join('');
+}
+function mediaImage(value) {
+  const mark=mediaMarkup(value);
+  return '<img class="editor-image" '+(mark.src?'src="'+esc(mark.src)+'" ':'')
+    +(mark.ref?'data-media-ref="'+esc(mark.ref)+'" ':'')+'alt="'+t('image')+'">';
 }
 
 export function openEditor(id) {
@@ -30,12 +36,13 @@ export function openEditor(id) {
   ${field('mnemonic','mnemonic',w.mnemonic)}${field('source','source',w.source)}${field('tags','tags',listValue(w.tags))}
   ${customInputs(w)}
   <label>${t('note')}<textarea name="note" rows="3">${esc(w.note||'')}</textarea></label>
-  <label>${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label><div id="media-image">${w.image?`<img class="editor-image" src="${esc(w.image)}" alt="${t('image')}">`:''}</div>${button(t('clear'),'clearImage','quiet')}
+  <label>${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label><div id="media-image">${w.image?mediaImage(w.image):''}</div>${button(t('clear'),'clearImage','quiet')}
   <label>${t('audioFile')}<input type="file" id="audio-upload" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"></label><small id="audio-status">${w.audio?t('saved'):t('missingAudio')}</small>${button(t('clear'),'clearAudio','quiet')}
   <p class="muted small">${t('mediaHelp')}</p></div></details>
   ${editing?`<label>${t('changeMeaning')}<select name="identity"><option value="copy">${t('createCopy')}</option><option value="reset">${t('resetProgress')}</option></select></label>`:''}
   ${w.errors?.inBook?`<section class="info"><p>${w.errors.failures} ${t('mistakes')} \u00b7 ${w.errors.evidence.length}/2 ${t('evidence')}</p><p>${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p>${t(e.game)} \u00b7 ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
   <div class="row between wrap">${editing?button(t('delete'),'deleteWord','danger',`data-id="${editing.id}"`):button(t('cancel'),'close','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div></form>`);
+  hydrateMedia(document.querySelector('#modal')).catch(()=>{});
 }
 export async function saveWord(form) {
   const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -77,13 +84,11 @@ export async function saveWord(form) {
 }
 export async function mediaFile(file,type) {
   if(!file)return;
-  if(file.size>1500000)throw new Error('Maximum upload: 1.5 MB');
-  const uri=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file);});
-  if(type==='image'&&!/^data:image\/(png|jpeg|webp);base64,/.test(uri))throw new Error('PNG, JPEG or WebP only');
-  if(type==='audio'&&!/^data:audio\/(mpeg|wav|ogg|webm|mp4);base64,/.test(uri))throw new Error('Unsupported audio type');
-  media[type]=uri;app.dirty=true;
-  if(type==='image')document.querySelector('#media-image').innerHTML=`<img class="editor-image" src="${esc(uri)}" alt="${t('image')}">`;
-  else document.querySelector('#audio-status').textContent=file.name;
+  const ref=await ingestFile(file,type);media[type]=ref;app.dirty=true;
+  if(type==='image'){
+    document.querySelector('#media-image').innerHTML=mediaImage(ref);
+    await hydrateMedia(document.querySelector('#media-image'));
+  } else document.querySelector('#audio-status').textContent=file.name+' · '+t('saved');
 }
 export function clearMedia(type) {
   media[type]='';app.dirty=true;
