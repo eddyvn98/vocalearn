@@ -18,7 +18,8 @@ def sync_now(page):
     expect(page.locator("dialog")).to_be_visible()
     page.locator('[data-action="sync"]').click()
     expect(page.locator("dialog")).to_contain_text("0 thay đổi chờ đồng bộ")
-    page.locator('[data-action="close"]').click()
+    page.wait_for_function("() => import('/js/state.js').then(({app}) => !app.busy)")
+    page.locator('dialog [data-action="close"]').last.click()
     expect(page.locator("dialog")).not_to_be_visible()
 
 
@@ -141,9 +142,10 @@ def main():
                 page.locator('[data-action="topics"]').click()
                 expect(page.locator(".topic-branch")).to_have_count(3)
                 work_branch=page.locator(".topic-branch").filter(has_text="Work").first
-                work_branch.locator("summary").click()
+                work_summary=work_branch.locator(":scope > summary")
+                work_summary.click()
                 assert work_branch.evaluate("el => el.open") is False
-                work_branch.locator("summary").click()
+                work_summary.click()
                 finance_branch=page.locator(".topic-tree > .topic-branch").filter(has_text="Finance").first
                 finance_branch.locator('[data-action="moveTopicDown"]').click()
                 roots=page.locator(".topic-tree > .topic-branch > summary")
@@ -181,6 +183,7 @@ def main():
                 before={b["meaning"]:b["generation"] for b in state_for_banks(page)}
                 page.once("dialog",lambda dialog: dialog.accept())
                 page.locator('[data-action="bulkReset"]').click()
+                expect(page.locator('[data-action="bulkReset"]')).not_to_be_visible()
                 after={b["meaning"]:b["generation"] for b in state_for_banks(page)}
                 assert before["bờ sông"]!=after["bờ sông"]
                 assert before["ngân hàng"]==after["ngân hàng"]

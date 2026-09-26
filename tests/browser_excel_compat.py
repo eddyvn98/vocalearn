@@ -13,7 +13,7 @@ from playwright.sync_api import expect, sync_playwright
 from browser_acceptance_next import register_and_create_set, wait_server
 
 ROOT=Path(__file__).resolve().parents[1]
-PNG=bytes.fromhex("89504e470d0a1a0a00000000")
+PNG=bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63fccfc0500f000485018084a98c210000000049454e44ae426082")
 
 
 def rels(items):
