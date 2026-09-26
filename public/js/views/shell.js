@@ -1,8 +1,9 @@
 import {app} from '../state.js';
 import {brand,button,icon,t,esc,badge} from '../ui.js';
 import {pendingCount} from '../storage.js';
+import {studySetProfile} from '/core/language-profiles.js';
 export function shell(content) {
-  const set=app.model.sets[app.setId];
+  const set=app.model.sets[app.setId],profile=studySetProfile(set);
   return `<a class="skip" href="#main">Skip to content</a><div class="layout">
   <aside class="sidebar">${brand()}<nav aria-label="Main navigation">${['home','library','errors'].map(key=>button(`${icon(key==='library'?'list':key==='errors'?'flag':'home')}${t(key)}`,key,app.page===key?'nav active':'nav')).join('')}</nav>
   <div class="sidebar-bottom"><p class="muted small">${t('phaseNotice')}</p>${button(`${icon('gear')}${t('settings')}`,'settings','quiet')}</div></aside>
