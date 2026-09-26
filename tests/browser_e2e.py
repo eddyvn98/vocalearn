@@ -83,6 +83,10 @@ def add_audio_and_test_export(page, temp):
     page.locator('[data-action="library"]').click()
     expect(page.locator("#word-rows")).to_be_visible()
     row = page.locator(".word-row").filter(has_text="deploy").first
+    if page.viewport_size["width"] <= 720:
+        target = row.locator(".card-select-target")
+        box = target.bounding_box()
+        assert box and box["width"] >= 44 and box["height"] >= 44, f"Card checkbox touch target too small: {box}"
     row.locator('[data-action="edit"]').click()
     expect(page.locator("#word-form")).to_be_visible()
     page.locator("details summary").click()
