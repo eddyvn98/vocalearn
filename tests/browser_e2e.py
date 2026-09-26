@@ -243,6 +243,7 @@ def main():
                         settings.focus()
                         settings.click()
                         expect(page.locator("dialog")).to_be_visible()
+                        expect(page.locator('[name="reminderPrimary"]')).to_be_visible()
                         assert page.evaluate(
                             "document.querySelector('#modal').contains(document.activeElement)"
                         )
