@@ -72,10 +72,11 @@ def main():
                 page.locator('[data-action="startSession"]').click()
                 expect(page.locator("#answer")).to_be_visible()
                 correct=page.evaluate("() => import('/js/state.js').then(m => m.current().answers[0])")
+                retryable_wrong=correct+"x"
 
-                # Record a failure episode offline, finish, reload offline, then reconnect.
+                # Record a retryable failure episode offline, finish, reload offline, then reconnect.
                 context.set_offline(True)
-                page.locator("#answer").fill("definitely-wrong")
+                page.locator("#answer").fill(retryable_wrong)
                 page.locator("#answer-form [type='submit']").click()
                 expect(page.locator("#input-error")).not_to_be_empty()
                 page.locator("#answer").fill(correct)
