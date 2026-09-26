@@ -57,17 +57,26 @@ function pinyinSyllable(raw){
     else if(/[1-5]/.test(ch))tone=ch==='5'?0:Number(ch);else if(/[a-zv]/.test(ch))out+=ch;}
   return out+(tone??0);
 }
+function pinyinSignature(input){
+  let letters='',tones=[];
+  for(const raw of String(input||'').trim().toLowerCase().normalize('NFC').replaceAll('u:','v')){
+    const mark=toneMarks[raw];
+    if(mark){letters+=mark[0];if(mark[1])tones.push(mark[1]);}
+    else if(/[1-5]/.test(raw))tones.push(raw==='5'?0:Number(raw));
+    else if(/[a-zv]/.test(raw))letters+=raw;
+  }
+  return {letters,tones};
+}
 export function normalizePinyin(input){
-  const s=String(input||'').trim().toLowerCase().replaceAll('u:','v'),explicit=s.split(/\s+/).filter(Boolean);
-  if(explicit.length>1)return explicit.map(pinyinSyllable);
-  const chunks=[];let cur='';
-  for(const ch of s){cur+=ch;if(toneMarks[ch]?.[1]||/[1-5]/.test(ch)){chunks.push(cur);cur='';}}
-  if(cur)chunks.push(cur);
-  return chunks.filter(Boolean).map(pinyinSyllable);
+  const s=String(input||'').trim().toLowerCase().replaceAll('u:','v');
+  if(/[1-5]/.test(s))return s.split(/\s+/).flatMap(part=>part.match(/[a-zv]+[1-5]/g)||[]).map(pinyinSyllable);
+  // Marked pinyin is canonicalized for comparison; syllable display keeps explicit boundaries when supplied.
+  if(/\s/.test(s))return s.split(/\s+/).filter(Boolean).map(pinyinSyllable);
+  return [pinyinSignature(s).letters+pinyinSignature(s).tones.join('')];
 }
 export function chineseReadingMatches(input,expected){
-  const a=normalizePinyin(input),b=normalizePinyin(expected);
-  return a.length===b.length&&a.every((x,i)=>x===b[i]);
+  const a=pinyinSignature(input),b=pinyinSignature(expected);
+  return a.letters===b.letters&&a.tones.length===b.tones.length&&a.tones.every((x,i)=>x===b.tones[i]);
 }
 const isKanaOnly=s=>[...String(s||'')].every(ch=>/[\u3040-\u30ffー々〆ヵヶ]/u.test(ch));
 const hiraToKata=s=>[...s].map(ch=>{const n=ch.codePointAt(0);return n>=0x3041&&n<=0x3096?String.fromCodePoint(n+0x60):ch}).join('');
