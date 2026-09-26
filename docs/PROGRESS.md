@@ -8,8 +8,8 @@ This file is the rolling engineering progress note for VocaLearn. The product re
 
 | Scope | Current estimate | Notes |
 |---|---:|---|
-| Phase 1 / MVP - functionality | ~87% | Core MVP is broadly implemented. AT-27 topic-transfer semantics is now merged; the main remaining functional gap is richer sentence/cloze authoring plus smaller UI/edge cases. |
-| Phase 1 / MVP - acceptance evidence | ~80% | AT-27 now has domain + browser acceptance. Physical-device, accessibility, PWA lifecycle and real multi-device checks remain. |
+| Phase 1 / MVP - functionality | ~88% | Core MVP is broadly implemented. AT-27 and the richer sentence/cloze authoring workflow are now merged; remaining work is mostly traceability, device/accessibility evidence and smaller edge cases. |
+| Phase 1 / MVP - acceptance evidence | ~81% | AT-27 and sentence/cloze authoring now have browser acceptance. Physical-device, accessibility, PWA lifecycle and real multi-device checks remain. |
 | Full specification v0.5 - phases 1-3 | ~60% | Phase 1 moved forward slightly; G2/G3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not complete. |
 
 These are planning estimates, not release certification.
@@ -57,18 +57,30 @@ Merged commit: `51035e7adc8de014032798a481b3a66113516164`
 
 This closes the major AT-27 source-transfer semantics gap from the Phase-1 list.
 
-## Phase 1 gaps after AT-27
+## Completed after AT-27
 
-1. Improve sentence/cloze authoring in the card editor: choose the blank span, confirm accepted answer(s), preview the final question.
-2. Expand the trace table so each AT-01..AT-32 and UX-01..UX-30 has explicit Pass / Partial / N/A / Pending evidence.
-3. Run physical-device and accessibility acceptance:
+### PR #34 - richer sentence/cloze authoring - merged
+Merged commit: `f94e6b7cb581003a91268d2cc12cb3be66abc77d`
+
+- Card editor now accepts a full sentence and lets the user highlight the target span.
+- **Tạo ô trống từ phần bôi đen** replaces exactly that span with `___`.
+- The selected text is seeded into accepted answers instead of using every card variant.
+- A live preview shows the resulting cloze question and accepted answers before save.
+- Browser acceptance verifies authoring, save and reopen persistence.
+- Verify and the full Chromium browser-regression workflow are green.
+- A selector collision found by browser CI was fixed before merge.
+
+## Phase 1 gaps now
+
+1. Expand the trace table so each AT-01..AT-32 and UX-01..UX-30 has explicit Pass / Partial / N/A / Pending evidence.
+2. Run physical-device and accessibility acceptance:
    - mobile virtual keyboard at 320/390 CSS px;
    - screen reader and keyboard-only flow;
    - measured WCAG contrast/focus checks;
    - installed PWA install/upgrade/offline lifecycle;
    - background reminder behavior;
    - real two-device offline AT-32 drill.
-4. Resend production activation stays deferred in issue #29 until a verified sending domain and real delivery acceptance are available.
+3. Resend production activation stays deferred in issue #29 until a verified sending domain and real delivery acceptance are available.
 
 ## Phase 2 / Phase 3
 
