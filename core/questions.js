@@ -1,6 +1,7 @@
 import {normalize} from './grading.js';
 import {opportunityId} from './opportunity.js';
 import {isDue, dayAt} from './time.js';
+import {maskMonolingualDefinition} from './language-profiles.js';
 
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'];
 export const MIX_GAMES = ['flash','quiz','typing','spell','dictation','cloze','clozeChoice'];
@@ -93,7 +94,7 @@ export function learningAllowed(model,scoped,now) {
   const used=Object.values(model.words).filter(w=>w.review.startedDay===day).length;
   return used>=model.settings.newLimit?'dailyLimit':null;
 }
-export function question(w,pool,game,face='meaning',mode='review',config={},uuid=()=>crypto.randomUUID(),answerFace) {
+export function question(w,pool,game,face='meaning',mode='review',config={},uuid=()=>crypto.randomUUID(),answerFace,profile={}) {
   const learning=mode==='new'||mode==='review'&&w.review.phase!=='review';
   let fallback=null,familiarize=false;
   if(learning) {
@@ -113,7 +114,9 @@ export function question(w,pool,game,face='meaning',mode='review',config={},uuid
   if(why.length)return {blocked:why,wordId:w.id,game,face,answerFace};
   const answers=game.startsWith('cloze')?[...w.answers]:
     ['quiz','match'].includes(game)?[valueFor(w,answerFace)]:[w.word];
-  const prompt=game.startsWith('cloze')?w.sentence:valueFor(w,face);
+  let prompt=game.startsWith('cloze')?w.sentence:valueFor(w,face);
+  if(profile.meaningMode==='monolingual'&&face==='meaning')
+    prompt=maskMonolingualDefinition(prompt,w.word,w.variants);
   const choices=['quiz','clozeChoice'].includes(game)?[answers[0],...alternatives(w,pool,game,face,answerFace)].slice(0,4)
     .map((label,index)=>({label,correct:index===0,wordId:game==='quiz'
       ?(index===0?w.id:pool.find(x=>x.id!==w.id&&answerValue(x,game,answerFace)===label)?.id):undefined})):[];
