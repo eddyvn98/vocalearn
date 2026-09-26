@@ -10,3 +10,5 @@ test('G-10 classifier game is unavailable without classifier data and returns co
  const q=classifierQuestion({word:'书',classifiers:['本'],classifierSentence:'一 ___ 书'});
  assert.equal(gradeClassifier(q,'本'),true);assert.equal(q.completed('本'),'一 本 书');
 });
+
+// Integration CI checkpoint.
