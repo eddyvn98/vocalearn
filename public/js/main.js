@@ -7,7 +7,7 @@ import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';
 import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
-import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
+import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash,makeSentenceBlank,restoreSentenceBlank,updateSentencePreview} from './editor.js';
 import {customFields,saveCustomField,deleteCustomField} from './card-schema.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,moveTopic,logoutAction,offlineResources,cleanupResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
@@ -65,6 +65,8 @@ async function click(action,el){
   if(action==='setupErrors')return setup('errors','mix');
   if(action==='practice')return setup('free',el.dataset.game);
   if(action==='add'||action==='edit')return openEditor(el.dataset.id);
+  if(action==='makeSentenceBlank')return makeSentenceBlank();
+  if(action==='restoreSentenceBlank')return restoreSentenceBlank();
   if(action==='deleteWord')return deleteWord(el.dataset.id);
   if(action==='clearImage'||action==='clearAudio')return clearMedia(action==='clearImage'?'image':'audio');
   if(action==='settings')return settings();
@@ -209,6 +211,7 @@ document.addEventListener('submit',async e=>{
 });
 document.addEventListener('input',e=>{
   if(e.target.closest('#word-form'))app.dirty=true;
+  if(e.target.id==='sentence-input'||e.target.id==='sentence-answers')updateSentencePreview();
   if(e.target.id==='search'){const pos=e.target.selectionStart;app.selectedCards.clear();app.query=e.target.value;app.render();const search=document.querySelector('#search');search.focus();try{search.setSelectionRange(pos,pos);}catch{}}
   if(e.target.id==='answer'&&current()){current().input=e.target.value;current().inputError='';setMeta('session',app.session).catch(showError);}
 });
