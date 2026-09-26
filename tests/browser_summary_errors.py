@@ -13,8 +13,8 @@ from browser_acceptance_next import register_and_create_set, wait_server
 ROOT=Path(__file__).resolve().parents[1]
 
 
-def metric(page,label,value):
-    item=page.locator(".summary .metric").filter(has_text=label)
+def metric(page,key,value):
+    item=page.locator(f'.summary [data-summary-metric="{key}"]')
     expect(item).to_have_count(1)
     expect(item.locator("strong")).to_have_text(str(value))
 
@@ -57,13 +57,13 @@ def main():
                 page.locator('[data-action="remember"]').click()
                 expect(page.locator("#feedback")).to_be_visible()
                 finish(page)
-                metric(page,"Từ mới đã bắt đầu",1)
-                metric(page,"Từ mới đã tốt nghiệp",0)
+                metric(page,"newStarted",1)
+                metric(page,"newGraduated",0)
                 expect(page.locator(".summary")).to_contain_text("thẻ còn bước học đang chờ")
                 expect(page.locator(".summary")).to_contain_text("thay đổi chưa đồng bộ")
                 page.reload(wait_until="networkidle")
-                metric(page,"Từ mới đã bắt đầu",1)
-                metric(page,"Từ mới đã tốt nghiệp",0)
+                metric(page,"newStarted",1)
+                metric(page,"newGraduated",0)
                 print("PASS: waiting learning step is pending, not mislabeled as graduated")
 
                 page.locator('.summary [data-action="home"]').click()
@@ -81,18 +81,19 @@ def main():
                 page.locator("#answer-form [type='submit']").click()
                 expect(page.locator("#feedback")).to_be_visible()
                 finish(page)
-                metric(page,"Vào sổ từ sai",1)
+                metric(page,"enteredErrorBook",1)
                 expect(page.locator(".summary")).to_contain_text("thay đổi chưa đồng bộ")
 
                 page.reload(wait_until="domcontentloaded")
-                metric(page,"Vào sổ từ sai",1)
+                metric(page,"enteredErrorBook",1)
                 context.set_offline(False)
                 page.wait_for_timeout(1000)
                 page.locator('[data-action="syncInfo"]:visible').first.click()
                 page.locator('[data-action="sync"]').click()
                 expect(page.locator("dialog")).to_contain_text("0 thay đổi chờ đồng bộ")
-                page.locator('[data-action="close"]').click()
-                metric(page,"Vào sổ từ sai",1)
+                page.wait_for_function("() => import('/js/state.js').then(({app}) => !app.busy)")
+                page.locator('dialog [data-action="close"]').last.click()
+                metric(page,"enteredErrorBook",1)
 
                 page.locator('.summary [data-action="errors"]').click()
                 row=page.locator(".word-row").filter(has_text=correct).first

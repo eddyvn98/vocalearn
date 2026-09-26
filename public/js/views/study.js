@@ -64,7 +64,7 @@ function matchView() {
   ${done===s.queue.length?button(t('results'),'finish','primary'):''}</section></main>`;
 }
 function summaryMetric(value,label){
-  return `<div class="metric"><strong>${value}</strong><span>${t(label)}</span></div>`;
+  return `<div class="metric" data-summary-metric="${esc(label)}"><strong>${value}</strong><span>${t(label)}</span></div>`;
 }
 export function resultsView() {
   const s=app.session,now=Date.now(),summary=buildSessionSummary(s,app.model,pendingCount(),now);
