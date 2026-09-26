@@ -13,6 +13,7 @@
     "check": "node scripts/check.js",
     "verify": "npm run check && npm test",
     "build:sw": "node scripts/build-sw.js",
+    "feature:check": "node scripts/feature-check.js",
     "preview:fixtures": "node --experimental-vm-modules scripts/preview.mjs"
   }
 }
