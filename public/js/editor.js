@@ -4,6 +4,7 @@ import {prepare,transact,model,uuid} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {categoryPath} from '/core/model.js';
 import {WORD_FIELDS} from '/core/validation.js';
+import {answerList,blankSelection,restoreBlank,validCloze} from '/core/cloze.js';
 import {hydrateMedia,ingestFile,mediaMarkup} from './media-store.js';
 let editing=null,media={};
 const listValue=value=>(value||[]).join(', ');
@@ -21,6 +22,43 @@ function mediaImage(value) {
     +(mark.ref?'data-media-ref="'+esc(mark.ref)+'" ':'')+'alt="'+t('image')+'">';
 }
 
+function sentenceAuthoring(w) {
+  return `<section class="stack">
+    <label>${t('sentence')}<textarea name="sentence" id="sentence-input" rows="3" placeholder="Yesterday, I went to school.">${esc(w.sentence||'')}</textarea></label>
+    <p class="muted small">${t('blankHelp')}</p>
+    <div class="row wrap">${button(t('chooseBlank'),'makeSentenceBlank','primary')}${button(t('restoreFullSentence'),'restoreSentenceBlank','quiet')}</div>
+    ${field('answers','answers',listValue(w.answers),'id="sentence-answers"')}
+    <section id="sentence-preview" class="wait-panel" aria-live="polite"></section>
+  </section>`;
+}
+export function updateSentencePreview() {
+  const sentence=document.querySelector('#sentence-input'),answers=document.querySelector('#sentence-answers'),preview=document.querySelector('#sentence-preview');
+  if(!sentence||!answers||!preview)return;
+  const text=sentence.value.trim(),accepted=answerList(answers.value);
+  if(!text){preview.innerHTML=`<p class="muted small">${t('previewEmpty')}</p>`;return;}
+  if(!validCloze(text,accepted)){preview.innerHTML=`<p class="muted small">${t('blankHelp')}</p>`;return;}
+  const [before,after]=text.split('___');
+  preview.innerHTML=`<p class="eyebrow">${t('sentencePreview')}</p><p>${esc(before)}<strong class="badge">___</strong>${esc(after)}</p><p class="muted small">${t('acceptedAnswers')}: ${accepted.map(value=>badge(esc(value),'neutral')).join(' ')}</p>`;
+}
+export function makeSentenceBlank() {
+  const sentence=document.querySelector('#sentence-input'),answers=document.querySelector('#sentence-answers');
+  if(!sentence||!answers)return;
+  if(sentence.value.includes('___'))throw new Error(t('blankAlreadySet'));
+  const result=blankSelection(sentence.value,sentence.selectionStart,sentence.selectionEnd);
+  if(!result)throw new Error(t('selectBlankText'));
+  const existing=answerList(answers.value).filter(value=>normalize(value)!==normalize(result.answer));
+  sentence.value=result.sentence;answers.value=[result.answer,...existing].join(', ');
+  app.dirty=true;updateSentencePreview();
+}
+export function restoreSentenceBlank() {
+  const sentence=document.querySelector('#sentence-input'),answers=document.querySelector('#sentence-answers');
+  if(!sentence||!answers)return;
+  const list=answerList(answers.value),marker=sentence.value.indexOf('___'),restored=restoreBlank(sentence.value,list);
+  if(restored==null)throw new Error(t('missingSentence'));
+  sentence.value=restored;app.dirty=true;updateSentencePreview();
+  sentence.focus();sentence.setSelectionRange(marker,marker+(list[0]?.length||0));
+}
+
 export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};app.dirty=false;
   const w=editing||{};
@@ -29,7 +67,7 @@ export function openEditor(id) {
   ${field('word','word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
-  <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I ___ to school."')}${field('answers','answers',listValue(w.answers))}
+  <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${sentenceAuthoring(w)}
   ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
   ${field('collocations','collocations',listValue(w.collocations))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
   ${field('register','register',w.register)}${field('level','level',w.level)}${field('translation','translation',w.translation)}
@@ -43,6 +81,7 @@ export function openEditor(id) {
   ${w.errors?.inBook?`<section class="info"><p>${w.errors.failures} ${t('mistakes')} \u00b7 ${w.errors.evidence.length}/2 ${t('evidence')}</p><p>${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p>${t(e.game)} \u00b7 ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
   <div class="row between wrap">${editing?button(t('delete'),'deleteWord','danger',`data-id="${editing.id}"`):button(t('cancel'),'close','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div></form>`);
   hydrateMedia(document.querySelector('#modal')).catch(()=>{});
+  requestAnimationFrame(updateSentencePreview);
 }
 export async function saveWord(form) {
   const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean);
