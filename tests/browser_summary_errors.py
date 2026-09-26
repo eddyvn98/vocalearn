@@ -57,6 +57,19 @@ def main():
                 context=browser.new_context(viewport={"width":1280,"height":900})
                 page=context.new_page();page.goto(origin,wait_until="networkidle")
                 register_and_create_set(page,"summary-e2e@example.test")
+                page.on("console",lambda msg: print("BROWSER CONSOLE:",msg.text))
+                page.on("framenavigated",lambda frame: print("BROWSER NAV:",frame.url) if frame==page.main_frame else None)
+                page.evaluate("""() => import('/js/state.js').then(({app}) => {
+                    let value=app.page;
+                    Object.defineProperty(app,'page',{
+                        configurable:true,
+                        get(){return value},
+                        set(next){
+                            console.log('PAGESET',value,'=>',next,new Error('page-set').stack);
+                            value=next;
+                        }
+                    });
+                })""")
                 page.locator('[data-action="samples"]').click()
                 expect(page.locator(".metric")).to_have_count(4)
 
