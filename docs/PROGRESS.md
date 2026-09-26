@@ -9,7 +9,7 @@ This file is the rolling engineering progress note for VocaLearn. The product re
 | Scope | Current estimate | Notes |
 |---|---:|---|
 | Phase 1 / MVP - functionality | ~88% | Core MVP is broadly implemented. AT-27 and richer sentence/cloze authoring are merged; explicit AT/UX traceability is now complete. Remaining work is focused acceptance evidence and smaller edge cases. |
-| Phase 1 / MVP - acceptance evidence | ~82% | Every AT-01..AT-32 and UX-01..UX-30 has an explicit evidence-backed state; AT-04, AT-10 and AT-30 now have exact automated acceptance. Physical-device, accessibility, PWA lifecycle and real-device checks remain. |
+| Phase 1 / MVP - acceptance evidence | ~82% | Every AT-01..AT-32 and UX-01..UX-30 has an explicit evidence-backed state; AT-04, AT-10, AT-30 and UX-29 now have exact automated/browser acceptance. Remaining gaps are predominantly physical-device/accessibility/PWA evidence. |
 | Full specification v0.5 - phases 1-3 | ~60% | Phase 1 moved forward slightly; G2/G3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not complete. |
 
 These are planning estimates, not release certification.
@@ -93,6 +93,19 @@ Merged commit: `bafbfddcaa45a5d7a32de70961554230cd4191a7`
 - Verify and Browser regression both passed before merge.
 - Phase-1 acceptance-evidence planning estimate moves conservatively from ~81% to ~82%.
 
+## Completed after AT acceptance closure
+
+### PR #38 - UX-29 timezone settings acceptance - merged
+Merged commit: `637a88b9b47a67801d44d216b49eb74b0e8b9701`
+
+- Live browser acceptance changes account timezone from another tab while a study question remains active.
+- The test captures and accepts the warning that existing due dates are not rewritten.
+- The synced model adopts the new timezone.
+- The active question keeps its original settings snapshot.
+- Verify and Browser regression both passed before merge.
+- UX-29 is now **Pass** in the explicit trace table.
+- The overall acceptance estimate remains ~82%; one additional acceptance case is not enough to justify another percentage-point increase.
+
 ## Phase 1 gaps now
 
 1. Run physical-device and accessibility acceptance:
@@ -102,8 +115,7 @@ Merged commit: `bafbfddcaa45a5d7a32de70961554230cd4191a7`
    - installed PWA install/upgrade/offline lifecycle;
    - background reminder behavior;
    - real two-device offline AT-32 drill.
-2. Close the explicit timezone-impact warning portion of **UX-29**.
-3. Resend production activation stays deferred in issue #29 until a verified sending domain and real delivery acceptance are available.
+2. Resend production activation stays deferred in issue #29 until a verified sending domain and real delivery acceptance are available.
 
 ## Phase 2 / Phase 3
 
