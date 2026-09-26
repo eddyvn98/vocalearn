@@ -120,6 +120,21 @@ async function click(action,el){
       <label>${t('mode')}<select name="operation"><option value="assign">${t('assignTopic')}</option><option value="remove">${t('removeTopic')}</option></select></label>
       <button type="submit" class="btn primary">${t('save')} · ${app.selectedCards.size} thẻ</button></form>`);
   }
+  if(action==='moveCardTopic'){
+    pruneSelection();
+    const selected=Array.from(app.selectedCards).map(id=>app.model.words[id]).filter(Boolean);
+    if(!selected.length)return app.render();
+    const shared=selected.reduce((ids,w)=>ids.filter(id=>w.categoryIds.includes(id)),[...selected[0].categoryIds]);
+    const cs=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
+    if(!shared.length)throw new Error('Các thẻ đã chọn không có chủ đề nguồn chung để chuyển.');
+    const targets=cs.filter(c=>!shared.every(id=>id===c.id));
+    if(!targets.length)throw new Error('Không có chủ đề đích khác.');
+    return modal('Chuyển chủ đề',`<form id="move-card-topic-form" class="stack">
+      <p class="muted small">Chuyển chỉ liên kết chủ đề nguồn. Các chủ đề khác và lịch học của thẻ được giữ nguyên.</p>
+      <label>Chuyển khỏi chủ đề<select name="sourceCategoryId">${shared.map(id=>`<option value="${id}">${esc(categoryPath(app.model.categories,id))}</option>`).join('')}</select></label>
+      <label>Sang chủ đề<select name="targetCategoryId">${cs.map(cat=>`<option value="${cat.id}">${esc(categoryPath(app.model.categories,cat.id))}</option>`).join('')}</select></label>
+      <button type="submit" class="btn primary">Chuyển · ${selected.length} thẻ</button></form>`);
+  }
   if(action==='trash')return trash();
   if(action==='restoreWord'){await commit([prepare('restoreWord',{id:el.dataset.id})]);trash();app.render();}
   if(action==='restoreAllWords'){
@@ -171,6 +186,21 @@ document.addEventListener('submit',async e=>{
         const link=app.model.links[`${wordId}/${catId}`],linked=link&&!link.removed;
         if(operation==='assign'&&!linked)events.push(prepare('link',{wordId,categoryId:catId,base:link?.rev||null}));
         if(operation==='remove'&&linked)events.push(prepare('unlink',{wordId,categoryId:catId,base:link.rev}));
+      }
+      if(events.length)await commit(events);
+      app.selectedCards.clear();closeModal();return app.render();
+    }
+    if(form.id==='move-card-topic-form'){
+      pruneSelection();
+      const data=new FormData(form),sourceCategoryId=data.get('sourceCategoryId'),targetCategoryId=data.get('targetCategoryId');
+      if(!sourceCategoryId||!targetCategoryId||sourceCategoryId===targetCategoryId)throw new Error('Chọn hai chủ đề khác nhau.');
+      const events=[];
+      for(const wordId of app.selectedCards){
+        const source=app.model.links[`${wordId}/${sourceCategoryId}`];
+        if(!source||source.removed)throw new Error('Một thẻ đã chọn không còn thuộc chủ đề nguồn.');
+        const target=app.model.links[`${wordId}/${targetCategoryId}`];
+        if(!target||target.removed)events.push(prepare('link',{wordId,categoryId:targetCategoryId,base:target?.rev||null}));
+        events.push(prepare('unlink',{wordId,categoryId:sourceCategoryId,base:source.rev}));
       }
       if(events.length)await commit(events);
       app.selectedCards.clear();closeModal();return app.render();
