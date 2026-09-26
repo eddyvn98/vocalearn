@@ -21,6 +21,33 @@ function mediaImage(value) {
     +(mark.ref?'data-media-ref="'+esc(mark.ref)+'" ':'')+'alt="'+t('image')+'">';
 }
 
+function sentencePreview(sentence,answers) {
+  if(!sentence)return '<span class="muted">Nhập câu đầy đủ, bôi đen từ/cụm cần khuyết rồi tạo ô trống.</span>';
+  const parts=sentence.split('___');
+  if(parts.length!==2)return '<span class="error-text">Câu Điền câu cần đúng một ô trống ___.</span>';
+  return `<span>${esc(parts[0])}<strong aria-label="ô trống">_____</strong>${esc(parts[1])}</span>
+    <small class="muted">Đáp án chấp nhận: ${esc(answers.length?answers.join(', '):'chưa có')}</small>`;
+}
+export function updateSentencePreview() {
+  const form=document.querySelector('#word-form'),out=document.querySelector('#sentence-preview');
+  if(!form||!out)return;
+  const sentence=String(form.elements.sentence?.value||''),answers=String(form.elements.answers?.value||'')
+    .split(',').map(value=>value.trim()).filter(Boolean);
+  out.innerHTML=sentencePreview(sentence,answers);
+}
+export function makeSentenceBlank() {
+  const form=document.querySelector('#word-form'),input=form?.elements.sentence,answers=form?.elements.answers;
+  if(!input||!answers)return;
+  if(input.value.includes('___'))throw new Error('Câu đã có ô trống. Hãy sửa hoặc xóa ô trống cũ trước.');
+  const start=input.selectionStart??0,end=input.selectionEnd??0,selected=input.value.slice(start,end).trim();
+  if(start===end||!selected)throw new Error('Bôi đen từ hoặc cụm từ cần làm ô trống trong câu ví dụ.');
+  input.value=input.value.slice(0,start)+'___'+input.value.slice(end);
+  const accepted=String(answers.value||'').split(',').map(value=>value.trim()).filter(Boolean);
+  if(!accepted.includes(selected))accepted.unshift(selected);
+  answers.value=accepted.join(', ');
+  app.dirty=true;updateSentencePreview();input.focus();input.setSelectionRange(start,start+3);
+}
+
 export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};app.dirty=false;
   const w=editing||{};
@@ -29,7 +56,9 @@ export function openEditor(id) {
   ${field('word','word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
-  <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I ___ to school."')}${field('answers','answers',listValue(w.answers))}
+  <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
+  <div class="row wrap">${button('Tạo ô trống từ phần bôi đen','makeSentenceBlank','quiet')}</div>
+  <div id="sentence-preview" class="info stack" aria-live="polite"><strong>Xem thử câu hỏi</strong>${sentencePreview(w.sentence||'',w.answers||[])}</div>
   ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
   ${field('collocations','collocations',listValue(w.collocations))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
   ${field('register','register',w.register)}${field('level','level',w.level)}${field('translation','translation',w.translation)}
@@ -43,6 +72,7 @@ export function openEditor(id) {
   ${w.errors?.inBook?`<section class="info"><p>${w.errors.failures} ${t('mistakes')} \u00b7 ${w.errors.evidence.length}/2 ${t('evidence')}</p><p>${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p>${t(e.game)} \u00b7 ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
   <div class="row between wrap">${editing?button(t('delete'),'deleteWord','danger',`data-id="${editing.id}"`):button(t('cancel'),'close','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div></form>`);
   hydrateMedia(document.querySelector('#modal')).catch(()=>{});
+  updateSentencePreview();
 }
 export async function saveWord(form) {
   const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean);
