@@ -1,6 +1,6 @@
 # Implementation coverage: v0.1.0 against specification v0.5
 
-This is a runnable Phase-1 implementation, **not full specification completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Current planning estimate: **~84% Phase-1 functional implementation, ~74% Phase-1 acceptance evidence, ~58% of the complete v0.5 scope across phases 1-3**. See `SPEC_TRACEABILITY_V0.5.md`.
+This is a runnable Phase-1 implementation, **not full specification completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Current planning estimate: **~86% Phase-1 functional implementation, ~76% Phase-1 acceptance evidence, ~59% of the complete v0.5 scope across phases 1-3**. See `SPEC_TRACEABILITY_V0.5.md`.
 
 Status meanings:
 - Implemented: source exists and is connected to the runtime. Not equivalent to browser acceptance.
@@ -62,3 +62,7 @@ These are backlog suggestions in a file, not issues already created on GitHub.
 
 - Resend production activation is tracked in GitHub issue #29. Integration code is merged, but production signup/reset remains disabled until a verified sending domain is configured and a real delivery acceptance run passes.
 - G2/G3 scope remains intentionally hidden until Phase-1 completion criteria are closed.
+
+## Reminder hardening update (2026-09-26)
+
+AT-31 logic now has a synced primary reminder device, browser-permission fallback and one-primary-reminder-per-day marker. Automated coverage verifies primary/secondary/denied-permission behavior and exposes the control in the live browser. This is not yet proof of background delivery while the PWA is closed; that remains a physical-device acceptance item.
