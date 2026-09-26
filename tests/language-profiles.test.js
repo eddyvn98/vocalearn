@@ -31,3 +31,4 @@ test('AT-26 adding handwriting capability does not alter language-profile schedu
   const upgraded={profile:LANGUAGE_PROFILES.zh,capabilities:{handwriting:true},review};
   assert.deepEqual(upgraded.review,review);
 });
+\n// CI checkpoint: generated offline manifest refreshed.\n
