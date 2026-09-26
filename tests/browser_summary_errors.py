@@ -15,6 +15,12 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def metric(page,key,value):
     item=page.locator(f'.summary [data-summary-metric="{key}"]')
+    if item.count()!=1:
+        summary=page.locator(".summary")
+        print("DEBUG summary html:", summary.inner_html() if summary.count() else "<missing>")
+        print("DEBUG summary metrics:", page.locator(".summary .metric").evaluate_all(
+            "(els) => els.map(el => ({metric: el.getAttribute('data-summary-metric'), text: el.innerText}))"
+        ))
     expect(item).to_have_count(1)
     expect(item.locator("strong")).to_have_text(str(value))
 
