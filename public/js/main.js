@@ -44,7 +44,8 @@ async function authenticated(user){
   applyStudySetup(await getMeta('studySetup'));
   app.session=await getMeta('session')||null;
   if(app.session&&!app.session.finished){for(const q of app.session.queue)if(!q.result)q.interrupted=true;await setMeta('session',app.session);}
-  app.page='home';app.render();replaceHistory();
+  const reopenResults=history.state?.voca&&history.state.page==='results'&&history.state.sessionId===app.session?.id&&app.session?.finished;
+  app.page=reopenResults?'results':'home';app.render();replaceHistory();
 }
 function pruneSelection(){const ids=new Set(filtered().map(w=>w.id));for(const id of app.selectedCards)if(!ids.has(id))app.selectedCards.delete(id);}
 async function click(action,el){
