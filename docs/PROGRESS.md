@@ -8,8 +8,8 @@ This file is the rolling engineering progress note for VocaLearn. The product re
 
 | Scope | Current estimate | Notes |
 |---|---:|---|
-| Phase 1 / MVP - functionality | ~88% | Core MVP is broadly implemented. AT-27 and the richer sentence/cloze authoring workflow are now merged; remaining work is mostly traceability, device/accessibility evidence and smaller edge cases. |
-| Phase 1 / MVP - acceptance evidence | ~81% | AT-27 and sentence/cloze authoring now have browser acceptance. Physical-device, accessibility, PWA lifecycle and real multi-device checks remain. |
+| Phase 1 / MVP - functionality | ~88% | Core MVP is broadly implemented. AT-27 and richer sentence/cloze authoring are merged; explicit AT/UX traceability is now complete. Remaining work is focused acceptance evidence and smaller edge cases. |
+| Phase 1 / MVP - acceptance evidence | ~81% | Every AT-01..AT-32 and UX-01..UX-30 now has an explicit evidence-backed state. Physical-device, accessibility, PWA lifecycle and selected exact-scenario checks remain. |
 | Full specification v0.5 - phases 1-3 | ~60% | Phase 1 moved forward slightly; G2/G3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not complete. |
 
 These are planning estimates, not release certification.
@@ -70,17 +70,30 @@ Merged commit: `f94e6b7cb581003a91268d2cc12cb3be66abc77d`
 - Verify and the full Chromium browser-regression workflow are green.
 - A selector collision found by browser CI was fixed before merge.
 
+## Completed after cloze authoring
+
+### PR #36 - explicit AT/UX traceability - merged
+Merged commit: `85d4de9238c5750c01d54d358f6db995acccf576`
+
+- `docs/SPEC_TRACEABILITY_V0.5.md` now records every **AT-01..AT-32** and **UX-01..UX-30** as **Pass / Partial / Pending / N/A (Phase 1)**.
+- Pass is only used where the applicable behavior has direct domain/API/browser evidence.
+- Physical-device, screen-reader, background-PWA and real two-device cases remain Partial/Pending where desktop automation is not enough.
+- Stale UI-09/UI-10 notes were updated after PR #33/#34.
+- Verify and Browser regression both passed before merge.
+- This documentation change does not raise the planning percentages by itself because it clarifies evidence rather than adding runtime behavior.
+
 ## Phase 1 gaps now
 
-1. Expand the trace table so each AT-01..AT-32 and UX-01..UX-30 has explicit Pass / Partial / N/A / Pending evidence.
+1. Add focused automated acceptance for the exact remaining composite cases **AT-04, AT-10 and AT-30**.
 2. Run physical-device and accessibility acceptance:
    - mobile virtual keyboard at 320/390 CSS px;
    - screen reader and keyboard-only flow;
-   - measured WCAG contrast/focus checks;
+   - measured WCAG contrast/target/zoom/focus checks;
    - installed PWA install/upgrade/offline lifecycle;
    - background reminder behavior;
    - real two-device offline AT-32 drill.
-3. Resend production activation stays deferred in issue #29 until a verified sending domain and real delivery acceptance are available.
+3. Close the explicit timezone-impact warning portion of **UX-29**.
+4. Resend production activation stays deferred in issue #29 until a verified sending domain and real delivery acceptance are available.
 
 ## Phase 2 / Phase 3
 
