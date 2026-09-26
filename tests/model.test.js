@@ -42,6 +42,8 @@ test('Reject unsafe media, prototype fields, invalid clocks/settings',()=>{
  assert.throws(()=>validateEvent(event('bad','word',{id:'__proto__',setId:'set',patch:{word:'x'}})));
  assert.throws(()=>validateEvent(event('bad','settings',{zone:'invalid/zone'})));
  assert.throws(()=>validateEvent(event('bad','settings',{newLimit:1.5})));
+ assert.throws(()=>validateEvent(event('bad','settings',{reminderPrimaryDevice:'bad device'})));
+ assert.throws(()=>validateEvent(event('bad','settings',{reminderLastDay:'26/09/2026'})));
  assert.throws(()=>validateEvent(event('bad','settings',JSON.parse('{"__proto__":{}}'))));
 });
 

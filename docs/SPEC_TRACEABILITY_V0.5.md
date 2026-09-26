@@ -10,9 +10,9 @@ These percentages are engineering estimates, not acceptance certificates. They w
 
 | Scope | Estimated progress | Interpretation |
 |---|---:|---|
-| Phase 1 / MVP functional implementation | **~84%** | Core offline PWA, accounts/sync, card model, topics, Excel, six MVP game families, SRS, error book, session recovery, production hardening and most MVP UI are implemented. |
-| Phase 1 / MVP acceptance evidence | **~74%** | Automated domain/API/browser coverage is strong, including production acceptance, but physical-device, screen-reader, virtual-keyboard, notification and some adversarial multi-device cases remain. |
-| Full specification v0.5, phases 1-3 | **~58%** | Phase 2 AI/Chinese work and Phase 3 speech/handwriting/Japanese/advanced statistics are intentionally not released yet. |
+| Phase 1 / MVP functional implementation | **~86%** | Core offline PWA, accounts/sync, card model, topics, Excel, six MVP game families, SRS, error book, session recovery, production hardening and most MVP UI are implemented. |
+| Phase 1 / MVP acceptance evidence | **~76%** | Automated domain/API/browser coverage is strong, including production acceptance, but physical-device, screen-reader, virtual-keyboard, notification and some adversarial multi-device cases remain. |
+| Full specification v0.5, phases 1-3 | **~59%** | Phase 2 AI/Chinese work and Phase 3 speech/handwriting/Japanese/advanced statistics are intentionally not released yet. |
 
 A feature is counted as complete only when its runtime behavior exists. Acceptance evidence is scored separately because the specification explicitly requires reload/sync/device/UI verification, not only source code.
 
@@ -32,7 +32,7 @@ A feature is counted as complete only when its runtime behavior exists. Acceptan
 | UI-10 Topics | Mostly implemented | Hierarchy, multi-membership, recursive scope, counts, reorder buttons, subtopics and bulk assignment exist. Exact drag-source transfer semantics remain incomplete. |
 | UI-11 Excel | Implemented for current Stage-1 scope | Import/export, embedded images including Place in Cell handling, preview, row validation, conflict choices, retry/idempotence and corrupt-file recovery are covered. |
 | UI-12 Error book | Implemented | Episode/history counts, clean evidence, recall/spacing conditions and practice entry are shown. |
-| UI-13 Settings/reminders | Partial | Timezone, daily new limit, SRS factors and in-app reminder work. Primary-device background notification ownership and permission fallback synchronization are not complete. |
+| UI-13 Settings/reminders | Mostly implemented | Timezone, daily new limit and SRS factors work. Reminder primary-device ownership is synced; only the primary device attempts browser notifications, denied/unsupported permission falls back to in-app, secondary devices stay in-app, and a synced day marker deduplicates the primary reminder. True background/PWA notification delivery still needs physical-device verification. |
 | UI-14 Resources/sync | Mostly implemented | IndexedDB journal, authenticated sync, conflict history, schedule adjustment evidence, bounded media store and offline resource status exist. Some physical-device/storage exhaustion evidence remains. |
 | UI-15 AI/Chinese G2 | Not released | Phase 2. |
 | UI-16 Advanced statistics G3 | Not released | Phase 3. |
@@ -42,7 +42,7 @@ A feature is counted as complete only when its runtime behavior exists. Acceptan
 The repository has direct automated coverage for many core cases including AT-03, AT-07, AT-11-15, AT-18-20, AT-28 and related UX flows, plus browser evidence for six MVP games, timed learning, reload/resume, offline reconnect, multi-tab/account sync, Excel import/export, session summary/error-book, mobile reflow and modal focus.
 
 Important cases still needing stronger or physical-device evidence include:
-- notification ownership/permission/background behavior (AT-31, UX-25);
+- physical-device/background-notification verification for the implemented AT-31 primary-device/fallback logic (UX-25);
 - cross-device daily-new-limit overflow behavior (AT-32);
 - exact category drag/source-transfer semantics (AT-27);
 - real mobile virtual keyboard, screen reader and measured WCAG checks (UX-21 to UX-24);
@@ -56,9 +56,8 @@ Important cases still needing stronger or physical-device evidence include:
 
 ## Next implementation order
 
-1. Finish Stage-1 English language-profile behavior and English→English masking/definition safeguards.
-2. Complete reminder ownership/fallback synchronization and its acceptance tests.
-3. Close remaining topic move semantics and card-editor sentence-authoring gaps.
-4. Expand AT-01..AT-32 and UX-01..UX-30 traceability with explicit pass/partial/not-applicable evidence.
-5. Perform physical-device/accessibility/PWA lifecycle checks required before calling Phase 1 complete.
-6. Start Phase 2 only after Phase 1 acceptance gaps are closed: AI fill protection, pronunciation data pipeline, sentence bank, Chinese profile, tone/classifier games.
+1. Close remaining topic move semantics and card-editor sentence-authoring gaps.
+2. Implement and verify AT-32 cross-device daily-new-limit overflow handling.
+3. Expand AT-01..AT-32 and UX-01..UX-30 traceability with explicit pass/partial/not-applicable evidence.
+4. Perform physical-device/accessibility/PWA lifecycle checks, including background reminder behavior, before calling Phase 1 complete.
+5. Start Phase 2 only after Phase 1 acceptance gaps are closed: AI fill protection, pronunciation data pipeline, sentence bank, Chinese profile, tone/classifier games.

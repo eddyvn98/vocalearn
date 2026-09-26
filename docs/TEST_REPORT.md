@@ -7,7 +7,7 @@ Date: 2026-09-25. Scope: source in this archive. Environment: Linux, Node **22.1
 `npm run verify`:
 
 - Syntax checks and below-300-line policy: **31 JavaScript source/test/tool modules**.
-- **108 automated tests passed; 0 failed** on the current hardening branch before the generated-manifest check.
+- **113 automated tests passed; 0 failed** on the current hardening branch before the generated-manifest check.
 
 Raw output: `test-evidence/automated-tests.txt`. These are not a claim that all specification acceptance cases passed.
 
@@ -61,7 +61,7 @@ GitHub Actions now launches the live app against a disposable server/database an
 
 The live-browser suite verifies account/set creation, dialog focus restoration, IME-safe Enter handling, all six MVP game families (Lật thẻ, Trắc nghiệm, Ghép cặp, Gõ từ, Chính tả xếp chữ, Điền câu), audio-resource loading, pause/resume across reload, real XLSX download, and page-level responsive overflow. A dedicated Ubuntu Chromium slice additionally exports a card with an embedded image, imports it into another set, restores the import preview after reload, retries the same workbook without duplicating the card, and exercises both keep-local and take-spreadsheet field-conflict choices. The latest branch run passes that Excel slice together with the existing matrix.
 
-The Node verification suite now contains 108 tests, including deterministic opportunity identity, same-device scheduled-answer deduplication, multi-device same-opportunity merge semantics, initial/anchored clock bounds, child-before-parent replay, and deterministic/idempotent Excel import planning. The browser suite also covers the complete 1/10/10-minute chain, offline reload/reconnect, same-account multi-tab propagation and sync into an isolated browser profile. This still does **not** certify real Safari on iPhone/iPad, a physical mobile virtual keyboard, screen readers, measured WCAG contrast, installed/first-launch PWA behavior, browser Back, or deliberate same-question tab contention.
+The Node verification suite now contains 113 tests, including deterministic opportunity identity, same-device scheduled-answer deduplication, multi-device same-opportunity merge semantics, initial/anchored clock bounds, child-before-parent replay, and deterministic/idempotent Excel import planning. The browser suite also covers the complete 1/10/10-minute chain, offline reload/reconnect, same-account multi-tab propagation and sync into an isolated browser profile. This still does **not** certify real Safari on iPhone/iPad, a physical mobile virtual keyboard, screen readers, measured WCAG contrast, installed/first-launch PWA behavior, browser Back, or deliberate same-question tab contention.
 
 
 ## Production-readiness branch update (2026-09-26)
@@ -77,3 +77,7 @@ These new tests are source coverage only until the branch's full `npm run verify
 - A deployed Railway production acceptance run has passed health/readiness, auth, card/media persistence, six game families, session summary/error-book, sync, offline reload, multi-tab, Excel export/import and password-reset request behavior.
 - The password-reset provider integration now has a direct Resend mode in source. Production delivery is still disabled until a verified Resend sending domain is configured (issue #29).
 - These results still do not certify physical Safari/iPhone/iPad, real mobile virtual keyboard, screen-reader operation, full WCAG AA, background notification delivery, penetration testing or workload capacity.
+
+## Reminder ownership update (2026-09-26)
+
+The verification suite now includes AT-31 reminder planning cases: primary device + granted permission selects a browser notification, denied permission falls back to in-app, secondary devices remain in-app only, the synced day marker suppresses a second primary reminder, and local in-app reminders do not repeat on the same device. The browser regression also checks that the primary-device control is present. Background notification delivery with the PWA closed still requires physical-device evidence.

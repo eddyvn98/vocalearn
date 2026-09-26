@@ -1,6 +1,7 @@
 import {addDays, dayAt, daysBetween, revision, isDue} from './time.js';
 export const DEFAULTS = Object.freeze({zone: 'Asia/Ho_Chi_Minh', newLimit: 15,
-  hardFactor: 1.2, easyFactor: 1.3, easyMs: 5000, maxInterval: 3650, reminder: false, reminderTime: '20:00'});
+  hardFactor: 1.2, easyFactor: 1.3, easyMs: 5000, maxInterval: 3650, reminder: false, reminderTime: '20:00',
+  reminderPrimaryDevice: '', reminderLastDay: ''});
 export function initialState(id) {
   return {phase: 'new', step: 0, ef: 2.5, interval: 0, dueDate: null, dueAt: null,
     lastDay: null, startedDay: null, rev: `root-${id}`};

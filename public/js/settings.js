@@ -1,21 +1,29 @@
 import {app,words} from './state.js';
 import {t,esc,button,modal,closeModal,field,notify} from './ui.js';
-import {prepare,transact,model,api,sync,pendingCount,getMeta,setMeta} from './storage.js';
+import {prepare,transact,model,api,sync,pendingCount,getMeta,setMeta,currentDeviceId} from './storage.js';
 import {descendants,inScope,categoryPath} from '/core/model.js';
 import {scheduleAdjustments as diffSchedules} from '/core/sync-diff.js';
 import {cleanupLocalMedia,cleanupServerMedia,currentMediaStatus,localMediaStats} from './media-store.js';
 export function settings() {
-  const s=app.model.settings;
+  const s=app.model.settings,device=currentDeviceId(),primary=!s.reminderPrimaryDevice||s.reminderPrimaryDevice===device;
+  const permission=typeof Notification==='undefined'?t('notificationUnsupported'):t('notification_'+Notification.permission);
   modal(t('settings'),`<form id="settings-form" class="stack">${field('newLimit','newLimit',s.newLimit,'type="number" min="0" max="200" required')}${field('zone','zone',s.zone,'required')}
-  <label class="check-label"><input type="checkbox" name="reminder" ${s.reminder?'checked':''}>${t('reminder')}</label>${field('reminderTime','reminderTime',s.reminderTime,'type="time" required')}<p class="muted small">${t('reminderHelp')}</p>
+  <label class="check-label"><input type="checkbox" name="reminder" ${s.reminder?'checked':''}>${t('reminder')}</label>${field('reminderTime','reminderTime',s.reminderTime,'type="time" required')}
+  <label class="check-label"><input type="checkbox" name="reminderPrimary" ${primary?'checked':''}>${t('reminderPrimary')}</label>
+  <p class="muted small">${t('reminderHelp')} ${t('notificationStatus')}: ${permission}.</p>
   <details><summary>${t('advanced')}</summary><div class="stack"><label>Hard multiplier<input type="number" name="hardFactor" step="0.1" min="1" max="3" value="${s.hardFactor}"></label><label>Easy multiplier<input type="number" name="easyFactor" step="0.1" min="1" max="3" value="${s.easyFactor}"></label><label>Easy threshold (ms)<input type="number" name="easyMs" min="1000" max="120000" value="${s.easyMs}"></label></div></details>
   <div class="row between"><button type="submit" class="btn primary">${t('save')}</button>${button(t('logout'),'logout','danger')}</div></form><p class="muted small">${esc(app.user.email)} \u00b7 ${t('onlyLocal')}</p>`);
 }
 export async function saveSettings(form) {
   const f=new FormData(form),oldZone=app.model.settings.zone,zone=f.get('zone');
   if(zone!==oldZone&&!confirm('Change account timezone? Existing due dates will not be rewritten.'))return;
+  const reminder=f.has('reminder'),device=currentDeviceId(),claim=f.has('reminderPrimary'),old=app.model.settings.reminderPrimaryDevice;
+  const reminderPrimaryDevice=reminder?(claim?device:(old===device?'':old)):old;
+  if(reminder&&reminderPrimaryDevice===device&&typeof Notification!=='undefined'&&Notification.permission==='default'){
+    const permission=await Notification.requestPermission();if(permission==='denied')notify(t('reminderFallback'));
+  }
   const data={zone,newLimit:Number(f.get('newLimit')),hardFactor:Number(f.get('hardFactor')),
-    easyFactor:Number(f.get('easyFactor')),easyMs:Number(f.get('easyMs')),reminder:f.has('reminder'),reminderTime:f.get('reminderTime')};
+    easyFactor:Number(f.get('easyFactor')),easyMs:Number(f.get('easyMs')),reminder,reminderTime:f.get('reminderTime'),reminderPrimaryDevice};
   await transact([prepare('settings',data)]);app.model=model();closeModal();app.render();
 }
 export async function syncNow() {
