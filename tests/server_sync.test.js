@@ -174,3 +174,28 @@ test('Server rejects a quiz whose explicit answer face equals its prompt face', 
   const r=await request('/api/sync',batch([answer]));
   assert.equal(r.status,400);
 });
+
+
+test('Server enforces per-set custom field definitions and select options', async () => {
+  const setUpdate=event('set-custom-fields','set',{
+    id:'set1',name:'Vocab',language:'en',meaningLanguage:'vi',
+    customFields:[{id:'priority',label:'Priority',type:'select',options:['low','high']}]
+  });
+  const validWord=event('custom-word','word',{
+    id:'word-custom',setId:'set1',patch:{word:'build',meaning:'xây dựng',custom:{priority:'high'}},baseFields:{}
+  });
+  const ok=await request('/api/sync',batch([setUpdate,validWord]));
+  assert.equal(ok.status,200);
+
+  const invalidOption=event('custom-invalid-option','word',{
+    id:'word-custom',setId:'set1',patch:{custom:{priority:'urgent'}},baseFields:{custom:'custom-word'}
+  });
+  const badOption=await request('/api/sync',batch([invalidOption]));
+  assert.equal(badOption.status,400);
+
+  const unknown=event('custom-unknown-field','word',{
+    id:'word-custom',setId:'set1',patch:{custom:{unknown:'x'}},baseFields:{custom:'custom-word'}
+  });
+  const badUnknown=await request('/api/sync',batch([unknown]));
+  assert.equal(badUnknown.status,400);
+});

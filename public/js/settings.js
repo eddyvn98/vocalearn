@@ -1,7 +1,7 @@
 import {app,words} from './state.js';
 import {t,esc,button,modal,closeModal,field,notify} from './ui.js';
 import {prepare,transact,model,api,sync,pendingCount,getMeta,setMeta} from './storage.js';
-import {descendants, inScope} from '/core/model.js';
+import {descendants,inScope,categoryPath} from '/core/model.js';
 import {scheduleAdjustments as diffSchedules} from '/core/sync-diff.js';
 export function settings() {
   const s=app.model.settings;
@@ -48,7 +48,8 @@ export async function syncInfo() {
 }
 
 export function buildTopicTree(categories, parentId = null, depth = 0) {
-  const list = Object.values(categories).filter(c => (c.parentId || null) === parentId);
+  const list = Object.values(categories).filter(c => (c.parentId || null) === parentId)
+    .sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name,'vi'));
   const out = [];
   for (const c of list) {
     out.push({...c, depth});
@@ -71,16 +72,42 @@ export function scopeModal() {
     <div class="row"><button class="btn primary" type="submit">${t('save')}</button>${button(t('clear'),'clearScope')}</div></form>`);
 }
 
-export function topics(editId) {
-  const cs = Object.values(app.model.categories).filter(c => c.setId === app.setId), c = app.model.categories[editId];
-  const tree = buildTopicTree(Object.fromEntries(cs.map(cat => [cat.id, cat])));
-  const allCards = words();
-  modal(t('topics'), `<div class="stack"><div class="topic-tree">${tree.map(cat => {
-    const count = allCards.filter(w => inScope(w, [cat.id], app.model.categories)).length;
-    const indent = '\u00a0\u00a0\u00a0\u00a0'.repeat(cat.depth) + (cat.depth ? '└─ ' : '');
-    return `<div class="topic-row"><span>${indent}${esc(cat.name)} <small class="muted">(${count} thẻ)</small></span><div class="row">${button(t('edit'),'editTopic','quiet',`data-id="${cat.id}"`)}${button('&times;','deleteTopic','icon-button',`data-id="${cat.id}" aria-label="${t('delete')} ${esc(cat.name)}"`)}</div></div>`;
-  }).join('') || `<p class="muted">${t('noTopics')}</p>`}</div>
-  <form id="topic-form" data-id="${c?.id||''}" class="stack">${field('topicName','name',c?.name||'','required maxlength="100"')}<label>${t('parent')}<select name="parentId"><option value="">${t('root')}</option>${cs.filter(cat=>!c||!descendants(app.model.categories,c.id).has(cat.id)).map(cat=>`<option value="${cat.id}" ${cat.id===c?.parentId?'selected':''}>${esc(cat.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">${t(c?'save':'addTopic')}</button></form></div>`);
+function topicBranches(categories,parentId,allCards) {
+  const children=Object.values(categories).filter(cat=>(cat.parentId||null)===parentId)
+    .sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name,'vi'));
+  return children.map(cat=>{
+    const count=allCards.filter(w=>inScope(w,[cat.id],categories)).length;
+    const nested=topicBranches(categories,cat.id,allCards);
+    return `<details class="topic-branch" open><summary>${esc(cat.name)} <small class="muted">(${count} thẻ)</small></summary>
+      <div class="topic-row"><small class="muted">${esc(categoryPath(categories,cat.id))}</small><div class="row">
+      ${button('↑','moveTopicUp','quiet',`data-id="${cat.id}" aria-label="${t('moveUp')} ${esc(cat.name)}"`)}
+      ${button('↓','moveTopicDown','quiet',`data-id="${cat.id}" aria-label="${t('moveDown')} ${esc(cat.name)}"`)}
+      ${button('+','addSubtopic','quiet',`data-id="${cat.id}" aria-label="${t('addSubtopic')} ${esc(cat.name)}"`)}
+      ${button(t('edit'),'editTopic','quiet',`data-id="${cat.id}"`)}
+      ${button('&times;','deleteTopic','icon-button',`data-id="${cat.id}" aria-label="${t('delete')} ${esc(cat.name)}"`)}</div></div>
+      ${nested?`<div class="topic-children">${nested}</div>`:''}</details>`;
+  }).join('');
+}
+export function topics(editId,parentDefault=null) {
+  const cs=Object.values(app.model.categories).filter(c=>c.setId===app.setId),c=app.model.categories[editId];
+  const categories=Object.fromEntries(cs.map(cat=>[cat.id,cat])),allCards=words();
+  modal(t('topics'),`<div class="stack"><div class="topic-tree">${topicBranches(categories,null,allCards)||`<p class="muted">${t('noTopics')}</p>`}</div>
+  <form id="topic-form" data-id="${c?.id||''}" class="stack">${field('topicName','name',c?.name||'','required maxlength="100"')}
+    <label>${t('parent')}<select name="parentId"><option value="">${t('root')}</option>
+    ${cs.filter(cat=>!c||!descendants(app.model.categories,c.id).has(cat.id)).map(cat=>`<option value="${cat.id}" ${cat.id===(c?.parentId||parentDefault)?'selected':''}>${esc(categoryPath(app.model.categories,cat.id))}</option>`).join('')}</select></label>
+    <button type="submit" class="btn primary">${t(c?'save':'addTopic')}</button></form></div>`);
+}
+export async function moveTopic(id,direction) {
+  const target=app.model.categories[id];if(!target)return;
+  const siblings=Object.values(app.model.categories).filter(cat=>cat.setId===target.setId&&(cat.parentId||null)===(target.parentId||null))
+    .sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name,'vi'));
+  const index=siblings.findIndex(cat=>cat.id===id),other=siblings[index+(direction<0?-1:1)];
+  if(!other)return;
+  const base=siblings.map((cat,i)=>({...cat,order:i}));
+  const a=base.find(cat=>cat.id===id),b=base.find(cat=>cat.id===other.id),tmp=a.order;a.order=b.order;b.order=tmp;
+  await transact([prepare('category',{id:a.id,setId:a.setId,name:a.name,parentId:a.parentId||null,order:a.order}),
+    prepare('category',{id:b.id,setId:b.setId,name:b.name,parentId:b.parentId||null,order:b.order})]);
+  app.model=model();topics();app.render();
 }
 
 export function offlineResources() {

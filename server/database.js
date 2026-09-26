@@ -62,6 +62,20 @@ function assertReferences(state, event, existing = []) {
   if (kind === 'word' && !state.words[d.id] && !d.patch.word) throw new Error('A word is required');
   if (kind === 'category' && state.categories[d.id] && state.categories[d.id].setId !== d.setId) throw new Error('Cannot move a category between sets');
   if (kind === 'word' && state.words[d.id] && state.words[d.id].setId !== d.setId) throw new Error('Cannot move a word between sets');
+  if (kind === 'word' && d.patch.custom) {
+    const defs=new Map((state.sets[d.setId]?.customFields||[]).map(field=>[field.id,field]));
+    const prior=state.words[d.id]?.custom||{};
+    for(const [fieldId,value] of Object.entries(d.patch.custom)) {
+      const def=defs.get(fieldId);
+      if(!def) {
+        if(prior[fieldId]!==value)throw new Error('Unknown custom field');
+        continue;
+      }
+      if(def.type==='number'&&value!==null&&!Number.isFinite(value))throw new Error('Invalid custom number');
+      if(def.type==='select'&&value!==''&&!def.options.includes(value))throw new Error('Invalid custom option');
+      if(def.type==='text'&&typeof value!=='string')throw new Error('Invalid custom text');
+    }
+  }
   if (kind === 'category') {
     let parent = d.parentId, seen = new Set([d.id]);
     while (parent) {
