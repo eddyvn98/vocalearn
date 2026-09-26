@@ -113,7 +113,7 @@ These percentages are planning estimates, not release certification.
 | UX-26 | **Pass** | Unreleased features must not appear as selectable games or mandatory learning steps. | Phase-2/3 AI, speech, handwriting, Chinese/Japanese and advanced-statistics capabilities remain hidden/not selectable in Phase 1. |
 | UX-27 | **N/A (Phase 1)** | G2/G3 pinyin/kana/IME whole-word behavior. | Chinese/Japanese input is not released. Generic IME Enter protection is already present in browser regression but does not certify the later language flows. |
 | UX-28 | **N/A (Phase 1)** | G3 speech/handwriting feedback and non-leaking hints. | Speech/handwriting are not released. |
-| UX-29 | **Partial** | Changing settings during a session must not mutate the current snapshot/past schedule; timezone impact must be warned. | Browser study-setup acceptance proves the current question/config snapshot stays frozen when settings change in another tab. Explicit timezone-impact warning acceptance remains to be completed. |
+| UX-29 | **Pass** | Changing settings during a session must not mutate the current snapshot/past schedule; timezone impact must be warned. | Live browser acceptance changes Easy threshold and account timezone from another tab, captures and accepts the timezone-impact warning, verifies the model adopts the new timezone, and proves the active question keeps its original config snapshot. |
 | UX-30 | **Pass** | Production UI must use real persistence/schedule/sync rather than demo labels/mock state. | Live app browser and Railway production acceptance exercise real auth, persistence, schedule, sync, offline reload and import/export; demo-only data is not used as completion evidence. |
 
 ## Phase-1 acceptance gaps after explicit trace
@@ -128,8 +128,7 @@ The remaining Phase-1 acceptance work is concentrated rather than broad:
    - installed PWA install/upgrade/offline lifecycle;
    - background reminder behavior.
 2. Run the real two-device offline/reconnect drill for **AT-32**.
-3. Finish the explicit timezone-warning portion of **UX-29**.
-4. Resend production delivery remains deferred to issue #29 until a verified sending domain and real delivery acceptance are available.
+3. Resend production delivery remains deferred to issue #29 until a verified sending domain and real delivery acceptance are available.
 
 ## Deferred later-phase cases
 
@@ -162,6 +161,5 @@ Primary evidence currently includes:
 ## Next implementation / acceptance order
 
 1. Run the physical-device/accessibility/PWA matrix and the real two-device AT-32 drill.
-2. Close the UX-29 timezone-warning gap.
-3. Keep Resend production activation in issue #29 until its domain prerequisite is available.
-4. Start Phase 2 only after the remaining Phase-1 acceptance gaps are closed.
+2. Keep Resend production activation in issue #29 until its domain prerequisite is available.
+3. Start Phase 2 only after the remaining Phase-1 acceptance gaps are closed.
