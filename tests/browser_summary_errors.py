@@ -21,6 +21,11 @@ def metric(page,key,value):
         print("DEBUG summary metrics:", page.locator(".summary .metric").evaluate_all(
             "(els) => els.map(el => ({metric: el.getAttribute('data-summary-metric'), text: el.innerText}))"
         ))
+        print("DEBUG app state:", page.evaluate("""() => import('/js/state.js').then(({app}) => ({
+            page: app.page, busy: app.busy, sessionFinished: app.session?.finished,
+            sessionId: app.session?.id, historyState: history.state,
+            appText: document.querySelector('#app')?.innerText?.slice(0,1200)
+        }))"""))
     expect(item).to_have_count(1)
     expect(item.locator("strong")).to_have_text(str(value))
 
