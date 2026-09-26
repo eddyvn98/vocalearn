@@ -14,7 +14,7 @@ from playwright.sync_api import expect, sync_playwright
 
 ORIGIN=os.environ.get("PROD_ORIGIN","https://vocalearn-web-production.up.railway.app").rstrip("/")
 EMAIL=os.environ.get("PROD_QA_EMAIL","prod-qa@example.test")
-PASSWORD=os.environ.get("PROD_QA_PASSWORD","disposable-password-123")
+PASSWORD=os.environ["PROD_QA_PASSWORD"]
 OUT=Path("tests/browser-evidence/production")
 PNG=base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
 MEANING_TO_WORD={"triển khai":"deploy","xác nhận":"confirm","hạn chót":"deadline","cải thiện":"improve",
@@ -258,7 +258,7 @@ def main():
         page.locator('[data-action="home"]').click();wait_home(page)
         report["ux"]=[ux_audit(page,"desktop-home")]
         reset=password_reset(page);report["passwordReset"]=reset
-        if reset["status"]==200 and "Nếu email tồn tại" in reset["text"]:
+        if reset["status"]==202 and "Nếu email tồn tại" in reset["text"]:
             report["checks"].append("password-reset-request")
         else:
             report["issues"].append({"area":"password-reset-request","detail":reset})
