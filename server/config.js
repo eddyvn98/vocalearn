@@ -12,7 +12,7 @@ const bool=(value,fallback,name)=>{
 };
 const mode=value=>{
   const selected=value||'disabled';
-  if(!['disabled','return-token','webhook'].includes(selected))throw new Error('PASSWORD_RESET_MODE must be disabled, return-token, or webhook');
+  if(!['disabled','return-token','webhook','resend'].includes(selected))throw new Error('PASSWORD_RESET_MODE must be disabled, return-token, webhook, or resend');
   return selected;
 };
 function appOrigin(value,production){
@@ -40,10 +40,12 @@ export function loadConfig(env=process.env){
   const origin=appOrigin(env.APP_ORIGIN,production);
   const providerUrl=String(env.PASSWORD_RESET_PROVIDER_URL||'').trim();
   const providerToken=String(env.PASSWORD_RESET_PROVIDER_TOKEN||'');
+  const resendApiKey=String(env.RESEND_API_KEY||'').trim();
+  const resendFrom=String(env.RESEND_FROM||'').trim();
   const config={
     production,host:String(env.HOST||'127.0.0.1'),port:integer(env.PORT,3000,1,65535,'PORT'),
     dbPath:String(env.DB_PATH||'./data/vocalearn.sqlite'),appOrigin:origin,allowSignup,
-    reset:{mode:resetMode,appOrigin:origin,providerUrl,providerToken,
+    reset:{mode:resetMode,appOrigin:origin,providerUrl,providerToken,resendApiKey,resendFrom,
       ttlMs:integer(env.PASSWORD_RESET_TTL_MINUTES,30,10,1440,'PASSWORD_RESET_TTL_MINUTES')*60000},
     limits:{
       maxRequestBytes:integer(env.MAX_REQUEST_BYTES,DEFAULT_LIMITS.maxRequestBytes,1024,32*1024*1024,'MAX_REQUEST_BYTES'),
@@ -60,7 +62,14 @@ export function loadConfig(env=process.env){
     if(!origin)throw new Error('Production requires HTTPS APP_ORIGIN');
     if(config.dbPath===':memory:')throw new Error('Production cannot use an in-memory database');
     if(resetMode==='return-token')throw new Error('return-token password recovery is development-only');
-    if(allowSignup&&resetMode!=='webhook')throw new Error('Production signup requires webhook password recovery');
+    if(allowSignup&&!['webhook','resend'].includes(resetMode))throw new Error('Production signup requires webhook or Resend password recovery');
+  }
+  if(resetMode==='resend'){
+    if(!resendApiKey)throw new Error('Resend password recovery requires RESEND_API_KEY');
+    if(!resendFrom)throw new Error('Resend password recovery requires RESEND_FROM');
+    if(production&&resendApiKey.length<20)throw new Error('Production Resend API key is invalid');
+    if(!/^[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+$/.test(resendFrom.replace(/^.*<|>.*$/g,'')))
+      throw new Error('RESEND_FROM must contain a valid email address');
   }
   if(resetMode==='webhook'){
     if(!providerUrl)throw new Error('Webhook password recovery requires PASSWORD_RESET_PROVIDER_URL');
