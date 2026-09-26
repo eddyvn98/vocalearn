@@ -3,7 +3,7 @@
 1. `docs/spec-v0.5.docx` is the product source of truth. The older reference HTML is only a visual reference. Read `docs/STATUS.md` before describing completion.
 2. Preserve the UI tokens in `public/css/base.css`; keep the focused-study layout and Vietnamese interface. Do not replace the approved UI with an unrelated template.
 3. JavaScript modules must stay below 300 lines. Keep dependencies minimal and explain new ones in an architecture decision.
-4. Run `npm run verify`. After changing public/core assets, run `npm run build:sw` and commit `public/sw.js`.
+4. After finishing any feature or bug fix, run `npm run feature:check` before declaring the work complete. Fix every failing check and rerun until it passes. Treat warnings as unresolved review items: either add/update a focused regression test or explicitly confirm which existing test covers the changed behavior. `feature:check` rebuilds the service worker and runs `npm run verify`; if `public/sw.js` changes, include it in the same commit.
 5. Never use the appearance of a view as proof of persistence, sync, grading or accessibility. Add actual tests and distinguish unrun scenarios.
 6. Do not leak answers in text, alt labels, choices, audio filenames or live regions before submission. Missing audio is not an incorrect answer.
 7. Preserve one final result per question, one schedule transition per opportunity, immutable question/config snapshots, retry history and local transaction boundaries.
