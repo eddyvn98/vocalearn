@@ -12,6 +12,20 @@ export async function requestPasswordReset(db,email,config,{now=Date.now(),fetch
   const resetUrl=`${config.appOrigin}/reset-password?token=${encodeURIComponent(token)}`;
   if(config.mode==='return-token')return {issued:true,debugToken:token,resetUrl,expires};
   try{
+    if(config.mode==='resend'){
+      const response=await fetchImpl('https://api.resend.com/emails',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:`Bearer ${config.resendApiKey}`,
+          'Idempotency-Key':`vocalearn-reset-${digest(token).slice(0,32)}`},
+        body:JSON.stringify({
+          from:config.resendFrom,to:[user.email],subject:'Đặt lại mật khẩu VocaLearn',
+          text:`Mở liên kết này để đặt lại mật khẩu VocaLearn: ${resetUrl}\nLiên kết hết hạn lúc ${new Date(expires).toISOString()}.`,
+          html:`<!doctype html><html><body><p>Bạn đã yêu cầu đặt lại mật khẩu VocaLearn.</p><p><a href="${resetUrl}">Đặt lại mật khẩu</a></p><p>Liên kết sẽ hết hạn sau ${Math.round(config.ttlMs/60000)} phút.</p><p>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p></body></html>`
+        })
+      });
+      if(!response.ok)throw new Error(`Resend returned ${response.status}`);
+      return {issued:true,expires};
+    }
     const response=await fetchImpl(config.providerUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json',...(config.providerToken?{Authorization:`Bearer ${config.providerToken}`}:{})},
