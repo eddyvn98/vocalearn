@@ -33,6 +33,8 @@ For each meaningful change, use this sequence:
 10. **Test the deployed Railway URL**
     - Run the production web smoke suite against the real public Railway domain.
     - Check health/readiness, public auth shell, JS/page errors, PWA manifest/service worker, offline shell reload and responsive overflow.
+    - Run **Agent operability** checks: visible controls need discernible names, important actions use native interactive elements, keyboard tab order is predictable, state/result feedback is observable, and automation must not need DOM hacks or forced JavaScript to complete a normal user action.
+    - Treat repeated selector guessing, hidden hover-only actions, ambiguous save state, blocked keyboard flow or action results that cannot be observed as UX gaps even when lower-level tests pass.
     - Physical-device-only cases stay separate until a real-device run exists.
 11. **Report Checkpoint: production verified**
     - State deployment commit, Railway terminal status and production-smoke result.
@@ -58,7 +60,8 @@ Until physical-device testing is resumed:
 
 - Continue domain/API/browser automation.
 - Test the real Railway production URL after deploy.
-- Use desktop Chromium plus a 390x844 mobile viewport for the production web shell.
+- A release is not considered web-verified until both the production smoke and applicable Agent-operability checks pass.
+- Use desktop Chromium plus 390x844 and 320 CSS-pixel mobile viewports for the production web shell.
 - Do not mark real virtual-keyboard, screen-reader, installed-PWA background notification or real two-device acceptance as Pass from emulation alone.
 - Keep those rows Partial/Pending in the trace table.
 
