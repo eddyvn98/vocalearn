@@ -258,7 +258,7 @@ def main():
                 expect(page.get_by_label("Từ tiếng Anh")).to_be_visible()
                 page.get_by_label("Từ tiếng Anh").fill("bank")
                 page.get_by_role("button", name="Kiểm tra", exact=True).click()
-                expect(page.get_by_role("status")).to_contain_text("Chính xác")
+                expect(page.get_by_role("status").filter(has_text="Chính xác").first).to_be_visible()
                 page.get_by_role("button", name="Câu tiếp theo", exact=True).click()
                 if page.get_by_label("Từ tiếng Anh").count():
                     page.get_by_label("Từ tiếng Anh").fill("bank")
