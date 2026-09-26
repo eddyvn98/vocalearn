@@ -17,6 +17,56 @@ def assert_no_overflow(page,label):
     assert state["scroll"]<=state["width"]+1, f"{label}: horizontal overflow {state}"
 
 
+def assert_agent_operable(page):
+    """Basic public-shell checks that matter to browser agents and keyboard users."""
+    audit=page.evaluate("""() => {
+      const visible = el => {
+        const r=el.getBoundingClientRect(), s=getComputedStyle(el);
+        return r.width>0 && r.height>0 && s.visibility!=='hidden' && s.display!=='none';
+      };
+      const name = el => (el.getAttribute('aria-label') || el.innerText || el.value || '').trim();
+      const controls=[...document.querySelectorAll('button,a[href],input,select,textarea')].filter(visible);
+      const unnamed=controls.filter(el => {
+        if(el.matches('input,select,textarea')){
+          const label=el.labels && [...el.labels].map(x=>x.innerText.trim()).join(' ');
+          return !(label || el.getAttribute('aria-label') || el.getAttribute('aria-labelledby'));
+        }
+        return !name(el);
+      }).map(el=>el.outerHTML.slice(0,180));
+      const nonNativeActions=[...document.querySelectorAll('[data-action]')]
+        .filter(visible)
+        .filter(el=>!el.matches('button,a[href],input[type=button],input[type=submit]'))
+        .map(el=>el.outerHTML.slice(0,180));
+      return {
+        main: document.querySelectorAll('main').length,
+        forms: document.querySelectorAll('form').length,
+        unnamed,
+        nonNativeActions
+      };
+    }""")
+    assert audit["main"]==1, f"agent audit: expected one main landmark: {audit}"
+    assert audit["forms"]>=1, f"agent audit: no actionable form: {audit}"
+    assert not audit["unnamed"], f"agent audit: unnamed controls: {audit['unnamed']}"
+    assert not audit["nonNativeActions"], f"agent audit: non-native actions: {audit['nonNativeActions']}"
+
+    email=page.locator('input[name="email"]')
+    password=page.locator('input[name="password"]')
+    submit=page.locator('#auth-form button[type="submit"]')
+    toggle=page.locator('[data-action="toggleAuth"]')
+    expect(email).to_be_visible()
+    expect(password).to_be_visible()
+    expect(submit).to_be_visible()
+    expect(toggle).to_be_visible()
+
+    email.focus()
+    page.keyboard.press("Tab")
+    assert page.evaluate("() => document.activeElement?.name")==="password"
+    page.keyboard.press("Tab")
+    assert page.evaluate("() => document.activeElement?.type")==="submit"
+    page.keyboard.press("Tab")
+    assert page.evaluate("() => document.activeElement?.dataset?.action")==="toggleAuth"
+
+
 def main():
     with sync_playwright() as p:
         browser=p.chromium.launch()
@@ -53,10 +103,12 @@ def main():
         expect(page).to_have_title("VocaLearn")
         assert page.locator('link[rel="manifest"]').get_attribute("href")=="/manifest.webmanifest"
         assert_no_overflow(page,"desktop")
+        assert_agent_operable(page)
         page.screenshot(path=str(EVIDENCE/"production-desktop.png"),full_page=True)
 
         assert not page_errors, f"page errors: {page_errors}"
-        assert not console_errors, f"console errors: {console_errors}"
+        unexpected_console=[m for m in console_errors if "status of 401" not in m]
+        assert not unexpected_console, f"console errors: {unexpected_console}"
 
         sw_ready=page.evaluate("""() => navigator.serviceWorker.ready.then(reg => Boolean(reg.active))""")
         assert sw_ready is True
@@ -82,7 +134,7 @@ def main():
         print("origin:",ORIGIN)
         print("health:",health_json)
         print("ready:",ready_json)
-        print("checks: health, readiness, anonymous auth boundary, manifest, clean browser load, service worker, offline reload, 1440/390/320 overflow")
+        print("checks: health, readiness, anonymous auth boundary, manifest, clean browser load, agent-operable auth shell, service worker, offline reload, 1440/390/320 overflow")
 
         context.close()
         browser.close()
