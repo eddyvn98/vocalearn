@@ -11,7 +11,7 @@ Status meanings:
 
 | Area | Implementation and qualification |
 |---|---|
-| UI-01/02 | Local email/password account API, create/switch English-to-Vietnamese/English study sets. Reset-password/verification flows not implemented. |
+| UI-01/02 | Local email/password account API, create/switch English-to-Vietnamese/English study sets. Password reset tokens, reset page/API and provider-gated delivery are implemented; email verification is not. |
 | UI-03 | Today, scope selection, learning/due/new/waiting/error counts, resume entry and next-step time. Live-browser CI covers pause/resume reload plus the controlled-clock 1/10/10-minute new-learning chain, including reload while waiting. |
 | UI-04 | Mode/game selection, configurable face matrix (meaning, word, ipa, image, audio), valid-count checks. |
 | UI-05 | Six game families, final-answer feedback, retry, hints, pause. Dictation requires stored uploaded audio. No ASR or pronunciation scoring. |
@@ -31,9 +31,9 @@ Status meanings:
 2. Continue authoritative review hardening. The server validates v2 question/config snapshots, allowed learning transitions, deterministic opportunity identity, same-device duplicate scheduled submissions, anchored clock bounds and deferred child-before-parent replay. Add more adversarial late-parent contradiction histories and conflict-detail evidence.
 3. Finish the remaining Excel compatibility edges: Microsoft 365 Place in Cell/rich-data images, image compression/bounds and larger invalid-file recovery. The core AT-03/UX-18 flow now has live-browser acceptance for embedded image import, reload/retry and conflict choices.
 4. Complete the user-configurable face matrix and game mix, card custom fields, valid question disambiguation, advanced settings/time rules, topic tree interactions and scoped bulk operations.
-5. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
+5. Finish media edges: the server now has versioned, bounded, content-addressed storage and explicit offline resource status; image compression and remaining compatibility/recovery cases are still pending.
 6. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Automated coverage now includes modal focus return, IME Enter protection, responsive reflow smoke checks and multi-engine/OS browser jobs. Real screen-reader, measured contrast, real virtual keyboard and declared physical-device checks still require manual/device evidence.
-7. Establish production migrations, secret handling, backup/restore, account recovery, throttling/observability and tested scale limits before public hosting.
+7. Production migrations, startup secret/config checks, backup/restore tooling, account recovery, throttling, structured logging and bounded deployment limits are implemented on this branch. Public hosting still requires green branch CI, a configured recovery provider, a real backup/restore drill and deployment-specific monitoring/load evidence.
 
 ## Important known behavior differences
 

@@ -6,77 +6,74 @@ import {validateEvent} from '../core/validation.js';
 import {RECOGNITION} from '../core/grading.js';
 import {validateReview} from './reviews.js';
 import {opportunityId} from '../core/opportunity.js';
-import {createMediaTable,getMedia} from './media.js';
+import {getMedia} from './media.js';
 import {isMediaRef} from '../core/media.js';
-export function openDatabase(path) {
-  if (path !== ':memory:') mkdirSync(dirname(path), {recursive: true, mode: 0o700});
-  const db = new DatabaseSync(path);
-  db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
-    CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,hash TEXT NOT NULL,salt TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires INTEGER NOT NULL);
-    CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT NOT NULL REFERENCES users(id),event_id TEXT NOT NULL,payload TEXT NOT NULL,UNIQUE(user_id,event_id));
-    CREATE INDEX IF NOT EXISTS user_events ON events(user_id,seq);
-    CREATE TABLE IF NOT EXISTS devices(user_id TEXT,device_id TEXT,server_at INTEGER,client_at INTEGER,PRIMARY KEY(user_id,device_id));`);
-  createMediaTable(db);
+import {applyMigrations} from './migrations.js';
+export function openDatabase(path){
+  if(path!==':memory:')mkdirSync(dirname(path),{recursive:true,mode:0o700});
+  const db=new DatabaseSync(path);
+  db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
+  applyMigrations(db);
   return db;
 }
-export function allEvents(db, userId) {
+export function allEvents(db,userId){
   return db.prepare('SELECT seq,payload FROM events WHERE user_id=? ORDER BY seq').all(userId)
-    .map(row => ({...JSON.parse(row.payload), seq: row.seq}));
+    .map(row=>({...JSON.parse(row.payload),seq:row.seq}));
 }
-export function synchronize(db, userId, input, now = Date.now()) {
-  if (!input || !Array.isArray(input.events) || input.events.length > 200
-    || !/^[\w-]{1,100}$/.test(input.deviceId) || !Number.isFinite(input.clientNow)) throw new Error('Invalid sync batch');
-  const anchor = db.prepare('SELECT * FROM devices WHERE user_id=? AND device_id=?').get(userId, input.deviceId);
-  const existing = allEvents(db, userId);
-  const received = [];
+export function synchronize(db,userId,input,now=Date.now(),maxEvents=200,maxAccountEvents=50000){
+  if(!input||!Array.isArray(input.events)||input.events.length>maxEvents
+    ||!/^[\w-]{1,100}$/.test(input.deviceId)||!Number.isFinite(input.clientNow))throw new Error('Invalid sync batch');
+  const anchor=db.prepare('SELECT * FROM devices WHERE user_id=? AND device_id=?').get(userId,input.deviceId);
+  const existing=allEvents(db,userId),received=[];
+  const known=new Set(existing.map(event=>event.id));
+  const incomingNew=new Set(input.events.filter(event=>!known.has(event.id)).map(event=>event.id)).size;
+  if(existing.length+incomingNew>maxAccountEvents)throw new Error('Account event limit reached');
   db.exec('BEGIN IMMEDIATE');
-  try {
-    for (const raw of input.events) {
+  try{
+    for(const raw of input.events){
       validateEvent(raw);
-      if (raw.deviceId !== input.deviceId) throw new Error('Wrong device');
-      const prior = db.prepare('SELECT payload FROM events WHERE user_id=? AND event_id=?').get(userId, raw.id);
-      if (prior) {
+      if(raw.deviceId!==input.deviceId)throw new Error('Wrong device');
+      const prior=db.prepare('SELECT payload FROM events WHERE user_id=? AND event_id=?').get(userId,raw.id);
+      if(prior){
         const original=JSON.parse(prior.payload);
         if(original.deviceId!==raw.deviceId||original.kind!==raw.kind||JSON.stringify(original.data)!==JSON.stringify(raw.data))throw new Error('Event ID already used with different content');
-        received.push(raw.id); continue;
+        received.push(raw.id);continue;
       }
-      const effectiveAt = anchor
-        ? Math.max(anchor.server_at, Math.min(now, anchor.server_at + raw.at - anchor.client_at)) : now;
-      const event = {id: raw.id, kind: raw.kind, data: raw.data, at: raw.at,
-        deviceId: raw.deviceId, localOrder: raw.localOrder, effectiveAt, receivedAt: now};
-      const model = replay(existing);
+      const effectiveAt=anchor?Math.max(anchor.server_at,Math.min(now,anchor.server_at+raw.at-anchor.client_at)):now;
+      const event={id:raw.id,kind:raw.kind,data:raw.data,at:raw.at,
+        deviceId:raw.deviceId,localOrder:raw.localOrder,effectiveAt,receivedAt:now};
+      const model=replay(existing);
       assertReferences(db,userId,model,event,existing);
       if(event.kind==='answer')validateReview(model,event,existing);
-      const row = db.prepare('INSERT INTO events(user_id,event_id,payload) VALUES(?,?,?)').run(userId, event.id, JSON.stringify(event));
-      event.seq = Number(row.lastInsertRowid); existing.push(event); received.push(event.id);
+      const row=db.prepare('INSERT INTO events(user_id,event_id,payload) VALUES(?,?,?)').run(userId,event.id,JSON.stringify(event));
+      event.seq=Number(row.lastInsertRowid);existing.push(event);received.push(event.id);
     }
     db.prepare('INSERT INTO devices VALUES(?,?,?,?) ON CONFLICT(user_id,device_id) DO NOTHING')
-      .run(userId, input.deviceId, now, input.clientNow);
+      .run(userId,input.deviceId,now,input.clientNow);
     db.exec('COMMIT');
-  } catch (error) {db.exec('ROLLBACK'); throw error;}
-  return {received, events: existing.filter(e => e.seq > (Number(input.cursor) || 0) || received.includes(e.id)),
-    cursor: existing.at(-1)?.seq ?? 0, serverNow: now,
-    anchorServer: anchor?.server_at ?? now, anchorClient: anchor?.client_at ?? input.clientNow};
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return {received,events:existing.filter(e=>e.seq>(Number(input.cursor)||0)||received.includes(e.id)),
+    cursor:existing.at(-1)?.seq??0,serverNow:now,
+    anchorServer:anchor?.server_at??now,anchorClient:anchor?.client_at??input.clientNow};
 }
-function assertReferences(db,userId,state,event,existing = []) {
-  const {kind, data: d} = event;
-  if (['category','word'].includes(kind) && !state.sets[d.setId]) throw new Error('Unknown study set');
-  if (kind === 'word' && !state.words[d.id] && !d.patch.word) throw new Error('A word is required');
-  if (kind === 'category' && state.categories[d.id] && state.categories[d.id].setId !== d.setId) throw new Error('Cannot move a category between sets');
-  if (kind === 'word' && state.words[d.id] && state.words[d.id].setId !== d.setId) throw new Error('Cannot move a word between sets');
-  if (kind === 'word') {
+function assertReferences(db,userId,state,event,existing=[]){
+  const {kind,data:d}=event;
+  if(['category','word'].includes(kind)&&!state.sets[d.setId])throw new Error('Unknown study set');
+  if(kind==='word'&&!state.words[d.id]&&!d.patch.word)throw new Error('A word is required');
+  if(kind==='category'&&state.categories[d.id]&&state.categories[d.id].setId!==d.setId)throw new Error('Cannot move a category between sets');
+  if(kind==='word'&&state.words[d.id]&&state.words[d.id].setId!==d.setId)throw new Error('Cannot move a word between sets');
+  if(kind==='word'){
     for(const field of ['image','audio']){
       const value=d.patch[field];
       if(isMediaRef(value)&&!getMedia(db,userId,value))throw new Error('Unknown media resource');
     }
   }
-  if (kind === 'word' && d.patch.custom) {
+  if(kind==='word'&&d.patch.custom){
     const defs=new Map((state.sets[d.setId]?.customFields||[]).map(field=>[field.id,field]));
     const prior=state.words[d.id]?.custom||{};
-    for(const [fieldId,value] of Object.entries(d.patch.custom)) {
+    for(const [fieldId,value] of Object.entries(d.patch.custom)){
       const def=defs.get(fieldId);
-      if(!def) {
+      if(!def){
         if(prior[fieldId]!==value)throw new Error('Unknown custom field');
         continue;
       }
@@ -85,37 +82,29 @@ function assertReferences(db,userId,state,event,existing = []) {
       if(def.type==='text'&&typeof value!=='string')throw new Error('Invalid custom text');
     }
   }
-  if (kind === 'category') {
-    let parent = d.parentId, seen = new Set([d.id]);
-    while (parent) {
-      if (seen.has(parent)) throw new Error('Category cycle');
+  if(kind==='category'){
+    let parent=d.parentId,seen=new Set([d.id]);
+    while(parent){
+      if(seen.has(parent))throw new Error('Category cycle');
       seen.add(parent);
-      const c = state.categories[parent];
-      if (!c || c.setId !== d.setId) throw new Error('Invalid category parent');
-      parent = c.parentId;
+      const c=state.categories[parent];
+      if(!c||c.setId!==d.setId)throw new Error('Invalid category parent');
+      parent=c.parentId;
     }
   }
-  if (['answer','attempt','link','unlink'].includes(kind) && !state.words[d.wordId]) throw new Error('Unknown word');
-  if (['link','unlink'].includes(kind) && (!state.categories[d.categoryId]
-    || state.categories[d.categoryId].setId !== state.words[d.wordId].setId)) throw new Error('Invalid word category');
-  if (kind === 'answer') {
-    if (!['free','errors'].includes(d.mode) && !d.baseRev) throw new Error('Missing schedule revision');
-    if (d.schemaVersion === 2 && d.opportunityId !== opportunityId(d)) throw new Error('Invalid opportunity identity');
-    if (RECOGNITION.has(d.game) && ['good','easy'].includes(d.grade)) throw new Error('Recognition games cannot produce good or easy grade');
-    if ((d.hadError || d.hint || d.assisted) && ['good','easy'].includes(d.grade)) throw new Error('Assisted answers cannot produce good or easy grade');
-    if (d.grade === 'forget' && d.assisted) throw new Error('Forget grade cannot be assisted');
-    if (d.interrupted && d.grade === 'easy') throw new Error('Interrupted answers cannot produce easy grade');
-    if (existing.some(e => e.kind === 'answer' && e.data.questionId === d.questionId && e.id !== event.id)) {
-      throw new Error('Duplicate final answer for question');
-    }
-    if (!['free','errors'].includes(d.mode) && existing.some(e => e.kind === 'answer' && e.deviceId === event.deviceId
-      && e.data.opportunityId === d.opportunityId && e.id !== event.id)) {
-      throw new Error('Duplicate review opportunity on device');
-    }
+  if(['answer','attempt','link','unlink'].includes(kind)&&!state.words[d.wordId])throw new Error('Unknown word');
+  if(['link','unlink'].includes(kind)&&(!state.categories[d.categoryId]
+    ||state.categories[d.categoryId].setId!==state.words[d.wordId].setId))throw new Error('Invalid word category');
+  if(kind==='answer'){
+    if(!['free','errors'].includes(d.mode)&&!d.baseRev)throw new Error('Missing schedule revision');
+    if(d.schemaVersion===2&&d.opportunityId!==opportunityId(d))throw new Error('Invalid opportunity identity');
+    if(RECOGNITION.has(d.game)&&['good','easy'].includes(d.grade))throw new Error('Recognition games cannot produce good or easy grade');
+    if((d.hadError||d.hint||d.assisted)&&['good','easy'].includes(d.grade))throw new Error('Assisted answers cannot produce good or easy grade');
+    if(d.grade==='forget'&&d.assisted)throw new Error('Forget grade cannot be assisted');
+    if(d.interrupted&&d.grade==='easy')throw new Error('Interrupted answers cannot produce easy grade');
+    if(existing.some(e=>e.kind==='answer'&&e.data.questionId===d.questionId&&e.id!==event.id))throw new Error('Duplicate final answer for question');
+    if(!['free','errors'].includes(d.mode)&&existing.some(e=>e.kind==='answer'&&e.deviceId===event.deviceId
+      &&e.data.opportunityId===d.opportunityId&&e.id!==event.id))throw new Error('Duplicate review opportunity on device');
   }
-  if (kind === 'attempt') {
-    if (existing.some(e => e.kind === 'answer' && e.data.questionId === d.questionId)) {
-      throw new Error('Cannot add attempt to completed question');
-    }
-  }
+  if(kind==='attempt'&&existing.some(e=>e.kind==='answer'&&e.data.questionId===d.questionId))throw new Error('Cannot add attempt to completed question');
 }

@@ -26,7 +26,9 @@ async function normalizeBlob(blob,kind) {
   if(kind==='image')return normalizeImage(blob);
   if(kind==='audio'){
     if(!AUDIO_TYPES.has(blob.type)||blob.size>MAX_AUDIO_BYTES)throw new Error('Audio không hỗ trợ hoặc vượt quá 3 MB');
-    return blob;
+    // Store a plain Blob instead of a File. Safari/WebKit can abort IndexedDB
+    // transactions when structured-cloning synthetic File objects from uploads.
+    return blob.slice(0,blob.size,blob.type);
   }
   throw new Error('Loại tài nguyên không hỗ trợ');
 }

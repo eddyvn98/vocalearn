@@ -13,6 +13,8 @@
     "check": "node scripts/check.js",
     "verify": "npm run check && npm test",
     "build:sw": "node scripts/build-sw.js",
+    "backup": "node scripts/backup.js",
+    "restore:verify": "node scripts/restore-verify.js",
     "preview:fixtures": "node --experimental-vm-modules scripts/preview.mjs"
   }
 }
