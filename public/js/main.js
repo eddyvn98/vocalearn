@@ -30,7 +30,7 @@ async function commit(events){await transact(events);app.model=model();}
 async function navigate(page){
   app.selectedCards.clear();
   if(app.page==='study'){stopClock(true);await setMeta('session',app.session);}
-  app.page=page;app.render('h1');await persistView();pushHistory();
+  app.page=page;await persistView();app.render('h1');pushHistory();
 }
 async function authenticated(user){
   app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
