@@ -1,6 +1,6 @@
 # Implementation coverage: v0.1.0 against specification v0.5
 
-This is a runnable Phase-1 implementation, **not full specification completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Current planning estimate: **~86% Phase-1 functional implementation, ~76% Phase-1 acceptance evidence, ~59% of the complete v0.5 scope across phases 1-3**. See `SPEC_TRACEABILITY_V0.5.md`.
+This is a runnable Phase-1 implementation, **not full specification completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Current planning estimate: **~86% Phase-1 functional implementation, ~78% Phase-1 acceptance evidence, ~59% of the complete v0.5 scope across phases 1-3**. See `SPEC_TRACEABILITY_V0.5.md`.
 
 Status meanings:
 - Implemented: source exists and is connected to the runtime. Not equivalent to browser acceptance.
@@ -66,3 +66,7 @@ These are backlog suggestions in a file, not issues already created on GitHub.
 ## Reminder hardening update (2026-09-26)
 
 AT-31 logic now has a synced primary reminder device, browser-permission fallback and one-primary-reminder-per-day marker. Automated coverage verifies primary/secondary/denied-permission behavior and exposes the control in the live browser. This is not yet proof of background delivery while the PWA is closed; that remains a physical-device acceptance item.
+
+## Daily-new overflow update (2026-09-26)
+
+AT-32 merged-state behavior is now explicit: the account-wide count of cards started today is shown on Today, synced overflow can display values above the configured limit, learned results are not undone, and the new-learning gate remains closed until the next account day. A real two-device offline drill is still useful as final acceptance evidence.
