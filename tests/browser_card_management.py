@@ -132,8 +132,25 @@ def main():
                 row=page.locator(".word-row").filter(has_text="ngân hàng").first
                 row.locator('[data-action="edit"]').click()
                 expect(page.get_by_label("Priority")).to_have_value("high")
+                page.locator("#word-form details summary").click()
+                sentence=page.locator('#word-form [name="sentence"]')
+                sentence.fill("I keep money in the bank.")
+                sentence.evaluate("(el) => { const i=el.value.indexOf('bank'); el.setSelectionRange(i,i+4); }")
+                page.locator('[data-action="makeSentenceBlank"]').click()
+                expect(sentence).to_have_value("I keep money in the ___.")
+                expect(page.locator('#word-form [name="answers"]')).to_have_value("bank")
+                expect(page.locator("#sentence-preview")).to_contain_text("I keep money in the")
+                expect(page.locator("#sentence-preview")).to_contain_text("bank")
+                page.locator('#word-form [type="submit"]').click()
+                expect(page.locator("dialog")).not_to_be_visible()
+
+                row=page.locator(".word-row").filter(has_text="ngân hàng").first
+                row.locator('[data-action="edit"]').click()
+                page.locator("#word-form details summary").click()
+                expect(page.locator('#word-form [name="sentence"]')).to_have_value("I keep money in the ___.")
+                expect(page.locator('#word-form [name="answers"]')).to_have_value("bank")
                 page.locator('[data-action="close"]').click()
-                print("PASS: custom field and sense-separated cards survive reload")
+                print("PASS: custom field, sense-separated cards and cloze authoring survive reload")
 
                 # Hierarchical topics and multi-membership.
                 create_topic(page,"Work")
