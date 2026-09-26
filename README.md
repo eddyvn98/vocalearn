@@ -33,7 +33,7 @@ The development server binds to `127.0.0.1:3000`. Persistent server data lives i
 - Per-user IndexedDB event journal, saved in-progress session and service-worker app shell. Events and session outcome are committed together locally.
 - Email/password authentication, HttpOnly session cookie, SQLite append-only journal and authenticated per-account sync endpoint.
 - Card editing, image/audio attachments, category hierarchy and multiple topic membership. Explicit delete/restore and field-conflict history.
-- JSON content transfer as an additional utility. It is **not Excel support**, a complete backup, or a substitute for specification section 6.
+- Excel import/export is implemented for the current supported workbook/image cases, plus JSON content transfer as an additional utility. Neither format is a full server backup because review journals/accounts are excluded.
 
 See [Implementation status](docs/STATUS.md) for specific boundaries. Presence of a button or implementation is not proof that all acceptance cases passed.
 
@@ -66,9 +66,11 @@ cp .env.example .env
 node --env-file=.env server/main.js
 ```
 
-Do not expose the development HTTP server to the internet. Public deployment requires an HTTPS reverse proxy, `NODE_ENV=production`, `APP_ORIGIN=https://your-domain.example` and a suitable registration policy. First create the intended account, then restart with `ALLOW_SIGNUP=false` for a personal deployment. Read [architecture and security limits](docs/ARCHITECTURE.md) before deployment.
+Do not expose the development HTTP server to the internet. Public deployment requires an HTTPS reverse proxy, `NODE_ENV=production`, exact `APP_ORIGIN=https://your-domain.example` and a suitable registration policy. First create the intended account, then restart with `ALLOW_SIGNUP=false` for a personal deployment. Public signup additionally requires a configured password-recovery webhook. Startup rejects unsafe production combinations.
 
-The event journal and embedded media currently suit small personal datasets; there is no large-scale performance guarantee. Back up the server database safely (SQLite-aware backup or stopped server), not just the JSON export. Browser storage is not encrypted by this application. Logging out does not wipe previously downloaded offline data from the browser: use a trusted OS/browser profile and clear site data on a shared device.
+Use `npm run backup -- <target.sqlite>` for a consistent SQLite backup and `npm run restore:verify -- <backup.sqlite> <fresh-target.sqlite>` for a restore drill. The current single-process deployment also enforces configurable request/sync/journal/session limits and exposes `/api/health` plus `/api/ready`. Read [operations](docs/OPERATIONS.md) and [architecture and security limits](docs/ARCHITECTURE.md) before deployment.
+
+Browser storage is not encrypted by this application. Logging out does not wipe previously downloaded offline data from the browser: use a trusted OS/browser profile and clear site data on a shared device.
 
 ## Structure
 
@@ -84,6 +86,7 @@ docs/               original spec, reference demo, status and test report
 - [Original v0.5 specification](docs/spec-v0.5.docx)
 - [Approved HTML reference](docs/reference/approved-demo.html) (demonstration, not the actual app)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Operations / backup / recovery](docs/OPERATIONS.md)
 - [Status / next implementation steps](docs/STATUS.md)
 - [Test report](docs/TEST_REPORT.md)
 - [Agent instructions](AGENTS.md)

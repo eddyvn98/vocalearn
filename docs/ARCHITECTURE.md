@@ -22,25 +22,36 @@ This is an event-journal design, not a full CRDT implementation.
 
 ## Authentication and boundaries
 
-Passwords use salted scrypt. Sessions use cryptographically random bearer values; only their hashes are stored server-side. Cookies are HttpOnly, SameSite=Strict, and Secure in production. Sync queries are scoped by authenticated user ID. Same-origin JSON write checks, request size bounds and basic failed-login rate limiting are included. Only approved static directories can be served; `server/`, `docs/` and `data/` are not web roots.
+Passwords use salted scrypt. Sessions use cryptographically random bearer values; only their hashes are stored server-side. Cookies are HttpOnly, SameSite=Strict, and Secure in production. Sync queries are scoped by authenticated user ID. Same-origin write checks, configurable request bounds and login/reset throttling are included. Only approved static directories can be served; `server/`, `docs/` and `data/` are not web roots.
+
+Password recovery uses short-lived random tokens stored only as SHA-256 digests. Production recovery is gated behind an explicitly configured HTTPS webhook provider; development may use a return-token mode for tests only. Resetting a password revokes prior sessions. Active sessions and per-account journal growth have configurable caps.
 
 The browser caches the last account identity to reopen downloaded data offline. This is not offline cryptographic identity verification. Data is not encrypted at rest by the app. Server accounts are isolated, but someone with access to the same browser profile may inspect its local storage. Use a trusted OS/browser profile.
 
-Server validation does not yet independently regrade every answer or enforce every due-time/learning-state transition submitted by a modified client. The personal-study workflow assumes the app's normal client; this is not suitable for competitive grading, exams or an adversarial multi-tenant service.
+Server validation does not yet independently regrade every possible future game/language rule. The personal-study workflow assumes the app's normal client; this is not suitable for competitive grading, exams or an adversarial multi-tenant service.
+
+## Database and operations
+
+SQLite schema changes are applied through ordered, idempotent migrations recorded in `schema_migrations`. Startup stops if the expected schema version cannot be established. Backup tooling uses SQLite `VACUUM INTO`; restore verification runs `PRAGMA integrity_check` and refuses to overwrite the target.
+
+Requests receive an `X-Request-Id`. Structured production logs include method, pathname, status and duration but omit query strings, request bodies, cookies and authorization headers. Liveness is exposed at `/api/health`; readiness/database checks are exposed at `/api/ready`.
+
+See `docs/OPERATIONS.md` for environment validation, recovery-provider requirements, backup/restore drill and deployment limits.
 
 ## Deliberate shortcuts that are NOT specification fulfillment
 
-- The spec calls for a separate media store; this version embeds bounded data URIs in events. Compression, deduplicated blob storage and efficient media transfer are pending.
-- Initial clock anchoring estimates device/server offset, bounds effective times and freezes an accepted event's time. Full monotonic elapsed-time anchors, clock-reset handling and all multi-device time scenarios are pending.
-- Full event replay and some repeated filtering are linear/quadratic for portions of the workload. No database-size or concurrent-user load target has been verified.
-- Tabs share a per-user session snapshot. BroadcastChannel/Web Locks are used for event operations, but robust session ownership and conflict-free editing across concurrent tabs require additional tests/implementation.
-- Expired auth sessions, account recovery, automatic schema migrations, admin controls, email verification and production abuse protection are not complete.
+- Media is content-addressed and bounded, but image compression and Microsoft 365 Place in Cell compatibility are still incomplete.
+- Initial clock anchoring estimates device/server offset, bounds effective times and freezes an accepted event's time. Full monotonic elapsed-time anchors, clock-reset handling and all multi-device time scenarios remain subjects for acceptance testing.
+- Full event replay and some repeated filtering are linear/quadratic for portions of the workload. A 50,000-event account cap bounds the current deployment, but no claim of safe performance at that cap is made without load testing.
+- Tabs share a per-user session snapshot. BroadcastChannel/Web Locks are used for event operations, but deliberate same-question contention still requires more browser evidence.
+- Admin controls and email verification are not implemented. Recovery delivery depends on an external webhook provider selected by the deployer.
+- In-memory throttling is appropriate only for the current single-process deployment. Multi-instance hosting needs a shared limiter/store.
 - Login is an explicit email/password implementation choice because no identity provider had been chosen in the specification. It is not an implied external-provider integration.
 
 ## Before deployment
 
-Serve HTTPS on one stable origin. Configure `APP_ORIGIN` to the exact external origin and set `NODE_ENV=production`; never suppress the HTTPS requirement. The development server binds loopback by default. Choose a registration policy, external monitoring and backup/restore procedure. Do not publish the SQLite file or `.env`.
+Serve HTTPS on one stable origin. Configure `APP_ORIGIN` to the exact external origin and set `NODE_ENV=production`; startup rejects insecure production configuration. The development server binds loopback by default.
 
-For a personal account, create it while registration is permitted, then restart with `ALLOW_SIGNUP=false`. There is no password-reset email flow in this slice. Preserve access credentials and maintain secure OS backups.
+For a personal account, create it while registration is permitted, then restart with `ALLOW_SIGNUP=false`. For public registration, configure and test the password-reset webhook provider first. Run `npm run backup` before schema-changing deployments and periodically perform `npm run restore:verify` into a fresh path.
 
 The GitHub publishing scripts do not provision a server, register a domain, configure DNS, deploy an app or publish GitHub Pages.
