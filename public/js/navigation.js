@@ -1,6 +1,6 @@
 import {app} from './state.js';
 
-const PAGES=new Set(['home','library','errors','sets','study','results']);
+const PAGES=new Set(['home','library','errors','statistics','sets','study','results']);
 let restoring=false;
 
 function snapshot() {
