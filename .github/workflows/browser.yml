@@ -13,7 +13,7 @@ jobs:
   browser:
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"include":[{"os":"ubuntu-latest","browser":"chromium","viewport":"1280x900"}]}' || '{"include":[{"os":"ubuntu-latest","browser":"chromium","viewport":"1280x900"},{"os":"ubuntu-latest","browser":"webkit","viewport":"390x844"},{"os":"windows-latest","browser":"chromium","viewport":"1280x900"},{"os":"macos-latest","browser":"webkit","viewport":"1280x900"}]}') }}
+      matrix: ${{ fromJSON(github.event_name == 'pull_request' && github.head_ref != 'fix/webkit-media-idb' && '{"include":[{"os":"ubuntu-latest","browser":"chromium","viewport":"1280x900"}]}' || '{"include":[{"os":"ubuntu-latest","browser":"chromium","viewport":"1280x900"},{"os":"ubuntu-latest","browser":"webkit","viewport":"390x844"},{"os":"windows-latest","browser":"chromium","viewport":"1280x900"},{"os":"macos-latest","browser":"webkit","viewport":"1280x900"}]}') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
