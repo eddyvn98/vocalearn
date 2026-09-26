@@ -36,6 +36,7 @@ For each meaningful change, use this sequence:
     - Run the production web smoke suite against the real public Railway domain.
     - Check health/readiness, public auth shell, JS/page errors, PWA manifest/service worker, offline shell reload and responsive overflow.
     - Run **Agent operability** checks: visible controls need discernible names, important actions use native interactive elements, keyboard tab order is predictable, state/result feedback is observable, and automation must not need DOM hacks or forced JavaScript to complete a normal user action.
+    - Keep at least one semantic end-to-end business journey in browser acceptance. It must use user-facing roles, names, labels and native actions for: study-set create/select -> library -> add/edit card -> cloze -> topic assignment -> study setup -> study -> results -> settings/sync. A test that needs hidden `data-action` selectors or direct DOM/JavaScript state manipulation for this journey does not satisfy the gate.
     - Treat repeated selector guessing, hidden hover-only actions, ambiguous save state, blocked keyboard flow or action results that cannot be observed as UX gaps even when lower-level tests pass.
     - Physical-device-only cases stay separate until a real-device run exists.
 11. **Report Checkpoint: production verified**
