@@ -3,6 +3,7 @@ import {t,esc,button,modal,closeModal,field,notify} from './ui.js';
 import {prepare,transact,model,api,sync,pendingCount,getMeta,setMeta} from './storage.js';
 import {descendants,inScope,categoryPath} from '/core/model.js';
 import {scheduleAdjustments as diffSchedules} from '/core/sync-diff.js';
+import {cleanupLocalMedia,cleanupServerMedia,currentMediaStatus,localMediaStats} from './media-store.js';
 export function settings() {
   const s=app.model.settings;
   modal(t('settings'),`<form id="settings-form" class="stack">${field('newLimit','newLimit',s.newLimit,'type="number" min="0" max="200" required')}${field('zone','zone',s.zone,'required')}
@@ -110,15 +111,25 @@ export async function moveTopic(id,direction) {
   app.model=model();topics();app.render();
 }
 
-export function offlineResources() {
-  const all = words(), withImg = all.filter(w => w.image).length, withAud = all.filter(w => w.audio).length;
-  modal('Tài nguyên ngoại tuyến', `<div class="stack">
-    <p><strong>${all.length}</strong> tổng số thẻ trong bộ học</p>
-    <p>📷 <strong>${withImg}</strong> thẻ có hình ảnh</p>
-    <p>🔊 <strong>${withAud}</strong> thẻ có âm thanh</p>
-    <div class="info"><p>✓ Dữ liệu văn bản, phiên âm và thẻ học đã được lưu cục bộ trong IndexedDB để học offline.</p>
-    <p>Thiếu hoặc lỗi audio không tính là trả lời sai. Chỉ bước học mới có phương án thay thế tự động; khi luyện riêng, hãy chọn game khác.</p><p>Các số trên là thẻ có dữ liệu đã lưu, chưa xác nhận file phát/hiển thị được trên thiết bị.</p></div>
-    ${button('Đóng','close','primary')}</div>`);
+const formatBytes=value=>value<1024?`${value} B`:value<1048576?`${(value/1024).toFixed(1)} KB`:`${(value/1048576).toFixed(1)} MB`;
+export async function offlineResources() {
+  const all=words(),status=await currentMediaStatus(all),local=await localMediaStats();
+  let remote=null;try{remote=await api('media-info');}catch{}
+  modal(t('offlineResources'),`<div class="stack">
+    <p><strong>${all.length}</strong> ${t('cards')} · <strong>${status.total}</strong> ${t('mediaReferences')}</p>
+    <div class="setup-stats"><p>✓ <strong>${status.available}</strong> ${t('mediaAvailable')}</p>
+      <p>↓ <strong>${status['not-downloaded']}</strong> ${t('mediaNotDownloaded')}</p>
+      <p>! <strong>${status.corrupt}</strong> ${t('mediaCorrupt')}</p>
+      <p>↺ <strong>${status.legacy}</strong> ${t('mediaLegacy')}</p></div>
+    <p>${t('localMediaCache')}: <strong>${local.count}</strong> · ${formatBytes(local.bytes)}</p>
+    <p>${t('serverMediaStore')}: ${remote?`<strong>${remote.count}</strong> · ${formatBytes(remote.bytes)} / ${formatBytes(remote.limit)}`:t('offline')}</p>
+    <div class="info"><p>${t('mediaResourceHelp')}</p><p>${t('mediaFailureSafe')}</p></div>
+    <div class="row wrap">${button(t('cleanupLocal'),'cleanupMediaLocal')}${remote?button(t('cleanupServer'),'cleanupMediaServer','quiet'):''}${button(t('close'),'close','primary')}</div></div>`);
+}
+export async function cleanupResources(target) {
+  const result=target==='server'?await cleanupServerMedia():await cleanupLocalMedia();
+  notify(`${t('cleaned')} ${result.removed||0}`);
+  await offlineResources();
 }
 
 export async function logoutAction() {

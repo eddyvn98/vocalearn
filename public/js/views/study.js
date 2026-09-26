@@ -3,8 +3,13 @@ import {t,esc,button,badge,brand} from '../ui.js';
 import {pendingCount} from '../storage.js';
 import {shell} from './shell.js';
 import {usesAudio} from '/core/questions.js';
+import {mediaMarkup} from '../media-store.js';
+function mediaAttrs(value) {
+  const mark=mediaMarkup(value);
+  return (mark.src?`src="${esc(mark.src)}" `:'')+(mark.ref?`data-media-ref="${esc(mark.ref)}" `:'');
+}
 function faceValue(face,value,alt='') {
-  if(face==='image')return `<img class="answer-image" src="${esc(value)}" alt="${esc(alt||t('image'))}">`;
+  if(face==='image')return `<img class="answer-image" ${mediaAttrs(value)}alt="${esc(alt||t('image'))}">`;
   return esc(value);
 }
 function feedback(q) {
@@ -28,7 +33,7 @@ export function studyView() {
   if(s.match)return matchView();
   return `<main class="study-shell"><header class="row between wrap">${brand()}${button(t('pause'),'pause','quiet')}</header><div class="study-meta row between wrap">${badge(t(s.mode)+' \u00b7 '+t(q.game))}<span>${completed}/${s.queue.length} ${t('answered')}</span></div><progress max="${s.queue.length}" value="${completed}" aria-label="${t('answered')}"></progress>
   <section class="question-panel"><div class="prompt"><span class="eyebrow">${t('question')} ${s.index+1} ${q.snapshot.review.phase!=='review'&&['review','new'].includes(q.mode)?' \u00b7 '+t('step')+' '+(q.snapshot.review.step+1):''}</span>
-  ${usesAudio(q)?`<h1 tabindex="-1">${t(q.game)}</h1><p class="muted">${t('audioPrompt')}</p><audio id="audio" preload="auto" src="${esc(q.snapshot.audio)}"></audio><div class="row center wrap">${button(t(q.audioPlayed?'listenAgain':'listen'),'playAudio','primary')}${button(t('slow'),'slowAudio')}</div>`:q.face==='image'&&!['cloze','clozeChoice'].includes(q.game)?`<img class="question-image" src="${esc(q.prompt)}" alt="${t('image')}">`:`<h1 tabindex="-1">${esc(q.prompt)}</h1>`}
+  ${usesAudio(q)?`<h1 tabindex="-1">${t(q.game)}</h1><p class="muted">${t('audioPrompt')}</p><audio id="audio" preload="auto" ${mediaAttrs(q.snapshot.audio)}></audio><div class="row center wrap">${button(t(q.audioPlayed?'listenAgain':'listen'),'playAudio','primary')}${button(t('slow'),'slowAudio')}</div>`:q.face==='image'&&!['cloze','clozeChoice'].includes(q.game)?`<img class="question-image" ${mediaAttrs(q.prompt)}alt="${t('image')}">`:`<h1 tabindex="-1">${esc(q.prompt)}</h1>`}
   ${q.game==='typing'?`<p class="muted">${t('typePrompt')}</p>`:''}${q.game==='quiz'||q.game==='clozeChoice'?`<p class="muted">${t('quizPrompt')}</p>`:''}</div>
   ${q.fallback?`<p class="info">${t(q.fallback)} \u2192 ${t(q.game)}</p>`:''}
   ${q.hint?`<p class="info">${t('hint')}: ${esc(q.snapshot.ipa||q.answers[0].slice(0,1)+'\u2026')} \u00b7 ${t('helpCap')}</p>`:''}

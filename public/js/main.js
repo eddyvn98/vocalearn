@@ -9,14 +9,16 @@ import {studyView,resultsView} from './views/study.js';
 import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {customFields,saveCustomField,deleteCustomField} from './card-schema.js';
-import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,moveTopic,logoutAction,offlineResources} from './settings.js';
+import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,moveTopic,logoutAction,offlineResources,cleanupResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 import {installAccessibility,isComposing} from './a11y.js';
 import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './navigation.js';
+import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
     :app.page==='study'?studyView():app.page==='results'?resultsView():['library','errors'].includes(app.page)?libraryView():homeView();
+  hydrateMedia(document.querySelector('#app')).catch(()=>{});
   if(focus)requestAnimationFrame(()=>document.querySelector(focus)?.focus());
 };
 async function persistView(){await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});}
@@ -32,8 +34,11 @@ async function navigate(page){
 }
 async function authenticated(user){
   app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
+  try{await migrateLegacyMedia();}catch(error){notify(t('mediaMigrationError')+': '+error.message,true);}
   try{await sync();}catch(error){notify(t('syncError')+': '+error.message,true);}
-  app.model=model();const saved=await getMeta('view');
+  try{if(await migrateLegacyMedia())await sync();}catch(error){notify(t('mediaMigrationError')+': '+error.message,true);}
+  app.model=model();
+  const saved=await getMeta('view');
   if(saved)Object.assign(app,saved);
   if(!app.model.sets[app.setId])app.setId=Object.keys(app.model.sets)[0]||null;
   applyStudySetup(await getMeta('studySetup'));
@@ -83,6 +88,8 @@ async function click(action,el){
   if(action==='previewImport')return previewImport();
   if(action==='confirmImport')return confirmImport();
   if(action==='offlineResources')return offlineResources();
+  if(action==='cleanupMediaLocal')return cleanupResources('local');
+  if(action==='cleanupMediaServer')return cleanupResources('server');
   if(action==='toggleSelect'){
     const id=el.dataset.id;if(app.selectedCards.has(id))app.selectedCards.delete(id);else app.selectedCards.add(id);
     return app.render();

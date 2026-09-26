@@ -6,6 +6,8 @@ import {validateEvent} from '../core/validation.js';
 import {RECOGNITION} from '../core/grading.js';
 import {validateReview} from './reviews.js';
 import {opportunityId} from '../core/opportunity.js';
+import {createMediaTable,getMedia} from './media.js';
+import {isMediaRef} from '../core/media.js';
 export function openDatabase(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
@@ -15,6 +17,7 @@ export function openDatabase(path) {
     CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT NOT NULL REFERENCES users(id),event_id TEXT NOT NULL,payload TEXT NOT NULL,UNIQUE(user_id,event_id));
     CREATE INDEX IF NOT EXISTS user_events ON events(user_id,seq);
     CREATE TABLE IF NOT EXISTS devices(user_id TEXT,device_id TEXT,server_at INTEGER,client_at INTEGER,PRIMARY KEY(user_id,device_id));`);
+  createMediaTable(db);
   return db;
 }
 export function allEvents(db, userId) {
@@ -43,7 +46,7 @@ export function synchronize(db, userId, input, now = Date.now()) {
       const event = {id: raw.id, kind: raw.kind, data: raw.data, at: raw.at,
         deviceId: raw.deviceId, localOrder: raw.localOrder, effectiveAt, receivedAt: now};
       const model = replay(existing);
-      assertReferences(model, event, existing);
+      assertReferences(db,userId,model,event,existing);
       if(event.kind==='answer')validateReview(model,event,existing);
       const row = db.prepare('INSERT INTO events(user_id,event_id,payload) VALUES(?,?,?)').run(userId, event.id, JSON.stringify(event));
       event.seq = Number(row.lastInsertRowid); existing.push(event); received.push(event.id);
@@ -56,12 +59,18 @@ export function synchronize(db, userId, input, now = Date.now()) {
     cursor: existing.at(-1)?.seq ?? 0, serverNow: now,
     anchorServer: anchor?.server_at ?? now, anchorClient: anchor?.client_at ?? input.clientNow};
 }
-function assertReferences(state, event, existing = []) {
+function assertReferences(db,userId,state,event,existing = []) {
   const {kind, data: d} = event;
   if (['category','word'].includes(kind) && !state.sets[d.setId]) throw new Error('Unknown study set');
   if (kind === 'word' && !state.words[d.id] && !d.patch.word) throw new Error('A word is required');
   if (kind === 'category' && state.categories[d.id] && state.categories[d.id].setId !== d.setId) throw new Error('Cannot move a category between sets');
   if (kind === 'word' && state.words[d.id] && state.words[d.id].setId !== d.setId) throw new Error('Cannot move a word between sets');
+  if (kind === 'word') {
+    for(const field of ['image','audio']){
+      const value=d.patch[field];
+      if(isMediaRef(value)&&!getMedia(db,userId,value))throw new Error('Unknown media resource');
+    }
+  }
   if (kind === 'word' && d.patch.custom) {
     const defs=new Map((state.sets[d.setId]?.customFields||[]).map(field=>[field.id,field]));
     const prior=state.words[d.id]?.custom||{};

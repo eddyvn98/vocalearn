@@ -6,8 +6,24 @@ import {inScope} from '/core/model.js';
 import {previewQueue,setup as setupDialog,applyStudySetup,saveStudySetup} from './study-setup.js';
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
 import {pushHistory} from './navigation.js';
+import {mediaBlob,mediaUrl} from './media-store.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
+async function ensureQuestionMedia(q,allMatch=false) {
+  const values=[];
+  if(q?.face==='image'){
+    if(allMatch)for(const item of app.session.queue)values.push(item.prompt);
+    else values.push(q.prompt);
+  }
+  if(q?.answerFace==='image'){
+    if(allMatch)for(const item of app.session.queue)values.push(item.answers?.[0]);
+    else if(q.game==='quiz')for(const choice of q.choices||[])values.push(choice.label);
+    else values.push(q.answers?.[0]);
+  }
+  if(usesAudio(q))values.push(q.snapshot.audio);
+  try{for(const value of values.filter(Boolean))await mediaBlob(value);}
+  catch{app.session.error=t('mediaUnavailable');app.render();throw new Error(t('mediaUnavailable'));}
+}
 export function startClock() {
   const q=current();
   started=q&&!q.result&&(!usesAudio(q)||q.audioPlayed)?performance.now():0;
@@ -39,6 +55,7 @@ async function writeAnswer(q,correct) {
   submitting=true;
   try {
     stopClock();
+    await ensureQuestionMedia(q);
     if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
     const result=gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,
       activeMs:Math.round(q.activeMs),interrupted:q.interrupted,answer:q.answers[0],easyMs:q.config.easyMs});
@@ -72,6 +89,7 @@ async function writeAnswer(q,correct) {
 }
 export async function submitInput(value) {
   const q=current();if(!q||q.result||submitting)return;
+  await ensureQuestionMedia(q);
   if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
   q.input=value;
   const result=checkAnswer(value,q.answers,q.retry);
@@ -86,6 +104,8 @@ export async function submitInput(value) {
 export async function playAudio(slow=false) {
   const q=current(),audio=document.querySelector('#audio');
   if(!audio||q.result)return;
+  try{audio.src=await mediaUrl(q.snapshot.audio);}
+  catch{app.session.error=t('mediaUnavailable');app.render();return;}
   if(q.audioPlayed||slow)q.hint=true;
   stopClock();audio.onerror=()=>{app.session.error=t('audioError');app.render();};audio.playbackRate=slow ? 0.75 : 1;
   audio.onended=async()=>{q.audioPlayed=true;await setMeta('session',app.session);app.render('#answer');startClock();};
@@ -99,6 +119,8 @@ export async function studyAction(action,element) {
   if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';app.render();pushHistory();return;}
   if(!q)return;
   if(action==='playAudio'||action==='slowAudio')return playAudio(action==='slowAudio');
+  if(['flip','unknown','remember','choose','letter','checkLetters','matchLeft','matchRight'].includes(action))
+    await ensureQuestionMedia(action.startsWith('match')?app.session.queue[app.session.selected??0]:q,app.session.match);
   if(action==='flip'){q.flipped=true;await setMeta('session',app.session);app.render();}
   if(action==='hint'){q.hint=true;await setMeta('session',app.session);app.render('#answer');}
   if(action==='unknown')await writeAnswer(q,false);

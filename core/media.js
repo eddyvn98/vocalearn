@@ -1,0 +1,12 @@
+export const MEDIA_REF=/^media:([a-f0-9]{64})$/;
+export const IMAGE_TYPES=new Set(['image/png','image/jpeg','image/webp']);
+export const AUDIO_TYPES=new Set(['audio/mpeg','audio/wav','audio/ogg','audio/webm','audio/mp4']);
+export const MAX_IMAGE_INPUT=12_000_000;
+export const MAX_IMAGE_BYTES=1_500_000;
+export const MAX_AUDIO_BYTES=3_000_000;
+export const MAX_USER_MEDIA_BYTES=100_000_000;
+export const MEDIA_VERSION=1;
+export const isMediaRef=value=>typeof value==='string'&&MEDIA_REF.test(value);
+export const mediaHash=value=>isMediaRef(value)?value.slice(6):'';
+export const mediaKind=mime=>IMAGE_TYPES.has(mime)?'image':AUDIO_TYPES.has(mime)?'audio':'';
+export const allowedMedia=(mime,size)=>IMAGE_TYPES.has(mime)?size<=MAX_IMAGE_BYTES:AUDIO_TYPES.has(mime)?size<=MAX_AUDIO_BYTES:false;

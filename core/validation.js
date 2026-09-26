@@ -1,4 +1,5 @@
 import {DEFAULTS} from './srs.js';
+import {isMediaRef} from './media.js';
 export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
@@ -42,7 +43,8 @@ export function validateEvent(e) {
             } else if (!(text(value,5000) || Number.isFinite(value) || value === null)) fail('Invalid custom value');
           }
         } else if (['image','audio'].includes(key)) {
-          if (!text(v, 2200000) || (v && !/^data:(image\/(png|jpeg|webp)|audio\/(mpeg|wav|ogg|webm|mp4));base64,[A-Za-z0-9+/=]+$/.test(v))) fail('Invalid media');
+          const legacy=key==='image'?/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/:/^data:audio\/(mpeg|wav|ogg|webm|mp4);base64,[A-Za-z0-9+/=]+$/;
+          if (!text(v, 2200000) || (v && !isMediaRef(v) && !legacy.test(v))) fail('Invalid media');
         } else if (!text(v, key === 'word' ? 100 : 5000)) fail('Invalid word text');
       }
       if ('word' in d.patch && !d.patch.word.trim()) fail('A word is required');
