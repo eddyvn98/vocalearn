@@ -252,6 +252,8 @@ def main():
                 page.get_by_role("button", name="Đóng").click()
 
                 page.get_by_role("button", name=re.compile(r"Hôm nay")).click()
+                page.get_by_role("button", name="Chọn chủ đề", exact=True).click()
+                page.get_by_role("button", name="Xóa lựa chọn", exact=True).click()
                 page.get_by_role("button", name=re.compile(r"Gõ từ")).click()
                 expect(page.get_by_role("heading", name="Thiết lập buổi học")).to_be_visible()
                 page.get_by_role("button", name="Bắt đầu học", exact=True).click()
