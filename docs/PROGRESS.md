@@ -8,9 +8,9 @@ This file is the rolling engineering progress note for VocaLearn. The product re
 
 | Scope | Current estimate | Notes |
 |---|---:|---|
-| Phase 1 / MVP - functionality | ~86% | Core MVP is broadly implemented. AT-27 topic-transfer semantics is the active remaining functional gap being closed now. |
-| Phase 1 / MVP - acceptance evidence | ~78% | CI/browser evidence is strong; physical-device, accessibility, PWA lifecycle and real multi-device checks remain. |
-| Full specification v0.5 - phases 1-3 | ~59% | G2/G3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not complete. |
+| Phase 1 / MVP - functionality | ~87% | Core MVP is broadly implemented. AT-27 topic-transfer semantics is now merged; the main remaining functional gap is richer sentence/cloze authoring plus smaller UI/edge cases. |
+| Phase 1 / MVP - acceptance evidence | ~80% | AT-27 now has domain + browser acceptance. Physical-device, accessibility, PWA lifecycle and real multi-device checks remain. |
+| Full specification v0.5 - phases 1-3 | ~60% | Phase 1 moved forward slightly; G2/G3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not complete. |
 
 These are planning estimates, not release certification.
 
@@ -40,27 +40,22 @@ Merged commit: `f816dede0dd6f37cc5846281de531008fd5b4001`
 - Verify and Browser regression were green before merge.
 - A real two-device offline/reconnect drill remains useful final evidence.
 
-## Active work
+## Completed in this pass
 
-### AT-27 / UI-10 - topic move semantics
-Working branch: `feature/at27-topic-move`
+### PR #33 - AT-27 / UI-10 topic move semantics - merged
+Merged commit: `51035e7adc8de014032798a481b3a66113516164`
 
-Target behavior from spec:
-- a card may belong to multiple topics without duplicating its review schedule;
-- moving a card from a specific source topic replaces only that source membership;
-- all other memberships remain;
-- review state/schedule remains unchanged;
-- when there is no explicit source context, assigning a topic continues to mean add membership rather than destructive move.
+- Added explicit **Chuyển chủ đề** action for selected cards.
+- The move requires an explicit shared source topic and target topic.
+- It adds the target membership when needed and removes only the chosen source membership.
+- Unrelated memberships remain intact.
+- Card generation and review revision remain unchanged.
+- Domain test for AT-27 passed.
+- Live Chromium card/topic/bulk acceptance passed.
+- Full Verify workflow passed (115 domain/API tests at this point).
+- Browser regression workflow passed after stabilizing the sync-dialog close in the acceptance helper.
 
-Implementation in the current branch:
-- added explicit **Chuyển chủ đề** action for selected cards;
-- the move dialog requires an explicit shared source topic and explicit target topic;
-- submit adds the target membership when needed and removes only the chosen source membership;
-- unrelated memberships are preserved;
-- browser acceptance checks that AT-27 preserves the independent Finance membership and review revision;
-- domain regression checks that source -> target transfer does not change card generation or review revision.
-
-Status: code written; CI/PR verification pending.
+This closes the major AT-27 source-transfer semantics gap from the Phase-1 list.
 
 ## Phase 1 gaps after AT-27
 
