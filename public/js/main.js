@@ -6,6 +6,7 @@ import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';
+import {statisticsView} from './views/statistics.js';
 import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash,makeSentenceBlank,updateSentencePreview} from './editor.js';
 import {customFields,saveCustomField,deleteCustomField} from './card-schema.js';
@@ -18,7 +19,7 @@ import {reminderPlan} from '/core/reminders.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
-    :app.page==='study'?studyView():app.page==='results'?resultsView():['library','errors'].includes(app.page)?libraryView():homeView();
+    :app.page==='study'?studyView():app.page==='results'?resultsView():app.page==='statistics'?statisticsView():['library','errors'].includes(app.page)?libraryView():homeView();
   hydrateMedia(document.querySelector('#app')).catch(()=>{});
   if(focus)requestAnimationFrame(()=>document.querySelector(focus)?.focus());
 };
@@ -53,7 +54,7 @@ async function click(action,el){
   if(studyActions.has(action))return studyAction(action,el);
   if(action==='toggleAuth'){app.register=!app.register;app.render();return;}
   if(action==='close'){if(app.dirty&&!confirm(t('unsaved')))return;app.dirty=false;closeModal(true);return;}
-  if(['home','library','errors','sets'].includes(action)){
+  if(['home','library','errors','statistics','sets'].includes(action)){
     if(action==='errors')app.filter='errors';if(action==='library')app.filter='all';return navigate(action);
   }
   if(action==='filter'){app.filter=el.dataset.filter;return navigate(app.filter==='errors'?'errors':'library');}
