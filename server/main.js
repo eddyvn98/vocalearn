@@ -70,7 +70,7 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
         if(rejectOrigin(req,origin))return json(res,403,{error:'Origin rejected'});
         if(!String(req.headers['content-type']).startsWith('application/json'))return json(res,415,{error:'JSON required'});
       }
-      if(path==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:'0.1.0'});
+      if(path==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:'0.1.0',commit:process.env.RAILWAY_GIT_COMMIT_SHA||null});
       if(path==='/api/ready'&&req.method==='GET'){
         db.prepare('SELECT 1 ok').get();
         return json(res,200,{ok:true,schemaVersion:schemaVersion(db),maxSyncEvents:configuredLimits.maxSyncEvents,
