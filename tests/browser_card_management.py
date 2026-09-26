@@ -132,8 +132,31 @@ def main():
                 row=page.locator(".word-row").filter(has_text="ngân hàng").first
                 row.locator('[data-action="edit"]').click()
                 expect(page.get_by_label("Priority")).to_have_value("high")
+
+                # Guided sentence/cloze authoring: select the hidden span instead of typing ___ manually.
+                page.locator("#word-form details summary").click()
+                sentence=page.locator("#sentence-input")
+                sentence.fill("The bank approved the loan.")
+                sentence.evaluate("""el => {
+                  const start=el.value.indexOf('bank');
+                  el.focus();
+                  el.setSelectionRange(start,start+4);
+                }""")
+                page.locator('[data-action="makeSentenceBlank"]').click()
+                expect(sentence).to_have_value("The ___ approved the loan.")
+                expect(page.locator("#sentence-answers")).to_have_value("bank")
+                expect(page.locator("#sentence-preview")).to_contain_text("The ___ approved the loan.")
+                expect(page.locator("#sentence-preview")).to_contain_text("bank")
+                page.locator('#word-form [type="submit"]').click()
+                expect(page.locator("dialog")).not_to_be_visible()
+
+                row=page.locator(".word-row").filter(has_text="ngân hàng").first
+                row.locator('[data-action="edit"]').click()
+                page.locator("#word-form details summary").click()
+                expect(page.locator("#sentence-input")).to_have_value("The ___ approved the loan.")
+                expect(page.locator("#sentence-answers")).to_have_value("bank")
                 page.locator('[data-action="close"]').click()
-                print("PASS: custom field and sense-separated cards survive reload")
+                print("PASS: custom field, cloze authoring and sense-separated cards survive reload")
 
                 # Hierarchical topics and multi-membership.
                 create_topic(page,"Work")
