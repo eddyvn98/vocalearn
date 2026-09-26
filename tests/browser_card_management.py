@@ -248,7 +248,7 @@ def main():
 
                 page.get_by_role("button", name="Chủ đề", exact=True).first.click()
                 expect(page.get_by_role("heading", name="Chủ đề")).to_be_visible()
-                expect(page.get_by_text("Work", exact=True)).to_be_visible()
+                expect(page.get_by_text(re.compile(r"^Work \\(\\d+ thẻ\\)$")).first).to_be_visible()
                 page.get_by_role("button", name="Đóng").click()
 
                 page.get_by_role("button", name=re.compile(r"Hôm nay")).click()
