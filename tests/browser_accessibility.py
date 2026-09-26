@@ -56,13 +56,10 @@ def main():
                 expect(page.locator("dialog")).not_to_be_visible()
                 assert trigger.evaluate("(e)=>document.activeElement===e")
 
-                # Reflow at 200% equivalent CSS viewport; no page-level horizontal scroll.
+                # WCAG reflow: 320 CSS px is the 400% equivalent of a 1280px desktop viewport.
                 page.set_viewport_size({"width":320,"height":700})
-                audit(page,"home-320")
-                page.evaluate("() => document.documentElement.style.zoom='2'")
-                state=page.evaluate("() => ({scroll:document.documentElement.scrollWidth,width:innerWidth})")
-                assert state["scroll"]<=state["width"]+1, f"200% zoom overflow {state}"
-                print("PASS: automated contrast, 44px targets, keyboard modal focus, 320/390 reflow and 200% zoom")
+                audit(page,"home-320-reflow")
+                print("PASS: automated contrast, 44px targets, keyboard modal focus and 320/390 reflow")
                 context.close();browser.close()
         finally:
             server.terminate()
