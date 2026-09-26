@@ -106,6 +106,22 @@ Merged commit: `637a88b9b47a67801d44d216b49eb74b0e8b9701`
 - UX-29 is now **Pass** in the explicit trace table.
 - The overall acceptance estimate remains ~82%; one additional acceptance case is not enough to justify another percentage-point increase.
 
+## Completed after UX-29
+
+### PR #39 - checkpointed delivery + Railway production smoke + Agent operability - merged and deployed
+Merged commit: `60b6edb94e978a9b22609ab46859b184b502af94`
+
+- Added `docs/DELIVERY_WORKFLOW.md` as the durable Code -> checkpoint -> CI -> merge -> Railway SUCCESS -> production smoke -> progress workflow.
+- Added a production smoke suite targeting the real Railway public origin instead of localhost.
+- Production smoke covers health/readiness, anonymous auth boundary, manifest/service worker, offline shell reload, 1440/390/320 CSS-pixel overflow and screenshots.
+- Added an **Agent operability** gate: visible controls need discernible names, important actions use native interactive semantics and the login flow has predictable keyboard order. Repeated selector guessing, hidden/ambiguous actions or DOM/JavaScript hacks are treated as UX gaps.
+- The first smoke run correctly exposed a test false-positive: the expected anonymous `/api/me` 401 appeared as a Chromium console resource error. The test now excludes only that expected auth response while preserving all other JS/resource errors.
+- PR Verify, Browser regression and Production web smoke all passed before merge.
+- Railway GitHub `checkSuites` waiting was disabled after it caused a circular dependency with the post-merge production-smoke wait. PR CI remains the pre-merge gate; production smoke is the post-deploy gate.
+- Railway deployment `cf14c636-ebdf-4917-bc99-290abc815442` reached terminal **SUCCESS** on the merge commit.
+- Physical virtual-keyboard, screen-reader, installed-PWA background notification and real two-device evidence remain Partial/Pending; emulation is not counted as physical-device proof.
+- Planning percentages stay at ~88% functionality / ~82% acceptance evidence / ~60% full v0.5 because this primarily improves release evidence and operability discipline rather than adding product scope.
+
 ## Phase 1 gaps now
 
 1. Run physical-device and accessibility acceptance:
