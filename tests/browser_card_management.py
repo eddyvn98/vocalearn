@@ -235,47 +235,64 @@ def main():
                 # This block deliberately avoids data-action selectors and direct DOM/JS manipulation.
                 page.get_by_role("button", name=re.compile(r"Đổi bộ học:")).click()
                 expect(page.get_by_role("heading", name="Bắt đầu với bộ từ của bạn")).to_be_visible()
-                page.get_by_role("button", name=re.compile(r"Chọn bộ học: Timed acceptance")).click()
+
+                # Build a clean set through the same controls an Agent/user sees.
+                page.get_by_label("Tên bộ học").fill("Agent journey")
+                page.get_by_label("Ngôn ngữ nghĩa").select_option("vi")
+                page.get_by_role("button", name="Tạo bộ học", exact=True).click()
                 expect(page.get_by_role("heading", name="Hôm nay học gì?")).to_be_visible()
 
+                # Re-open the set picker and select by an explicit, unambiguous accessible name.
+                page.get_by_role("button", name=re.compile(r"Đổi bộ học: Agent journey")).click()
+                page.get_by_role("button", name="Chọn bộ học: Agent journey", exact=True).click()
+                expect(page.get_by_role("heading", name="Hôm nay học gì?")).to_be_visible()
+
+                # Library -> add a ready card.
                 page.get_by_role("button", name=re.compile(r"Kho từ")).click()
                 expect(page.get_by_role("heading", name="Kho từ")).to_be_visible()
-                page.get_by_role("button", name="Sửa thẻ", exact=True).first.click()
+                page.get_by_role("button", name=re.compile(r"Thêm từ")).click()
+                page.get_by_role("textbox", name="Từ tiếng Anh").fill("deploy")
+                page.get_by_role("textbox", name="Nghĩa").fill("triển khai")
+                page.get_by_role("button", name="Lưu", exact=True).click()
+                expect(page.get_by_text("deploy", exact=True)).to_be_visible()
+
+                # Edit -> cloze authoring through labeled fields, no selection/DOM hack.
+                page.get_by_role("button", name="Sửa thẻ", exact=True).click()
                 page.get_by_text("Trường bổ sung", exact=True).click()
-                expect(page.get_by_label("Câu khuyết (một dấu ___)")).to_be_visible()
-                expect(page.get_by_label("Đáp án của câu (ngăn bằng dấu phẩy)")).to_be_visible()
-                page.get_by_role("button", name="Đóng").click()
+                page.get_by_label("Câu khuyết (một dấu ___)").fill("We ___ the app today.")
+                page.get_by_label("Đáp án của câu (ngăn bằng dấu phẩy)").fill("deploy")
+                page.get_by_role("button", name="Lưu", exact=True).click()
 
+                # Topic creation -> attach the card to that topic.
                 page.get_by_role("button", name="Chủ đề", exact=True).first.click()
-                expect(page.get_by_role("heading", name="Chủ đề")).to_be_visible()
-                expect(page.get_by_label("Chủ đề cha")).to_contain_text("Work")
-                page.get_by_role("button", name="Đóng").click()
+                page.get_by_label("Tên chủ đề").fill("Agent flow")
+                page.get_by_role("button", name="Thêm chủ đề", exact=True).click()
+                page.get_by_role("button", name="Sửa thẻ", exact=True).click()
+                page.get_by_label("Agent flow", exact=True).check()
+                page.get_by_role("button", name="Lưu", exact=True).click()
 
+                # Study setup -> study -> result.
                 page.get_by_role("button", name=re.compile(r"Hôm nay")).click()
-                page.get_by_role("button", name="Chọn chủ đề", exact=True).click()
-                page.get_by_role("button", name="Xóa lựa chọn", exact=True).click()
                 page.get_by_role("button", name=re.compile(r"Gõ từ")).click()
                 expect(page.get_by_role("heading", name="Thiết lập buổi học")).to_be_visible()
+                expect(page.get_by_text(re.compile(r"1/1.*thẻ đủ điều kiện"))).to_be_visible()
                 page.get_by_role("button", name="Bắt đầu học", exact=True).click()
-                expect(page.get_by_label("Từ tiếng Anh")).to_be_visible()
-                page.get_by_label("Từ tiếng Anh").fill("bank")
+                answer=page.get_by_role("textbox", name="Từ tiếng Anh")
+                expect(answer).to_be_visible()
+                answer.fill("deploy")
                 page.get_by_role("button", name="Kiểm tra", exact=True).click()
                 expect(page.get_by_role("status").filter(has_text="Chính xác").first).to_be_visible()
                 page.get_by_role("button", name="Câu tiếp theo", exact=True).click()
-                if page.get_by_label("Từ tiếng Anh").count():
-                    page.get_by_label("Từ tiếng Anh").fill("bank")
-                    page.get_by_role("button", name="Kiểm tra", exact=True).click()
-                    expect(page.get_by_role("status").filter(has_text="Chính xác").first).to_be_visible()
-                    page.get_by_role("button", name="Câu tiếp theo", exact=True).click()
                 expect(page.get_by_role("heading", name="Thêm một lần ghi nhớ.")).to_be_visible()
 
+                # Settings -> sync status remain discoverable by explicit action names.
                 page.get_by_role("button", name="Cài đặt tài khoản").click()
                 expect(page.get_by_role("heading", name="Cài đặt")).to_be_visible()
                 page.get_by_role("button", name="Đóng").click()
                 page.get_by_role("button", name=re.compile(r"Mở trạng thái đồng bộ")).click()
                 expect(page.get_by_role("heading", name="Đồng bộ")).to_be_visible()
                 page.get_by_role("button", name="Đóng").click()
-                print("PASS: semantic agent journey reaches set -> library/card/cloze -> topic -> study -> results -> settings/sync")
+                print("PASS: semantic agent journey completes set -> library -> card/cloze -> topic -> setup/study -> results -> settings/sync")
 
                 context.close();browser.close()
         finally:
