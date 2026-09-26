@@ -60,11 +60,11 @@ def assert_agent_operable(page):
 
     email.focus()
     page.keyboard.press("Tab")
-    assert page.evaluate("() => document.activeElement?.name")==="password"
+    assert page.evaluate("() => document.activeElement?.name")=="password"
     page.keyboard.press("Tab")
-    assert page.evaluate("() => document.activeElement?.type")==="submit"
+    assert page.evaluate("() => document.activeElement?.type")=="submit"
     page.keyboard.press("Tab")
-    assert page.evaluate("() => document.activeElement?.dataset?.action")==="toggleAuth"
+    assert page.evaluate("() => document.activeElement?.dataset?.action")=="toggleAuth"
 
 
 def main():
