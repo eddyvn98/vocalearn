@@ -1,6 +1,6 @@
 # Implementation coverage: v0.1.0 against specification v0.5
 
-This is a first runnable vertical slice, **not full MVP completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement.
+This is a runnable Phase-1 implementation, **not full specification completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Current planning estimate: **~84% Phase-1 functional implementation, ~74% Phase-1 acceptance evidence, ~58% of the complete v0.5 scope across phases 1-3**. See `SPEC_TRACEABILITY_V0.5.md`.
 
 Status meanings:
 - Implemented: source exists and is connected to the runtime. Not equivalent to browser acceptance.
@@ -11,15 +11,15 @@ Status meanings:
 
 | Area | Implementation and qualification |
 |---|---|
-| UI-01/02 | Local email/password account API, create/switch English-to-Vietnamese/English study sets. Password reset tokens, reset page/API and provider-gated delivery are implemented; email verification is not. |
+| UI-01/02 | Local email/password account API and create/switch English-to-Vietnamese or English-to-English sets. Stage-1 language-profile behavior distinguishes bilingual/monolingual meaning mode and masks target forms in English-English meaning prompts. Password reset supports direct Resend delivery, but public signup/reset is intentionally disabled until issue #29 configures a verified sending domain. Email verification is not implemented. |
 | UI-03 | Today, scope selection, learning/due/new/waiting/error counts, resume entry and next-step time. Live-browser CI covers pause/resume reload plus the controlled-clock 1/10/10-minute new-learning chain, including reload while waiting. |
 | UI-04 | Mode/game selection, configurable face matrix (meaning, word, ipa, image, audio), valid-count checks. |
 | UI-05 | Six game families, final-answer feedback, retry, hints, pause. Dictation requires stored uploaded audio. No ASR or pronunciation scoring. |
 | UI-06 | Pure scheduler has 1/10-minute learning steps, mandatory recall graduation and relearning; browser queue uses these states. Scheduler timing is covered by domain tests and the live-browser suite verifies the full 1/10/10-minute new-learning chain with a shared controlled browser/server clock. |
-| UI-07 | Answer/clean/error summary and pending learning steps. Full started/graduated/entered/left breakdown remains incomplete. |
+| UI-07 | Session summary separates scheduled reviews, new started/graduated, free practice, entered/left error book, clean/error counts and pending learning steps. |
 | UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio; delete/restore; identity-change copy or reset; bulk selection, bulk delete, bulk assign topic and bulk reset. |
 | UI-10 | Parent/child topic data, parent selection, multi-membership and recursive scope. Hierarchical topic tree with depth indentation, subtopic creation and card counts. |
-| UI-11 | **Excel import/export implemented** in pure JS (.xlsx with OpenXML/ZIP), floating embedded images, column mapping, row-level validation and sense-aware duplicate handling. Chromium acceptance covers embedded-image import, preview recovery after reload, per-field conflict choice and repeated import without duplicate cards. |
+| UI-11 | **Excel import/export implemented** in pure JS (.xlsx with OpenXML/ZIP), floating and Place in Cell images, column mapping, row-level validation, corrupt-file recovery and sense-aware duplicate handling. Chromium acceptance covers embedded-image import, preview recovery after reload, per-field conflict choice and repeated import without duplicate cards. |
 | UI-12 | Error-book filter, practice, episode counts/evidence display. Pure evidence rules tested; richer remaining-condition UI pending. |
 | UI-13 | Daily limit, timezone, basic SRS factors, open-app reminder. No background notifications or primary-device scheduler. |
 | UI-14 | IndexedDB journal, authenticated sync, authoritative server snapshot & grade validation, opportunity deduplication, conservative multi-device merge, offline resource status modal. |
@@ -37,7 +37,7 @@ Status meanings:
 
 ## Important known behavior differences
 
-- Excel transfer is content interchange, not a full backup: review schedule/logs are excluded, and Excel Place in Cell images remain unsupported.
+- Excel transfer is content interchange, not a full backup: review schedule/logs are excluded. Current image compatibility covers the implemented floating/Place in Cell cases but is not a guarantee for every producer/version.
 - The core SRS formula is implemented, but not every configurable per-language/game threshold is exposed. Full late clock correction can reclassify dependent local attempts.
 - A new learning step is resumed through a new due session rather than an always-updating in-session scheduler. The waiting indicator shows a timestamp, not a per-second timer.
 - English alternatives are constructed from local cards. Semantic synonym ambiguity is not comprehensively detected; the author should verify candidate meanings. Exact duplicate checks are not semantic validation.
@@ -56,3 +56,9 @@ Status meanings:
 - [P2] Production auth, migrations, recovery and operations
 
 These are backlog suggestions in a file, not issues already created on GitHub.
+
+
+## Deferred by owner (2026-09-26)
+
+- Resend production activation is tracked in GitHub issue #29. Integration code is merged, but production signup/reset remains disabled until a verified sending domain is configured and a real delivery acceptance run passes.
+- G2/G3 scope remains intentionally hidden until Phase-1 completion criteria are closed.
