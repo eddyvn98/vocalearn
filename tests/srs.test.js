@@ -49,3 +49,22 @@ test('Account timezone and due dates',()=>{
  assert.equal(dayAt(Date.parse('2026-09-24T18:00Z'),'Asia/Ho_Chi_Minh'),'2026-09-25');
  assert.equal(isDue(base,at,'Asia/Ho_Chi_Minh'),true);assert.equal(isDue(initialState('w'),at,'Asia/Ho_Chi_Minh'),false);
 });
+
+
+test('AT-10: scheduled recognition owns the schedule; later free-practice failure is ignored by scheduler',()=>{
+ let state=initialState('w');const events=[];
+ const add=(id,grade,time,mode='review')=>{const e=event(id,state.rev,grade,time,mode);events.push(e);state=advance(state,e.data,time);return e;};
+ add('new','hard',at,'new');
+ add('step1','hard',at+60000);
+ add('step2','hard',at+660000);
+ add('step3','good',at+1260000);
+ assert.equal(state.phase,'review');
+ const reviewBase={...state};
+ add('scheduled-quiz','hard',at+86400000);
+ const scheduled=scheduleFor('w',events);
+ const practice=event('free-fail',state.rev,'forget',at+86401000,'free');
+ const withPractice=scheduleFor('w',[...events,practice]);
+ assert.deepEqual(withPractice.state,scheduled.state);
+ assert.equal(withPractice.state.ef,reviewBase.ef);
+ assert.equal(withPractice.accepted.has('free-fail'),false);
+});

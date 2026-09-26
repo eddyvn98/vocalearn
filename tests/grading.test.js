@@ -46,10 +46,12 @@ test('Hint breaks evidence without adding a failure',()=>{
  assert.equal(state.failures,1);assert.equal(state.evidence.length,0);
 });
 const card=(id,word,meaning)=>({id,word,meaning,ready:!!meaning,review:initialState(id)});
-test('AT-04: small decks produce 2/3 options and reject ambiguous duplicates',()=>{
- const a=card('a','apple','fruit'),b=card('b','book','object'),c=card('c','car','vehicle');
- assert.equal(question(a,[a,b,c],'quiz','meaning','free',DEFAULTS,()=>String(Math.random())).choices.length,3);
+test('AT-04: three-card pool supports three quiz options and three match pairs; one card blocks matching',()=>{
+ const a=card('a','apple','fruit'),b=card('b','book','object'),c=card('c','car','vehicle'),pool=[a,b,c];
+ assert.equal(question(a,pool,'quiz','meaning','free',DEFAULTS,()=>String(Math.random())).choices.length,3);
  assert.equal(question(a,[a,b],'quiz','meaning','free',DEFAULTS,()=>String(Math.random())).choices.length,2);
+ for(const item of pool)assert.deepEqual(reasons(item,'match','meaning',pool,'word'),[]);
+ assert.deepEqual(reasons(a,'match','meaning',[a],'word'),['missingChoices']);
  assert.ok(reasons(a,'quiz','meaning',[a,card('b','pear','fruit')]).length);
 });
 test('Audio-dependent games require actual offline audio',()=>{
@@ -63,4 +65,21 @@ test('Learning falls back from missing audio to typing; no audio claim',()=>{
 test('Learning daily cap does not block saving words',()=>{
  const a=card('a','apple','fruit');a.review.startedDay='2026-09-25';
  assert.equal(learningAllowed({words:{a},settings:{...DEFAULTS,newLimit:1}},[],at),'dailyLimit');
+});
+
+
+test('AT-10: wrong free practice still enters the error book',()=>{
+ const practice=answer('practice-fail',at+1000,'typing','forget');
+ const state=errorBook([practice]);
+ assert.equal(state.inBook,true);assert.equal(state.failures,1);
+});
+
+test('AT-30: only ready due cards inside the selected scope block new learning',()=>{
+ const fresh=card('fresh','fresh','new card');
+ const blocked=card('blocked','blocked','');blocked.review={...blocked.review,phase:'review',dueDate:'2026-09-25',lastDay:'2026-09-20'};
+ const dueElsewhere=card('elsewhere','elsewhere','other scope');dueElsewhere.review={...dueElsewhere.review,phase:'review',dueDate:'2026-09-25',lastDay:'2026-09-20'};
+ const dueHere=card('due-here','due here','current scope');dueHere.review={...dueHere.review,phase:'review',dueDate:'2026-09-25',lastDay:'2026-09-20'};
+ const model={words:{fresh,blocked,dueElsewhere,dueHere},settings:{...DEFAULTS,newLimit:15}};
+ assert.equal(learningAllowed(model,[fresh,blocked],at),null);
+ assert.equal(learningAllowed(model,[fresh,blocked,dueHere],at),'reviewFirst');
 });
