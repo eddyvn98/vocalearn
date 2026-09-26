@@ -12,3 +12,4 @@
 10. No silent destructive migrations or force push. Back up the server database before schema changes. JSON card export is not a journal backup.
 11. The initial sync/replay is not fully production hardened. See the acceptance backlog; in particular test clock skew, late parent revisions, concurrent tabs, tombstones and initial offline synchronization.
 12. When a browser tool reports an environment/security restriction, report it. Do not bypass it; use the permitted unit/API tests and label static UI checks correctly.
+13. Keep source CSS readable and expanded. Do not manually minify, compress, or pack multiple selectors/declarations onto very long lines just to reduce line count. Use normal indentation and generally one CSS declaration per line. The 300-line limit applies to JavaScript modules, not CSS. If minification is ever added for deployment, generate a separate build artifact and never overwrite the committed source CSS.
