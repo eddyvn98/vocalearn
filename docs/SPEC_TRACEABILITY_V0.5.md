@@ -11,7 +11,7 @@ These percentages are engineering estimates, not acceptance certificates. They w
 | Scope | Estimated progress | Interpretation |
 |---|---:|---|
 | Phase 1 / MVP functional implementation | **~86%** | Core offline PWA, accounts/sync, card model, topics, Excel, six MVP game families, SRS, error book, session recovery, production hardening and most MVP UI are implemented. |
-| Phase 1 / MVP acceptance evidence | **~76%** | Automated domain/API/browser coverage is strong, including production acceptance, but physical-device, screen-reader, virtual-keyboard, notification and some adversarial multi-device cases remain. |
+| Phase 1 / MVP acceptance evidence | **~78%** | Automated domain/API/browser coverage is strong, including production acceptance, but physical-device, screen-reader, virtual-keyboard, notification and some adversarial multi-device cases remain. |
 | Full specification v0.5, phases 1-3 | **~59%** | Phase 2 AI/Chinese work and Phase 3 speech/handwriting/Japanese/advanced statistics are intentionally not released yet. |
 
 A feature is counted as complete only when its runtime behavior exists. Acceptance evidence is scored separately because the specification explicitly requires reload/sync/device/UI verification, not only source code.
@@ -43,7 +43,7 @@ The repository has direct automated coverage for many core cases including AT-03
 
 Important cases still needing stronger or physical-device evidence include:
 - physical-device/background-notification verification for the implemented AT-31 primary-device/fallback logic (UX-25);
-- cross-device daily-new-limit overflow behavior (AT-32);
+- explicit two-real-device offline/reconnect evidence for AT-32; the merged-state rule and exact overflow display are implemented and automated at domain/browser level;
 - exact category drag/source-transfer semantics (AT-27);
 - real mobile virtual keyboard, screen reader and measured WCAG checks (UX-21 to UX-24);
 - installed/upgrade PWA behavior on declared device/browser matrix;
@@ -57,7 +57,6 @@ Important cases still needing stronger or physical-device evidence include:
 ## Next implementation order
 
 1. Close remaining topic move semantics and card-editor sentence-authoring gaps.
-2. Implement and verify AT-32 cross-device daily-new-limit overflow handling.
-3. Expand AT-01..AT-32 and UX-01..UX-30 traceability with explicit pass/partial/not-applicable evidence.
-4. Perform physical-device/accessibility/PWA lifecycle checks, including background reminder behavior, before calling Phase 1 complete.
-5. Start Phase 2 only after Phase 1 acceptance gaps are closed: AI fill protection, pronunciation data pipeline, sentence bank, Chinese profile, tone/classifier games.
+2. Expand AT-01..AT-32 and UX-01..UX-30 traceability with explicit pass/partial/not-applicable evidence.
+3. Perform physical-device/accessibility/PWA lifecycle checks, including background reminder behavior and a two-device AT-32 drill, before calling Phase 1 complete.
+4. Start Phase 2 only after Phase 1 acceptance gaps are closed: AI fill protection, pronunciation data pipeline, sentence bank, Chinese profile, tone/classifier games.
