@@ -1,12 +1,7 @@
 import {unzip, text} from './zip.js';
 import {parseXml, descendants, first, value, attribute, relationships} from './xml.js';
+import {floatingImages,placeInCellImages,mergeImageMaps} from './images.js';
 const xml = (files,path) => parseXml(files[path] ? text(files[path]) : '');
-const base64 = data => {let s=''; for(const b of data)s+=String.fromCharCode(b); return btoa(s);};
-function imageData(files, path) {
-  const data = files[path], ext = path.split('.').at(-1).toLowerCase();
-  if (!data || !['png','jpeg','jpg','webp'].includes(ext)) throw new Error('Missing or unsupported embedded image');
-  return `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${base64(data)}`;
-}
 export async function readWorkbook(input, sheetIndex = 0) {
   const files = await unzip(input);
   const workbookPath = relationships(files, '').find(r=>r.type.endsWith('/officeDocument'))?.target || 'xl/workbook.xml';
@@ -29,22 +24,11 @@ export async function readWorkbook(input, sheetIndex = 0) {
     }
     rows.push({row:Number(row.attrs.r),cells});
   }
-  const imageRows = new Map(), sheetRels = relationships(files,path);
-  for(const drawing of descendants(document,'drawing')) {
-    const dpath = sheetRels.find(r=>r.id===attribute(drawing,'id'))?.target;
-    if(!dpath)continue;
-    const links = relationships(files,dpath), doc = xml(files,dpath);
-    for(const anchor of [...descendants(doc,'oneCellAnchor'),...descendants(doc,'twoCellAnchor')]) {
-      const row = Number(value(first(first(anchor,'from') || anchor,'row'))) + 1;
-      const id = attribute(first(anchor,'blip'),'embed'), target = links.find(r=>r.id===id)?.target;
-      try {
-        if(imageRows.has(row))throw new Error('Multiple images on one row require manual selection');
-        imageRows.set(row,imageData(files,target || ''));
-      } catch(error){warnings.push({row,message:error.message});}
-    }
-  }
-  // Rich-data/cell images need a different relationship chain. Never silently lose them.
-  if(Object.keys(files).some(k=>/^xl\/(richData|cellimages)/i.test(k)))warnings.push({row:0,
-    message:'Place in Cell/rich-data images are not supported yet. Convert them to floating images before importing.'});
+  const imageRows=mergeImageMaps(
+    floatingImages(files,path,document,warnings),
+    placeInCellImages(files,document,warnings)
+  );
+  for(const [row,images] of imageRows)if(images.length>1)warnings.push({row,
+    message:`${images.length} images found on this row; choose one in the import preview`});
   return {rows,imageRows,warnings,sheets:sheets.map(s=>s.attrs.name),sheetIndex};
 }

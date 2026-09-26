@@ -13,7 +13,8 @@ export function inspectCards(cards, model, setId) {
   const seen = new Set();
   return cards.map((card,index)=>{
     const patch = Object.fromEntries(Object.entries(card).filter(([k])=>WORD_FIELDS.has(k)));
-    const row = {row:card.row || index+2, patch, category:card.category || '', conflicts:[], action:'add', take:{}};
+    const row = {row:card.row || index+2, patch, category:card.category || '', conflicts:[], action:'add', take:{},
+      imageCandidates:Array.isArray(card.imageCandidates)?card.imageCandidates:[]};
     try {
       validateEvent({id:'preview',deviceId:'preview',at:0,kind:'word',data:{id:'preview',setId,patch}});
       if(!patch.word?.trim())throw new Error('Missing Word');

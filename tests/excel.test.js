@@ -10,6 +10,18 @@ test('Excel export and import round-trip with embedded image', async () => {
       meaning: 'kiên cường',
       ipa: '/rɪˈzɪl.jənt/',
       pos: 'adj',
+      level: 'B2',
+      variants: ['resilience','resiliently'],
+      synonyms: ['tough'],
+      antonyms: ['fragile'],
+      collocations: ['highly resilient'],
+      wordFamily: ['resilience'],
+      register: 'neutral',
+      translation: 'kiên cường',
+      mnemonic: 'spring back',
+      source: 'internal',
+      tags: ['work','character'],
+      custom: {priority:'high'},
       sentence: 'She is ___ under pressure.',
       answers: ['resilient'],
       note: 'Tập trung học',
@@ -41,6 +53,18 @@ test('Excel export and import round-trip with embedded image', async () => {
   assert.equal(result.cards[0].meaning, 'kiên cường');
   assert.equal(result.cards[0].ipa, '/rɪˈzɪl.jənt/');
   assert.equal(result.cards[0].pos, 'adj');
+  assert.equal(result.cards[0].level, 'B2');
+  assert.deepEqual(result.cards[0].variants, ['resilience','resiliently']);
+  assert.deepEqual(result.cards[0].synonyms, ['tough']);
+  assert.deepEqual(result.cards[0].antonyms, ['fragile']);
+  assert.deepEqual(result.cards[0].collocations, ['highly resilient']);
+  assert.deepEqual(result.cards[0].wordFamily, ['resilience']);
+  assert.equal(result.cards[0].register, 'neutral');
+  assert.equal(result.cards[0].translation, 'kiên cường');
+  assert.equal(result.cards[0].mnemonic, 'spring back');
+  assert.equal(result.cards[0].source, 'internal');
+  assert.deepEqual(result.cards[0].tags, ['work','character']);
+  assert.deepEqual(result.cards[0].custom, {priority:'high'});
   assert.equal(result.cards[0].sentence, 'She is ___ under pressure.');
   assert.deepEqual(result.cards[0].answers, ['resilient']);
   assert.equal(result.cards[0].note, 'Tập trung học');
