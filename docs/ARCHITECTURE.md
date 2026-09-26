@@ -24,7 +24,7 @@ This is an event-journal design, not a full CRDT implementation.
 
 Passwords use salted scrypt. Sessions use cryptographically random bearer values; only their hashes are stored server-side. Cookies are HttpOnly, SameSite=Strict, and Secure in production. Sync queries are scoped by authenticated user ID. Same-origin write checks, configurable request bounds and login/reset throttling are included. Only approved static directories can be served; `server/`, `docs/` and `data/` are not web roots.
 
-Password recovery uses short-lived random tokens stored only as SHA-256 digests. Production recovery is gated behind an explicitly configured HTTPS webhook provider; development may use a return-token mode for tests only. Resetting a password revokes prior sessions. Active sessions and per-account journal growth have configurable caps.
+Password recovery uses short-lived random tokens stored only as SHA-256 digests. Production recovery supports either an explicitly configured HTTPS webhook provider or direct Resend delivery; development may use a return-token mode for tests only. Resetting a password revokes prior sessions. Active sessions and per-account journal growth have configurable caps.
 
 The browser caches the last account identity to reopen downloaded data offline. This is not offline cryptographic identity verification. Data is not encrypted at rest by the app. Server accounts are isolated, but someone with access to the same browser profile may inspect its local storage. Use a trusted OS/browser profile.
 
@@ -52,6 +52,6 @@ See `docs/OPERATIONS.md` for environment validation, recovery-provider requireme
 
 Serve HTTPS on one stable origin. Configure `APP_ORIGIN` to the exact external origin and set `NODE_ENV=production`; startup rejects insecure production configuration. The development server binds loopback by default.
 
-For a personal account, create it while registration is permitted, then restart with `ALLOW_SIGNUP=false`. For public registration, configure and test the password-reset webhook provider first. Run `npm run backup` before schema-changing deployments and periodically perform `npm run restore:verify` into a fresh path.
+For a personal account, create it while registration is permitted, then restart with `ALLOW_SIGNUP=false`. For public registration, configure and test either the password-reset webhook provider or the Resend mode first. Run `npm run backup` before schema-changing deployments and periodically perform `npm run restore:verify` into a fresh path.
 
 The GitHub publishing scripts do not provision a server, register a domain, configure DNS, deploy an app or publish GitHub Pages.
