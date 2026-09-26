@@ -39,7 +39,7 @@ def sync_now(page):
     expect(page.locator("dialog")).to_be_visible()
     page.locator('[data-action="sync"]').click()
     expect(page.locator("dialog")).to_contain_text("0 thay đổi chờ đồng bộ")
-    page.locator('[data-action="close"]').click()
+    page.locator('dialog [data-action="close"]').last.click()
     expect(page.locator("dialog")).not_to_be_visible()
 
 
@@ -100,29 +100,34 @@ def main():
                 page.locator('[data-action="offlineResources"]').click()
                 expect(page.locator("dialog")).to_contain_text("1 tài nguyên đang được thẻ tham chiếu")
                 page.locator('[data-action="cleanupMediaLocal"]').click()
+                page.wait_for_function("""async () => {
+                  const {localMediaStats}=await import('/js/media-store.js');
+                  return (await localMediaStats()).count===1;
+                }""")
                 expect(page.locator("dialog")).to_contain_text("Bộ nhớ media cục bộ")
                 assert local_stats(page)["count"]==1
-                page.locator('[data-action="close"]').click()
+                page.locator('dialog [data-action="close"]').last.click()
                 print("PASS: image compression, hash dedup, separate upload and local cleanup")
 
                 # A fresh device downloads once, then renders the same blob while offline.
                 second=browser.new_context(viewport={"width":1280,"height":900})
                 device=second.new_page();login(device,origin,email)
+                device.locator('[data-action="library"]').click()
                 device.locator('[data-action="offlineResources"]').click()
                 expect(device.locator("dialog")).to_contain_text("1 chưa tải trên thiết bị")
-                device.locator('[data-action="close"]').click()
+                device.locator('dialog [data-action="close"]').last.click()
                 device.locator('[data-action="library"]').click()
                 device.locator(".word-row").filter(has_text="cat").first.locator('[data-action="edit"]').click()
                 pic=device.locator("#media-image .editor-image")
                 expect(pic).to_have_attribute("data-media-status","available",timeout=10000)
                 assert pic.get_attribute("src").startswith("blob:")
-                device.locator('[data-action="close"]').click()
+                device.locator('dialog [data-action="close"]').last.click()
                 assert local_stats(device)["count"]==1
                 second.set_offline(True);device.reload(wait_until="domcontentloaded")
                 device.locator('[data-action="library"]').click()
                 device.locator(".word-row").filter(has_text="cat").first.locator('[data-action="edit"]').click()
                 expect(device.locator("#media-image .editor-image")).to_have_attribute("data-media-status","available")
-                device.locator('[data-action="close"]').click()
+                device.locator('dialog [data-action="close"]').last.click()
                 second.set_offline(False);second.close()
                 print("PASS: remote media hydrates into IndexedDB and remains available offline")
 
