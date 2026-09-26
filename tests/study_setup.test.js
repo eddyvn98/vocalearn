@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {question,reasons,answerFaces,MIX_GAMES} from '../core/questions.js';
 import {initialState,DEFAULTS} from '../core/srs.js';
+import {studySetProfile,maskMonolingualDefinition} from '../core/language-profiles.js';
 
 const make=(id,word,meaning,extra={})=>({
   id,setId:'set',word,meaning,ipa:extra.ipa||'',image:extra.image||'',audio:extra.audio||'',
@@ -58,4 +59,19 @@ test('Mixed practice list contains only per-card games, not batch matching',()=>
   assert.ok(MIX_GAMES.includes('quiz'));
   assert.ok(MIX_GAMES.includes('typing'));
   assert.equal(MIX_GAMES.includes('match'),false);
+});
+
+
+test('Stage 1 English study-set profile distinguishes bilingual and monolingual meaning modes',()=>{
+  assert.equal(studySetProfile({language:'en',meaningLanguage:'vi'}).meaningMode,'bilingual');
+  assert.equal(studySetProfile({language:'en',meaningLanguage:'en'}).meaningMode,'monolingual');
+});
+
+test('English-English meaning prompts mask the target word and declared variants',()=>{
+  const word=make('m','deploy','To deploy a service after the deployed build',{});
+  word.variants=['deployed'];
+  const profile=studySetProfile({language:'en',meaningLanguage:'en'});
+  const q=question(word,[word,make('x','confirm','to verify')],'typing','meaning','free',DEFAULTS,()=> 'id',undefined,profile);
+  assert.equal(q.prompt,'To ____ a service after the ____ build');
+  assert.equal(maskMonolingualDefinition('Deployment is not deploy.','deploy',[]),'Deployment is not ____.');
 });
