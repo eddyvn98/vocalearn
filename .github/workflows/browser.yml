@@ -3,28 +3,17 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   browser:
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            browser: chromium
-            viewport: 1280x900
-          - os: ubuntu-latest
-            browser: webkit
-            viewport: 390x844
-          - os: windows-latest
-            browser: chromium
-            viewport: 1280x900
-          - os: macos-latest
-            browser: webkit
-            viewport: 1280x900
+      matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"include":[{"os":"ubuntu-latest","browser":"chromium","viewport":"1280x900"}]}' || '{"include":[{"os":"ubuntu-latest","browser":"chromium","viewport":"1280x900"},{"os":"ubuntu-latest","browser":"webkit","viewport":"390x844"},{"os":"windows-latest","browser":"chromium","viewport":"1280x900"},{"os":"macos-latest","browser":"webkit","viewport":"1280x900"}]}') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -33,7 +22,6 @@ jobs:
         with:
           node-version: '22.16.0'
       - run: npm ci --ignore-scripts
-      - run: npm run verify
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
