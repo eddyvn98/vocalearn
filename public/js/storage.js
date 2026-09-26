@@ -33,6 +33,7 @@ export async function refresh() {
 export const model = () => replay(cached);
 export const localEvents = () => [...cached];
 export const pendingCount = () => cached.filter(e=>!e.seq).length;
+export const currentDeviceId = () => deviceId || '';
 export const getMeta = key => request(db.transaction('meta').objectStore('meta').get(key));
 export async function setMeta(key,value) {
   const tx = db.transaction('meta','readwrite');tx.objectStore('meta').put(value,key);await done(tx);
