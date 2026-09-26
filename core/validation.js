@@ -65,6 +65,8 @@ export function validateEvent(e) {
       if ('newLimit' in d && !Number.isInteger(d.newLimit)) fail('Invalid daily limit');
       if ('reminder' in d && typeof d.reminder !== 'boolean') fail('Invalid reminder');
       if (d.reminderTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(d.reminderTime)) fail('Invalid reminder time');
+      if ('reminderPrimaryDevice' in d && d.reminderPrimaryDevice && !id(d.reminderPrimaryDevice)) fail('Invalid reminder device');
+      if ('reminderLastDay' in d && d.reminderLastDay && !/^\d{4}-\d{2}-\d{2}$/.test(d.reminderLastDay)) fail('Invalid reminder day');
       break;
     case 'answer':
       if (!id(d.wordId) || !id(d.questionId) || !text(d.baseRev, 200)
