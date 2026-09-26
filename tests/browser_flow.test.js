@@ -103,32 +103,15 @@ test('Browser Flow: Đăng ký -> Tạo bộ học -> Thêm từ -> Học -> T�
     finished: false
   };
 
-  // Trả lời câu 1: Người dùng gõ nhầm ("appl") -> retry attempt
-  const check1 = checkAnswer('appl', q1.answers, q1.retry);
-  assert.equal(check1.kind, 'retry');
-  q1.hadError = true;
-  q1.retry = true;
-  const attemptEv = {
-    id: 'att-ev-1',
-    deviceId,
-    kind: 'attempt',
-    data: {wordId: q1.wordId, questionId: q1.id, wrong: true, input: 'appl'},
-    at: now + 10,
-    effectiveAt: now + 10,
-    localOrder: 4
-  };
-  clientEvents.push(attemptEv);
-
-  // Người dùng gõ đúng ("apple") -> hoàn thành câu 1
-  const check2 = checkAnswer('apple', q1.answers, q1.retry);
-  assert.equal(check2.kind, 'correct');
+  // Hoàn thành bước làm quen bắt buộc của thẻ mới. Đây là Lật thẻ, không phải câu gõ.
+  assert.equal(q1.game, 'flash');
+  assert.equal(q1.familiarize, true);
   const grade1 = gradeAnswer({
-    correct: true, game: q1.game, hint: false, hadError: q1.hadError,
+    correct: true, game: q1.game, hint: false, hadError: false,
     activeMs: 4000, interrupted: false, answer: q1.answers[0], easyMs: 5000
   });
-  // Vì có lỗi trước đó (hadError=true), điểm tối đa bị giới hạn ở 'hard' và assisted=true
   assert.equal(grade1.grade, 'hard');
-  assert.equal(grade1.assisted, true);
+  assert.equal(grade1.assisted, false);
 
   q1.result = grade1;
   const answerEv1 = {
@@ -136,18 +119,20 @@ test('Browser Flow: Đăng ký -> Tạo bộ học -> Thêm từ -> Học -> T�
     deviceId,
     kind: 'answer',
     data: {
-      wordId: q1.wordId, questionId: q1.id, baseRev: q1.baseRev, mode: q1.mode, game: q1.game,
-      ...grade1, hadError: true, config: DEFAULTS, familiarize: false,
-      activeMs: 4000, input: 'apple', question: {prompt: 'quả táo', answers: ['apple'], word: 'apple'}
+      schemaVersion: 2, wordId: q1.wordId, questionId: q1.id, baseRev: q1.baseRev, mode: q1.mode, game: q1.game,
+      ...grade1, hadError: false, config: DEFAULTS, familiarize: q1.familiarize,
+      activeMs: 4000, input: '', face: q1.face, hint: false, interrupted: false, unknown: false,
+      question: {prompt: q1.prompt, answers: q1.answers, word: q1.snapshot.word,
+        meaning: q1.snapshot.meaning, fields: q1.snapshot.fields}
     },
     at: now + 20,
     effectiveAt: now + 20,
-    localOrder: 5
+    localOrder: 4
   };
   clientEvents.push(answerEv1);
 
   // Sync câu 1 lên server
-  const sync2 = await api('/api/sync', {events: [attemptEv, answerEv1], cursor, deviceId, clientNow: Date.now()});
+  const sync2 = await api('/api/sync', {events: [answerEv1], cursor, deviceId, clientNow: Date.now()});
   assert.equal(sync2.status, 200);
   cursor = sync2.data.cursor;
 
@@ -178,9 +163,11 @@ test('Browser Flow: Đăng ký -> Tạo bộ học -> Thêm từ -> Học -> T�
     deviceId,
     kind: 'answer',
     data: {
-      wordId: curQ.wordId, questionId: curQ.id, baseRev: curQ.baseRev, mode: curQ.mode, game: curQ.game,
-      ...grade2, hadError: false, config: DEFAULTS, familiarize: false,
-      activeMs: 3000, input: 'banana', question: {prompt: 'quả chuối', answers: ['banana'], word: 'banana'}
+      schemaVersion: 2, wordId: curQ.wordId, questionId: curQ.id, baseRev: curQ.baseRev, mode: curQ.mode, game: curQ.game,
+      ...grade2, hadError: false, config: DEFAULTS, familiarize: curQ.familiarize,
+      activeMs: 3000, input: '', face: curQ.face, hint: false, interrupted: false, unknown: false,
+      question: {prompt: curQ.prompt, answers: curQ.answers, word: curQ.snapshot.word,
+        meaning: curQ.snapshot.meaning, fields: curQ.snapshot.fields}
     },
     at: now + 50,
     effectiveAt: now + 50,
@@ -210,9 +197,9 @@ test('Browser Flow: Đăng ký -> Tạo bộ học -> Thêm từ -> Học -> T�
   assert.equal(finalState.words.w1.review.step, 1);
   // w2: Đã tốt nghiệp bước 1 sau câu trả lời easy
   assert.equal(finalState.words.w2.review.step, 1);
-  // Lỗi của w1 được theo dõi trong sổ lỗi (errorBook) với 1 completed failure sau khi nộp đáp án cuối
-  assert.equal(finalState.words.w1.errors.failures, 1);
-  assert.equal(finalState.words.w1.errors.inBook, true);
+  // Bước làm quen không ghi lỗi vào sổ từ sai.
+  assert.equal(finalState.words.w1.errors.failures, 0);
+  assert.equal(finalState.words.w1.errors.inBook, false);
 
   // Đảm bảo không có câu hỏi nào bị ghi nhận 2 lần
   const allWord1Answers = clientEvents.filter(e => e.kind === 'answer' && e.data.wordId === 'w1');
