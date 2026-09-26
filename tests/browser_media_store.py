@@ -100,6 +100,10 @@ def main():
                 page.locator('[data-action="offlineResources"]').click()
                 expect(page.locator("dialog")).to_contain_text("1 tài nguyên đang được thẻ tham chiếu")
                 page.locator('[data-action="cleanupMediaLocal"]').click()
+                page.wait_for_function("""async () => {
+                  const {localMediaStats}=await import('/js/media-store.js');
+                  return (await localMediaStats()).count===1;
+                }""")
                 expect(page.locator("dialog")).to_contain_text("Bộ nhớ media cục bộ")
                 assert local_stats(page)["count"]==1
                 page.locator('[data-action="close"]').click()
