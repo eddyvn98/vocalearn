@@ -4,6 +4,7 @@ import {setMeta,uuid} from './storage.js';
 import {availablePool,learningAllowed,question,GAMES,MIX_GAMES,FACES,GAME_ANSWER_FACES} from '/core/questions.js';
 import {inScope} from '/core/model.js';
 import {normalize} from '/core/grading.js';
+import {studySetProfile} from '/core/language-profiles.js';
 
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 const answerFaceFor=game=>['quiz','match'].includes(game)?app.answerFace:undefined;
@@ -24,7 +25,8 @@ export const saveStudySetup=()=>setMeta('studySetup',{
 });
 
 function makeQuestion(w,pool,game) {
-  return question(w,pool,game,app.face,app.mode,app.model.settings,uuid,answerFaceFor(game));
+  const profile=studySetProfile(app.model.sets[app.setId]);
+  return question(w,pool,game,app.face,app.mode,app.model.settings,uuid,answerFaceFor(game),profile||{});
 }
 function matchQueue(pool) {
   const selected=pool.slice(0,6),seenPrompt=new Set(),seenAnswer=new Set();
