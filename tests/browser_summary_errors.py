@@ -15,17 +15,6 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def metric(page,key,value):
     item=page.locator(f'.summary [data-summary-metric="{key}"]')
-    if item.count()!=1:
-        summary=page.locator(".summary")
-        print("DEBUG summary html:", summary.inner_html() if summary.count() else "<missing>")
-        print("DEBUG summary metrics:", page.locator(".summary .metric").evaluate_all(
-            "(els) => els.map(el => ({metric: el.getAttribute('data-summary-metric'), text: el.innerText}))"
-        ))
-        print("DEBUG app state:", page.evaluate("""() => import('/js/state.js').then(({app}) => ({
-            page: app.page, busy: app.busy, sessionFinished: app.session?.finished,
-            sessionId: app.session?.id, historyState: history.state,
-            appText: document.querySelector('#app')?.innerText?.slice(0,1200)
-        }))"""))
     expect(item).to_have_count(1)
     expect(item.locator("strong")).to_have_text(str(value))
 
@@ -57,19 +46,7 @@ def main():
                 context=browser.new_context(viewport={"width":1280,"height":900})
                 page=context.new_page();page.goto(origin,wait_until="networkidle")
                 register_and_create_set(page,"summary-e2e@example.test")
-                page.on("console",lambda msg: print("BROWSER CONSOLE:",msg.text))
-                page.on("framenavigated",lambda frame: print("BROWSER NAV:",frame.url) if frame==page.main_frame else None)
-                page.evaluate("""() => import('/js/state.js').then(({app}) => {
-                    let value=app.page;
-                    Object.defineProperty(app,'page',{
-                        configurable:true,
-                        get(){return value},
-                        set(next){
-                            console.log('PAGESET',value,'=>',next,new Error('page-set').stack);
-                            value=next;
-                        }
-                    });
-                })""")
+                page.evaluate("() => navigator.serviceWorker.ready.then(() => true)")
                 page.locator('[data-action="samples"]').click()
                 expect(page.locator(".metric")).to_have_count(4)
 
