@@ -106,8 +106,9 @@ def settings_check(page):
     expect(button).to_be_focused()
 
 def finish(page):
-    page.locator('[data-action="pause"]').click();expect(page.locator(".resume")).to_be_visible()
-    page.locator('.resume [data-action="finish"]').click();expect(page.locator(".summary")).to_be_visible()
+    if not page.locator(".summary").is_visible():
+        page.locator('[data-action="pause"]').click();expect(page.locator(".resume")).to_be_visible()
+        page.locator('.resume [data-action="finish"]').click();expect(page.locator(".summary")).to_be_visible()
     shot(page,"06-summary")
     page.locator('.summary [data-action="home"]').click();wait_home(page)
 
@@ -153,6 +154,32 @@ def error_book(page):
     expect(page.locator(".word-row").filter(has_text=correct).first).to_be_visible()
     shot(page,"07-error-book")
 
+def export_import(page,temp):
+    page.locator('[data-action="library"]').click();expect(page.locator("#word-rows")).to_be_visible()
+    row=page.locator(".word-row").filter(has_text="productionqa").first
+    row.locator(".card-select").check()
+    page.once("dialog",lambda d:d.accept())
+    xlsx=temp/"productionqa.xlsx"
+    with page.expect_download() as info:
+        page.locator('[data-action="export"]').click()
+    info.value.save_as(str(xlsx));assert xlsx.stat().st_size>1000 and xlsx.read_bytes()[:2]==b"PK"
+    page.locator('[data-action="sets"]').click();expect(page.locator("#set-form")).to_be_visible()
+    page.locator('#set-form [name="name"]').fill("Production Import "+str(int(time.time())))
+    page.locator('#set-form [type="submit"]').click();wait_home(page)
+    page.locator('[data-action="library"]').click();page.locator('[data-action="import"]').click()
+    page.locator("#import-file").set_input_files({"name":"productionqa.xlsx","mimeType":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","buffer":xlsx.read_bytes()})
+    expect(page.locator("#preview-import")).to_be_visible(timeout=10000)
+    page.locator("#preview-import").click();expect(page.locator('[data-action="confirmImport"]')).to_be_enabled()
+    shot(page,"08-import-preview")
+    page.locator('[data-action="confirmImport"]').click();expect(page.locator("dialog")).not_to_be_visible()
+    expect(page.locator(".word-row").filter(has_text="productionqa")).to_have_count(1)
+
+def multi_tab(page,context):
+    tab=context.new_page();tab.goto(ORIGIN,wait_until="networkidle");wait_home(tab)
+    tab.locator('[data-action="library"]').click()
+    expect(tab.locator(".word-row").filter(has_text="productionqa")).to_be_visible(timeout=10000)
+    tab.close()
+
 def sync_and_offline(page,context):
     page.locator('[data-action="home"]').click();wait_home(page)
     page.locator('[data-action="syncInfo"]:visible').first.click();expect(page.locator("dialog")).to_be_visible()
@@ -182,8 +209,10 @@ def ux_audit(page,label):
         w:Math.round(e.getBoundingClientRect().width),h:Math.round(e.getBoundingClientRect().height)
       })).slice(0,30);
       const unnamed=interactive.filter(e=>['BUTTON','A'].includes(e.tagName)&&!(e.innerText||e.getAttribute('aria-label')||e.title)).length;
+      const skip=document.querySelector('.skip'),active=document.activeElement;
       return {label,overflow:root.scrollWidth-root.clientWidth,smallTargets:small,unnamedInteractive:unnamed,
-        bodyFont:getComputedStyle(document.body).fontSize,title:document.title};
+        bodyFont:getComputedStyle(document.body).fontSize,title:document.title,
+        skipTop:skip?getComputedStyle(skip).top:null,active:(active?.innerText||active?.getAttribute?.('aria-label')||active?.tagName||'').trim().slice(0,80)};
     }""",label)
 
 def mobile_audit(browser):
@@ -216,6 +245,8 @@ def main():
         settings_check(page);six_games(page);report["checks"].append("six-games")
         error_book(page);report["checks"].append("error-book")
         sync_and_offline(page,ctx);report["checks"]+=["sync","offline-cache"]
+        multi_tab(page,ctx);report["checks"].append("multi-tab")
+        export_import(page,temp);report["checks"].append("excel-export-import")
         page.locator('[data-action="home"]').click();wait_home(page)
         report["ux"]=[ux_audit(page,"desktop-home")]
         password_reset(page);report["checks"].append("password-reset-request")
