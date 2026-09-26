@@ -118,7 +118,7 @@ export async function studyAction(action,element) {
   if(action==='startSession')return beginSession();
   if(action==='resume'){app.page='study';app.setId=app.session.setId;app.render();pushHistory();startClock();return;}
   if(action==='pause'){stopClock(true);await setMeta('session',app.session);app.page='home';app.render();pushHistory();return;}
-  if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';app.render();pushHistory();return;}
+  if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});app.render();pushHistory();return;}
   if(!q)return;
   if(action==='playAudio'||action==='slowAudio')return playAudio(action==='slowAudio');
   if(['flip','unknown','remember','choose','letter','checkLetters','matchLeft','matchRight'].includes(action))
