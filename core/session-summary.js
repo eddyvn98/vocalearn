@@ -14,7 +14,7 @@ export function buildSessionSummary(session,model,pending=0,now=Date.now()) {
   const done=answered(session),baseline=session?.baseline||sessionBaseline(model,session?.queue||[]);
   const touched=unique(done.map(q=>q.wordId));
   const current=id=>model.words[id];
-  const scheduledReviews=done.filter(q=>q.mode==='review'&&q.snapshot?.review?.phase==='review').length;
+  const scheduledReviews=done.filter(q=>q.mode==='review').length;
   const freePracticeAnswers=done.filter(q=>['free','errors'].includes(q.mode)).length;
   const newStarted=touched.filter(id=>baseline[id]?.phase==='new'&&current(id)?.review?.phase!=='new').length;
   const newGraduated=touched.filter(id=>['new','learning'].includes(baseline[id]?.phase)
