@@ -78,7 +78,7 @@ def state_for_banks(page):
         """async () => {
           const {app}=await import('/js/state.js');
           return Object.values(app.model.words).filter(w=>w.word==='bank').map(w=>({
-            id:w.id,meaning:w.meaning,generation:w.generation,deleted:w.deleted,
+            id:w.id,meaning:w.meaning,generation:w.generation,reviewRev:w.review.rev,deleted:w.deleted,
             categories:[...w.categoryIds],custom:w.custom||{}
           })).sort((a,b)=>a.meaning.localeCompare(b.meaning,'vi'));
         }"""
@@ -161,21 +161,28 @@ def main():
                 expect(page.locator(".word-row")).to_have_count(1)
                 expect(page.locator(".word-row")).to_contain_text("ngân hàng")
                 page.locator('[data-action="toggleSelectAll"]').click()
-                page.locator('[data-action="bulkTopic"]').click()
-                page.locator('#bulk-topic-form [name="categoryId"]').select_option(
+                before_move=next(b for b in state_for_banks(page) if b["meaning"]=="ngân hàng")
+                page.locator('[data-action="moveCardTopic"]').click()
+                expect(page.locator("#move-card-topic-form")).to_be_visible()
+                page.locator('#move-card-topic-form [name="sourceCategoryId"]').select_option(
                     label="Work > BIM"
                 )
-                page.locator('#bulk-topic-form [name="operation"]').select_option("remove")
-                page.locator('#bulk-topic-form [type="submit"]').click()
-                expect(page.locator(".word-row")).to_have_count(0)
+                page.locator('#move-card-topic-form [name="targetCategoryId"]').select_option(
+                    label="Work"
+                )
+                page.locator('#move-card-topic-form [type="submit"]').click()
+                expect(page.locator("dialog")).not_to_be_visible()
+                expect(page.locator(".word-row")).to_have_count(1)
 
                 clear_scope(page)
                 expect(page.locator(".word-row")).to_have_count(2)
-                # Card still retains its independent Finance membership after BIM removal.
+                # AT-27: moving from BIM replaces only that source link. Finance and review state survive.
                 after=state_for_banks(page)
                 money=next(b for b in after if b["meaning"]=="ngân hàng")
-                assert len(money["categories"])==1
-                print("PASS: recursive scope and bulk topic removal preserve other memberships")
+                assert len(money["categories"])==2
+                assert money["generation"]==before_move["generation"]
+                assert money["reviewRev"]==before_move["reviewRev"]
+                print("PASS: AT-27 topic move preserves other memberships and review schedule")
 
                 # Scoped selection/reset touches only one card.
                 target=page.locator(".word-row").filter(has_text="bờ sông").first
