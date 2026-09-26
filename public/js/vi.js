@@ -10,6 +10,7 @@ export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidF
   "errors": "Sổ từ sai",
   "settings": "Cài đặt",
   "chooseSet": "Chọn bộ học",
+  "switchSet": "Đổi bộ học",
   "openSync": "Mở trạng thái đồng bộ",
   "accountSettings": "Cài đặt tài khoản",
   "login": "Đăng nhập",
