@@ -122,6 +122,20 @@ Merged commit: `60b6edb94e978a9b22609ab46859b184b502af94`
 - Physical virtual-keyboard, screen-reader, installed-PWA background notification and real two-device evidence remain Partial/Pending; emulation is not counted as physical-device proof.
 - Planning percentages stay at ~88% functionality / ~82% acceptance evidence / ~60% full v0.5 because this primarily improves release evidence and operability discipline rather than adding product scope.
 
+## Completed after production-operability workflow
+
+### PR #40 - semantic Agent business journey - merged and deployed
+Merged commit: `3deb5750738bd89f035222a64b609e48c081b415`
+
+- Added a browser acceptance journey that creates/selects a clean study set, opens the library, adds and edits a card, authors cloze content, creates/assigns a topic, configures a typing session, completes study/results, then opens settings and sync status.
+- The new journey intentionally uses visible Playwright roles, accessible names and labels rather than hidden `data-action` selectors, direct DOM state reads or JavaScript manipulation.
+- The first semantic pass exposed a real UX ambiguity: the top-bar study-set switcher and a selectable study-set card both announced **Chọn bộ học: ...**. The product now distinguishes **Đổi bộ học: ...** from **Chọn bộ học: ...**.
+- Sync status and the icon-only settings action now have explicit accessible action names.
+- Verify passed and the full Browser regression matrix passed before merge, including the Chromium semantic business journey.
+- Railway deployment `e5603a95-817e-4e73-8456-a2df2d3ac26f` reached terminal **SUCCESS** for the merge commit.
+- Planning percentages remain ~88% functionality / ~82% acceptance evidence / ~60% full v0.5. This closes an operability/evidence gap rather than adding new product scope.
+- Real virtual keyboard, screen reader, installed-PWA/background notification and two physical-device evidence remain Partial/Pending.
+
 ## Phase 1 gaps now
 
 1. Run physical-device and accessibility acceptance:
