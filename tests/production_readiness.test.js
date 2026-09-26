@@ -25,10 +25,13 @@ async function request(base,path,data,cookie=''){
 }
 test('Production config rejects unsafe startup and gates public recovery',()=>{
   assert.throws(()=>loadConfig({NODE_ENV:'production',APP_ORIGIN:'http://example.test',DB_PATH:'./db.sqlite'}),/HTTPS APP_ORIGIN/);
-  assert.throws(()=>loadConfig({NODE_ENV:'production',APP_ORIGIN:'https://example.test',DB_PATH:'./db.sqlite',ALLOW_SIGNUP:'true'}),/signup requires webhook/);
+  assert.throws(()=>loadConfig({NODE_ENV:'production',APP_ORIGIN:'https://example.test',DB_PATH:'./db.sqlite',ALLOW_SIGNUP:'true'}),/signup requires webhook or Resend/);
   const config=loadConfig({NODE_ENV:'production',APP_ORIGIN:'https://example.test',DB_PATH:'./db.sqlite',ALLOW_SIGNUP:'true',
     PASSWORD_RESET_MODE:'webhook',PASSWORD_RESET_PROVIDER_URL:'https://mailer.example/hook',PASSWORD_RESET_PROVIDER_TOKEN:'x'.repeat(24)});
   assert.equal(config.production,true);assert.equal(config.reset.mode,'webhook');assert.equal(config.limits.maxSyncEvents,200);
+  const resend=loadConfig({NODE_ENV:'production',APP_ORIGIN:'https://example.test',DB_PATH:'./db.sqlite',ALLOW_SIGNUP:'true',
+    PASSWORD_RESET_MODE:'resend',RESEND_API_KEY:'re_abcdefghijklmnopqrstuvwxyz',RESEND_FROM:'VocaLearn <noreply@example.test>'});
+  assert.equal(resend.reset.mode,'resend');assert.equal(resend.reset.resendFrom,'VocaLearn <noreply@example.test>');
   assert.equal(config.limits.maxAccountEvents,50000);assert.equal(config.limits.maxActiveSessions,20);
 });
 test('Legacy database is adopted by ordered migrations without losing accounts',()=>{
@@ -65,6 +68,29 @@ test('Same-origin password reset form accepts opaque Origin while cross-site rem
     },body:'email=person%40example.test'});
     assert.equal(blocked.status,403);
   });
+});
+test('Resend password recovery sends a bounded reset email and removes token after delivery failure',async()=>{
+  const db=openDatabase(':memory:');
+  try{
+    const record=await import('../server/auth.js').then(m=>m.passwordRecord('initial-password-123'));
+    db.prepare('INSERT INTO users(id,email,hash,salt) VALUES(?,?,?,?)').run('u','resend@example.test',record.hash,record.salt);
+    const calls=[];
+    const config={mode:'resend',appOrigin:'https://example.test',ttlMs:30*60000,resendApiKey:'re_test_key',resendFrom:'VocaLearn <noreply@example.test>'};
+    const ok=await import('../server/recovery.js').then(m=>m.requestPasswordReset(db,'resend@example.test',config,{
+      now:1000,fetchImpl:async(url,options)=>{calls.push({url,options});return {ok:true,status:200};}
+    }));
+    assert.equal(ok.issued,true);assert.equal(calls.length,1);assert.equal(calls[0].url,'https://api.resend.com/emails');
+    const payload=JSON.parse(calls[0].options.body);
+    assert.equal(payload.from,config.resendFrom);assert.deepEqual(payload.to,['resend@example.test']);
+    assert.match(payload.text,/https:\/\/example\.test\/reset-password\?token=/);
+    assert.match(calls[0].options.headers.Authorization,/^Bearer re_test_key$/);
+    const failed=await import('../server/recovery.js').then(m=>m.requestPasswordReset(db,'resend@example.test',config,{
+      now:2000,fetchImpl:async()=>({ok:false,status:500})
+    }));
+    assert.equal(failed.issued,false);assert.match(failed.deliveryError,/Resend returned 500/);
+    const count=db.prepare('SELECT COUNT(*) count FROM password_reset_tokens').get().count;
+    assert.equal(count,0);
+  }finally{db.close();}
 });
 test('Password reset token changes password and revokes old sessions',async()=>{
   await withServer({dbPath:':memory:',reset:{mode:'return-token',appOrigin:'http://localhost',ttlMs:60000}},async base=>{
