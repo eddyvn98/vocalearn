@@ -31,6 +31,8 @@ For each meaningful change, use this sequence:
    - Do not call the deployment successful until Railway reports terminal `SUCCESS`.
    - Intermediate `WAITING`, `BUILDING`, `DEPLOYING`, `SKIPPED` or `REMOVED` are not success.
 10. **Test the deployed Railway URL**
+    - On the initial main-branch run, production smoke must not wait for the new Railway deployment because Railway itself waits for GitHub checks.
+    - After Railway reaches terminal `SUCCESS`, rerun the Production web smoke job. On rerun it must verify `/api/health.commit` equals the deployed GitHub SHA before browser checks.
     - Run the production web smoke suite against the real public Railway domain.
     - Check health/readiness, public auth shell, JS/page errors, PWA manifest/service worker, offline shell reload and responsive overflow.
     - Run **Agent operability** checks: visible controls need discernible names, important actions use native interactive elements, keyboard tab order is predictable, state/result feedback is observable, and automation must not need DOM hacks or forced JavaScript to complete a normal user action.
