@@ -24,3 +24,5 @@ test('handwriting is gated by both tested pen capability and stroke data',()=>{
   assert.equal(gameAvailability('handwriting',device,'zh',{hasStrokes:false}).reason,'missingStrokeData');
   assert.equal(gameAvailability('handwriting',device,'zh',{hasStrokes:true}).available,true);
 });
+
+// CI checkpoint: generated offline manifest refreshed.
