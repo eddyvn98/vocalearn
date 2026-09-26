@@ -19,13 +19,29 @@ def check_viewport(browser, name, width, height):
     page = context.new_page()
     page_errors = []
     console_errors = []
+    http_errors = []
+
     page.on("pageerror", lambda error: page_errors.append(str(error)))
-    page.on(
-        "console",
-        lambda message: console_errors.append(message.text)
-        if message.type == "error"
-        else None,
-    )
+
+    def on_console(message):
+        if message.type != "error":
+            return
+        # The signed-out app intentionally probes /api/me, which returns 401.
+        if "status of 401" in message.text:
+            return
+        console_errors.append(message.text)
+
+    def on_response(response):
+        if response.status < 400:
+            return
+        if response.status == 401 and response.url.rstrip("/").endswith("/api/me"):
+            return
+        http_errors.append({"status": response.status, "url": response.url})
+
+    page.on("console", on_console)
+    page.on("response", on_response)
+
+    overflow = None
     try:
         response = page.goto(ORIGIN, wait_until="networkidle", timeout=30000)
         assert response is not None and response.ok, (
@@ -40,10 +56,7 @@ def check_viewport(browser, name, width, height):
         assert overflow <= 1, f"{name}: horizontal overflow {overflow}px"
         assert not page_errors, f"{name}: page errors: {page_errors!r}"
         assert not console_errors, f"{name}: console errors: {console_errors!r}"
-        page.screenshot(
-            path=str(EVIDENCE / f"{name}.png"),
-            full_page=True,
-        )
+        assert not http_errors, f"{name}: unexpected HTTP errors: {http_errors!r}"
         return {
             "viewport": {"width": width, "height": height},
             "url": page.url,
@@ -51,8 +64,13 @@ def check_viewport(browser, name, width, height):
             "horizontalOverflowPx": overflow,
             "pageErrors": page_errors,
             "consoleErrors": console_errors,
+            "httpErrors": http_errors,
         }
     finally:
+        page.screenshot(
+            path=str(EVIDENCE / f"{name}.png"),
+            full_page=True,
+        )
         context.close()
 
 
