@@ -3,7 +3,7 @@ import {validateEvent} from '/core/validation.js';
 let db, owner, cached = [], cursor = 0, deviceId, offset = 0, lastOrder = 0, queue = Promise.resolve();
 export const uuid = () => crypto.randomUUID();
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('voca-events') : null;
-function done(tx) {return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error || new Error('Storage transaction aborted'));});}
+function done(tx) {return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error || new Error('Storage transaction failed'));tx.onabort=()=>reject(tx.error || new Error('Storage transaction aborted'));});}
 function request(req) {return new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
 export async function openStore(user) {
   owner = user.id;
@@ -37,10 +37,17 @@ export const getMeta = key => request(db.transaction('meta').objectStore('meta')
 export async function setMeta(key,value) {
   const tx = db.transaction('meta','readwrite');tx.objectStore('meta').put(value,key);await done(tx);
 }
-export const getMediaRecord=id=>request(db.transaction('media').objectStore('media').get(id));
-export const allMediaRecords=()=>request(db.transaction('media').objectStore('media').getAll());
+function hydrateMediaRecord(record) {
+  if(!record||record.blob||!record.bytes)return record;
+  return {...record,blob:new Blob([record.bytes],{type:record.mime||''})};
+}
+export const getMediaRecord=async id=>hydrateMediaRecord(await request(db.transaction('media').objectStore('media').get(id)));
+export const allMediaRecords=async()=> (await request(db.transaction('media').objectStore('media').getAll())).map(hydrateMediaRecord);
 export async function putMediaRecord(record) {
-  const tx=db.transaction('media','readwrite');tx.objectStore('media').put(record);await done(tx);return record;
+  const stored={...record};
+  if(stored.blob){stored.bytes=await stored.blob.arrayBuffer();delete stored.blob;}
+  const tx=db.transaction('media','readwrite');tx.objectStore('media').put(stored);await done(tx);
+  return hydrateMediaRecord(stored);
 }
 export async function deleteMediaRecord(id) {
   const tx=db.transaction('media','readwrite');tx.objectStore('media').delete(id);await done(tx);
