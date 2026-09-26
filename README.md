@@ -66,7 +66,7 @@ cp .env.example .env
 node --env-file=.env server/main.js
 ```
 
-Do not expose the development HTTP server to the internet. Public deployment requires an HTTPS reverse proxy, `NODE_ENV=production`, exact `APP_ORIGIN=https://your-domain.example` and a suitable registration policy. First create the intended account, then restart with `ALLOW_SIGNUP=false` for a personal deployment. Public signup additionally requires a configured password-recovery webhook. Startup rejects unsafe production combinations.
+Do not expose the development HTTP server to the internet. Public deployment requires an HTTPS reverse proxy, `NODE_ENV=production`, exact `APP_ORIGIN=https://your-domain.example` and a suitable registration policy. First create the intended account, then restart with `ALLOW_SIGNUP=false` for a personal deployment. Public signup additionally requires configured password recovery. Set `PASSWORD_RESET_MODE=resend` with `RESEND_API_KEY` and a verified-domain `RESEND_FROM`, or use the existing webhook mode. Startup rejects unsafe production combinations.
 
 Use `npm run backup -- <target.sqlite>` for a consistent SQLite backup and `npm run restore:verify -- <backup.sqlite> <fresh-target.sqlite>` for a restore drill. The current single-process deployment also enforces configurable request/sync/journal/session limits and exposes `/api/health` plus `/api/ready`. Read [operations](docs/OPERATIONS.md) and [architecture and security limits](docs/ARCHITECTURE.md) before deployment.
 
