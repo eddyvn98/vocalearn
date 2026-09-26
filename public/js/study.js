@@ -7,6 +7,7 @@ import {previewQueue,setup as setupDialog,applyStudySetup,saveStudySetup} from '
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
 import {pushHistory} from './navigation.js';
 import {mediaBlob,mediaUrl} from './media-store.js';
+import {sessionBaseline} from '/core/session-summary.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
 async function ensureQuestionMedia(q,allMatch=false) {
@@ -45,6 +46,7 @@ export async function beginSession() {
   }
   if(!queue.length)return;
   const session={id:uuid(),setId:app.setId,mode:app.mode,queue,index:0,finished:false,match:queue.every(q=>q.game==='match'),
+    baseline:sessionBaseline(app.model,queue),
     setup:{game:app.game,face:app.face,answerFace:app.answerFace,mixGames:[...app.mixGames]},
     matchOrder:queue.map((_,i)=>i).reverse(),selected:null,error:''};
   await setMeta('session',session);app.session=session;closeModal();app.page='study';app.render();pushHistory();startClock();
@@ -116,7 +118,7 @@ export async function studyAction(action,element) {
   if(action==='startSession')return beginSession();
   if(action==='resume'){app.page='study';app.setId=app.session.setId;app.render();pushHistory();startClock();return;}
   if(action==='pause'){stopClock(true);await setMeta('session',app.session);app.page='home';app.render();pushHistory();return;}
-  if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';app.render();pushHistory();return;}
+  if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});app.render();pushHistory();return;}
   if(!q)return;
   if(action==='playAudio'||action==='slowAudio')return playAudio(action==='slowAudio');
   if(['flip','unknown','remember','choose','letter','checkLetters','matchLeft','matchRight'].includes(action))

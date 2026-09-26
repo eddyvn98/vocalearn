@@ -37,6 +37,9 @@ test('Media rejects forged hashes and enforces type/size bounds',()=>{
     assert.equal(allowedMedia('image/webp',MAX_IMAGE_BYTES),true);
     assert.equal(allowedMedia('image/webp',MAX_IMAGE_BYTES+1),false);
     assert.equal(allowedMedia('audio/wav',MAX_AUDIO_BYTES),true);
+    assert.equal(allowedMedia('audio/x-wav',MAX_AUDIO_BYTES),true);
+    assert.equal(allowedMedia('audio/wave',MAX_AUDIO_BYTES),true);
+    assert.equal(allowedMedia('audio/x-pn-wav',MAX_AUDIO_BYTES),true);
     assert.equal(allowedMedia('audio/wav',MAX_AUDIO_BYTES+1),false);
     assert.equal(allowedMedia('text/plain',1),false);
   }finally{db.close();}

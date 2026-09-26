@@ -1,6 +1,6 @@
 export const MEDIA_REF=/^media:([a-f0-9]{64})$/;
 export const IMAGE_TYPES=new Set(['image/png','image/jpeg','image/webp']);
-export const AUDIO_TYPES=new Set(['audio/mpeg','audio/wav','audio/ogg','audio/webm','audio/mp4']);
+export const AUDIO_TYPES=new Set(['audio/mpeg','audio/wav','audio/wave','audio/x-wav','audio/x-pn-wav','audio/ogg','audio/webm','audio/mp4']);
 export const MAX_IMAGE_INPUT=12_000_000;
 export const MAX_IMAGE_BYTES=1_500_000;
 export const MAX_AUDIO_BYTES=3_000_000;

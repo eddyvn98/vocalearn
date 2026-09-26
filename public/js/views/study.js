@@ -4,6 +4,7 @@ import {pendingCount} from '../storage.js';
 import {shell} from './shell.js';
 import {usesAudio} from '/core/questions.js';
 import {mediaMarkup} from '../media-store.js';
+import {buildSessionSummary} from '/core/session-summary.js';
 function mediaAttrs(value) {
   const mark=mediaMarkup(value);
   return (mark.src?`src="${esc(mark.src)}" `:'')+(mark.ref?`data-media-ref="${esc(mark.ref)}" `:'');
@@ -62,8 +63,31 @@ function matchView() {
   <p role="status" class="error-text">${esc(s.matchMessage||'')}</p><p id="study-error" class="error-text" role="alert">${esc(s.error||'')}</p>
   ${done===s.queue.length?button(t('results'),'finish','primary'):''}</section></main>`;
 }
+function summaryMetric(value,label){
+  return `<div class="metric" data-summary-metric="${esc(label)}"><strong>${value}</strong><span>${t(label)}</span></div>`;
+}
 export function resultsView() {
-  const s=app.session,answered=s.queue.filter(q=>q.result),now=Date.now();
-  const waiting=Object.values(app.model.words).filter(w=>w.setId===app.setId&&!w.deleted&&['learning','relearn'].includes(w.review.phase));
-  return shell(`<section class="summary"><span class="summary-icon">\u2713</span>${badge(t(answered.length===s.queue.length?'complete':'finishEarly'),'good')}<h1 tabindex="-1">${t('resultTitle')}</h1><p>${t(s.mode)}</p><div class="metrics three">${[[answered.length,'answered'],[answered.filter(q=>q.result.grade!=='forget'&&!q.hadError&&!q.hint).length,'clean'],[answered.filter(q=>q.hadError||q.result.grade==='forget').length,'mistakes']].map(([n,key])=>`<div class="metric"><strong>${n}</strong><span>${t(key)}</span></div>`).join('')}</div><p>${t(['free','errors'].includes(s.mode)?'noSchedule':'localSchedule')}</p>${waiting.length?`<p class="info">${waiting.length} ${t('learning')} \u00b7 ${t('nextAt')} ${new Date(Math.min(...waiting.map(w=>w.review.dueAt))).toLocaleString('vi-VN',{timeZone:app.model.settings.zone})}</p>`:''}<div class="row center wrap actions">${button(t('home'),'home','primary')}${button(t('errors'),'errors')}</div></section>`);
+  const s=app.session,now=Date.now(),summary=buildSessionSummary(s,app.model,pendingCount(),now);
+  const pending=summary.pendingLearning;
+  const next=pending.filter(item=>item.waiting&&Number.isFinite(item.dueAt)).sort((a,b)=>a.dueAt-b.dueAt)[0];
+  return shell(`<section class="summary"><span class="summary-icon">✓</span>
+    ${badge(t(summary.answered===s.queue.length?'complete':'finishEarly'),'good')}
+    <h1 tabindex="-1">${t('resultTitle')}</h1><p>${t(s.mode)}</p>
+    <div class="metrics">
+      ${summaryMetric(summary.scheduledReviews,'scheduledReviews')}
+      ${summaryMetric(summary.newStarted,'newStarted')}
+      ${summaryMetric(summary.newGraduated,'newGraduated')}
+      ${summaryMetric(summary.freePracticeAnswers,'freePracticeAnswers')}
+      ${summaryMetric(summary.enteredErrorBook,'enteredErrorBook')}
+      ${summaryMetric(summary.leftErrorBook,'leftErrorBook')}
+    </div>
+    <p class="muted small">${summary.answered} ${t('answered')} · ${summary.clean} ${t('clean')} · ${summary.mistakes} ${t('mistakes')}</p>
+    ${pending.length?`<section class="info"><strong>${pending.length} ${t('pendingLearning')}</strong>
+      ${pending.map(item=>`<p>${esc(item.word)} · ${t(item.phase)} · ${t('step')} ${Number(item.step)+1}${item.dueAt?` · ${new Date(item.dueAt).toLocaleString('vi-VN',{timeZone:app.model.settings.zone})}`:''}</p>`).join('')}
+      ${next?`<p class="muted small">${t('nextAt')} ${new Date(next.dueAt).toLocaleString('vi-VN',{timeZone:app.model.settings.zone})}</p>`:''}
+    </section>`:''}
+    ${summary.unsyncedChanges?`<p class="info">${summary.unsyncedChanges} ${t('unsyncedSummary')}</p>`:`<p class="muted small">${t('allSynced')}</p>`}
+    <p>${t(['free','errors'].includes(s.mode)?'noSchedule':'localSchedule')}</p>
+    <div class="row center wrap actions">${button(t('home'),'home','primary')}${button(t('errors'),'errors')}</div>
+  </section>`);
 }

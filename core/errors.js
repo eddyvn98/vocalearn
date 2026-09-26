@@ -33,5 +33,15 @@ export function errorBook(events) {
   if (events.some(e => e.kind === 'attempt' && e.data.wrong && !answered.has(e.data.questionId))) {
     state.inBook = true; state.evidence = [];
   }
+  const clean=state.evidence||[],firstAt=clean.length?Math.min(...clean.map(item=>item.at)):null;
+  state.requirements={
+    cleanNeeded:Math.max(0,2-clean.length),
+    distinctGames:true,
+    recallNeeded:state.inBook&&!clean.some(item=>item.recall),
+    minSpacingMs:600000,
+    nextEvidenceAt:state.inBook&&firstAt!==null?firstAt+600000:null
+  };
+  state.episodeFailures=state.failures;
+  state.historicalFailures=state.total;
   return state;
 }

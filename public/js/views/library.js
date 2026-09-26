@@ -21,10 +21,22 @@ function evidenceHint(w,now=Date.now()) {
   const game=evidence.some(e=>e.recall)?'một game khác':'một game nhớ lại khác';
   return `Cần thêm minh chứng đúng sạch ở ${game}${wait?` sau ít nhất ${wait} phút`:''}.`;
 }
+function errorDetails(w,now=Date.now()) {
+  if(!w.errors?.inBook)return '';
+  const e=w.errors,req=e.requirements||{},next=req.nextEvidenceAt;
+  return `<details class="error-evidence"><summary>${t('whyInErrorBook')}</summary>
+    <p>${t('currentErrorEpisode')}: <strong>${e.episodeFailures??e.failures}</strong> · ${t('historicalErrors')}: <strong>${e.historicalFailures??e.total}</strong></p>
+    ${e.persistent?`<p class="error-text">${t('persistentHelp')}</p>`:''}
+    <p>${t('cleanEvidence')}: ${(e.evidence||[]).length}/2 · ${req.recallNeeded?t('recallStillNeeded'):t('recallSatisfied')}</p>
+    ${(e.evidence||[]).map(item=>`<p>${t(item.game)} · ${item.recall?t('recallGame'):t('recognitionGame')} · ${new Date(item.at).toLocaleString('vi-VN',{timeZone:app.model.settings.zone})}</p>`).join('')}
+    ${next&&next>now?`<p class="muted">${t('nextCleanEligible')}: ${new Date(next).toLocaleString('vi-VN',{timeZone:app.model.settings.zone})}</p>`:''}
+    <p class="muted small">${t('errorExitRule')}</p><p class="muted small">${t('resetKeepsErrorHistory')}</p>
+  </details>`;
+}
 export function rows() {
   app.selectedCards = app.selectedCards || new Set();
   const list = filtered();
-  return list.map(w => `<article class="word-row ${app.selectedCards.has(w.id) ? 'selected' : ''}"><div class="row items-center"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id) ? 'checked' : ''} aria-label="Chọn ${esc(w.word)}"><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}${w.errors.inBook?`<small>${esc(evidenceHint(w))}</small>`:''}</div>${button(t('edit'),'edit','quiet',`data-id="${w.id}"`)}</article>`).join('') || `<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
+  return list.map(w => `<article class="word-row ${app.selectedCards.has(w.id) ? 'selected' : ''}"><div class="row items-center"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id) ? 'checked' : ''} aria-label="Chọn ${esc(w.word)}"><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}${w.errors.inBook?`<small>${esc(evidenceHint(w))}</small>`:''}</div>${app.page==='errors'?errorDetails(w):''}${button(t('edit'),'edit','quiet',`data-id="${w.id}"`)}</article>`).join('') || `<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
 }
 
 export function libraryView() {

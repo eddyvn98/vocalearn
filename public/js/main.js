@@ -30,7 +30,7 @@ async function commit(events){await transact(events);app.model=model();}
 async function navigate(page){
   app.selectedCards.clear();
   if(app.page==='study'){stopClock(true);await setMeta('session',app.session);}
-  app.page=page;app.render('h1');await persistView();pushHistory();
+  app.page=page;await persistView();app.render('h1');pushHistory();
 }
 async function authenticated(user){
   app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
@@ -44,7 +44,8 @@ async function authenticated(user){
   applyStudySetup(await getMeta('studySetup'));
   app.session=await getMeta('session')||null;
   if(app.session&&!app.session.finished){for(const q of app.session.queue)if(!q.result)q.interrupted=true;await setMeta('session',app.session);}
-  app.page='home';app.render();replaceHistory();
+  const reopenResults=saved?.page==='results'&&app.session?.finished;
+  app.page=reopenResults?'results':'home';app.render();replaceHistory();
 }
 function pruneSelection(){const ids=new Set(filtered().map(w=>w.id));for(const id of app.selectedCards)if(!ids.has(id))app.selectedCards.delete(id);}
 async function click(action,el){
