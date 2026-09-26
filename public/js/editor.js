@@ -58,7 +58,7 @@ export function openEditor(id) {
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
   <div class="row wrap">${button('Tạo ô trống từ phần bôi đen','makeSentenceBlank','quiet')}</div>
-  <div id="sentence-preview" class="info stack" aria-live="polite"><strong>Xem thử câu hỏi</strong>${sentencePreview(w.sentence||'',w.answers||[])}</div>
+  <div id="sentence-preview" class="wait-panel stack" aria-live="polite"><strong>Xem thử câu hỏi</strong>${sentencePreview(w.sentence||'',w.answers||[])}</div>
   ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
   ${field('collocations','collocations',listValue(w.collocations))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
   ${field('register','register',w.register)}${field('level','level',w.level)}${field('translation','translation',w.translation)}
