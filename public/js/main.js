@@ -1,6 +1,6 @@
 import {descendants,categoryPath} from '/core/model.js';
 import {app,current} from './state.js';
-import {api,openStore,model,prepare,transact,setMeta,getMeta,refresh,sync,pendingCount,uuid} from './storage.js';
+import {api,openStore,model,prepare,transact,setMeta,getMeta,refresh,sync,pendingCount,uuid,currentDeviceId} from './storage.js';
 import {t,notify,closeModal,modal,esc,setModalTrigger,clearModalTrigger} from './ui.js';
 import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
@@ -14,6 +14,7 @@ import {samples,exportContent,importDialog,readImport,confirmImport,previewImpor
 import {installAccessibility,isComposing} from './a11y.js';
 import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './navigation.js';
 import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
+import {reminderPlan} from '/core/reminders.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -225,7 +226,19 @@ setInterval(async()=>{
       const day=(await import('/core/time.js')).dayAt(now.valueOf(),s.zone);
       const clock=new Intl.DateTimeFormat('en-GB',{timeZone:s.zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now);
       const due=Object.values(m.words).some(w=>!w.deleted&&w.ready&&(w.review.dueDate<=day&&w.review.dueDate||w.review.dueAt&&w.review.dueAt<=now.valueOf()));
-      if(due&&clock>=s.reminderTime&&await getMeta('reminded')!==day){notify(t('reviewHint'));await setMeta('reminded',day);}
+      if(due&&clock>=s.reminderTime){
+        const localShown=await getMeta('reminded')===day;
+        const permission=typeof Notification==='undefined'?'unsupported':Notification.permission;
+        const plan=reminderPlan(s,currentDeviceId(),day,permission,localShown);
+        if(plan.action!=='none'){
+          if(plan.action==='notification'){
+            try{const reg=await navigator.serviceWorker.ready;await reg.showNotification('VocaLearn',{body:t('reviewHint'),tag:'vocalearn-review-'+day});}
+            catch{notify(t('reviewHint'));}
+          }else notify(t('reviewHint'));
+          await setMeta('reminded',day);
+          if(plan.primary){await transact([prepare('settings',{reminderLastDay:day})]);app.model=model();}
+        }
+      }
     }
   }catch{}
 },30000);
