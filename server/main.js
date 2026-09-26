@@ -23,7 +23,11 @@ function checkLimit(limiter,keys,now=Date.now()){
 }
 function rejectOrigin(req,origin){
   const expected=origin||`http://${req.headers.host}`;
-  return (req.headers.origin&&req.headers.origin!==expected)||req.headers['sec-fetch-site']==='cross-site';
+  const supplied=String(req.headers.origin||'');
+  const fetchSite=String(req.headers['sec-fetch-site']||'');
+  if(fetchSite==='cross-site')return true;
+  if(supplied==='null')return fetchSite!=='same-origin';
+  return Boolean(supplied&&supplied!==expected);
 }
 export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure=false,origin='',allowSignup=true,
   limits={},reset={},logger=noopLogger}={}){

@@ -54,6 +54,18 @@ test('Health/readiness expose migration state and request limits',async()=>{
     assert.equal(ready.data.maxSyncEvents,DEFAULT_LIMITS.maxSyncEvents);assert.equal(ready.data.maxAccountEvents,DEFAULT_LIMITS.maxAccountEvents);
   });
 });
+test('Same-origin password reset form accepts opaque Origin while cross-site remains blocked',async()=>{
+  await withServer({dbPath:':memory:',origin:'https://example.test'},async base=>{
+    const accepted=await fetch(base+'/reset-password/request',{method:'POST',headers:{
+      'Content-Type':'application/x-www-form-urlencoded',Origin:'null','Sec-Fetch-Site':'same-origin'
+    },body:'email=person%40example.test'});
+    assert.equal(accepted.status,202);
+    const blocked=await fetch(base+'/reset-password/request',{method:'POST',headers:{
+      'Content-Type':'application/x-www-form-urlencoded',Origin:'null','Sec-Fetch-Site':'cross-site'
+    },body:'email=person%40example.test'});
+    assert.equal(blocked.status,403);
+  });
+});
 test('Password reset token changes password and revokes old sessions',async()=>{
   await withServer({dbPath:':memory:',reset:{mode:'return-token',appOrigin:'http://localhost',ttlMs:60000}},async base=>{
     const registered=await request(base,'/api/register',{email:'reset@example.test',password:'initial-password-123'});
