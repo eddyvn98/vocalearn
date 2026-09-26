@@ -9,8 +9,8 @@ This file is the rolling engineering progress note for VocaLearn. The product re
 | Scope | Current estimate | Notes |
 |---|---:|---|
 | Phase 1 / MVP - functionality | ~88% | Core MVP is broadly implemented. AT-27 and richer sentence/cloze authoring are merged; explicit AT/UX traceability is now complete. Remaining work is focused acceptance evidence and smaller edge cases. |
-| Phase 1 / MVP - acceptance evidence | ~82% | Every AT-01..AT-32 and UX-01..UX-30 has an explicit evidence-backed state; AT-04, AT-10, AT-30 and UX-29 now have exact automated/browser acceptance. Remaining gaps are predominantly physical-device/accessibility/PWA evidence. |
-| Full specification v0.5 - phases 1-3 | ~60% | Phase 1 moved forward slightly; G2/G3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not complete. |
+| Phase 1 / MVP - acceptance evidence | ~84% | Automated accessibility coverage now includes measured contrast, product 44px targets, keyboard/modal focus behavior and 320/390px reflow. Remaining gaps are predominantly physical-device, real screen-reader/virtual-keyboard, installed-PWA/background-notification and real two-device evidence. |
+| Full specification v0.5 - phases 1-3 | ~68% | Phase 2 AI/sentence semantics, Chinese/Japanese profile rules, device capability gates, handwriting grading semantics, Chinese tone/classifier rules and the defined advanced-statistics core are now implemented. UI/runtime exposure and physical-device validation for G2/G3 remain incomplete. |
 
 These are planning estimates, not release certification.
 
@@ -122,6 +122,45 @@ Merged commit: `60b6edb94e978a9b22609ab46859b184b502af94`
 - Physical virtual-keyboard, screen-reader, installed-PWA background notification and real two-device evidence remain Partial/Pending; emulation is not counted as physical-device proof.
 - Planning percentages stay at ~88% functionality / ~82% acceptance evidence / ~60% full v0.5 because this primarily improves release evidence and operability discipline rather than adding product scope.
 
+## Completed after the delivery workflow
+
+### PR #42 - automated accessibility acceptance - merged and deployed
+Merged commit: `ff10ab6e5d14c4931879009893f7f641f938583b`
+
+- Added automated checks for text/non-text contrast, the product 44px target rule, keyboard/modal focus restoration and mobile reflow at 320/390 CSS px.
+- Corrected the initial zoom-emulation approach so the acceptance now measures CSS-viewport reflow instead of treating a fake browser scale as WCAG evidence.
+- Verify and Browser regression passed before merge.
+- This improves software-verifiable UX-21/22/23 evidence, but real screen-reader and virtual-keyboard checks remain physical-device work.
+
+### PR #43 - Phase 2 AI jobs + sentence-pool semantics - merged and deployed
+Merged commit: `d52eba03f07aca8de2ece0efafff6764fe78cf01`
+
+- AI jobs snapshot content/field revisions and never overwrite fields the user changed after the job was queued; stale results are retained as suggestions.
+- Sentence pools validate gap/answer/content-version semantics, prefer unused sentences, deterministically reuse/refill after exhaustion, and disable safely when no valid sentence exists.
+- Covers the software semantics behind AT-22 and AT-23 without introducing a paid/external AI provider.
+- Verify and Browser regression passed before merge.
+
+### PR #46 - defined Phase 3 statistics core - merged and deployed
+Merged commit: `37b0ade791713331660a514926a620c280b746e7`
+
+- Implements the v0.5 definition of “Đã thuộc”: review phase, interval >= 21 days, not overdue and not in the error book.
+- Uses all active cards in scope as the denominator, including new/waiting cards; empty scope reports 0/0 and “—”.
+- Activity series keeps scheduled review separate from free/error practice and exposes a textual summary for future accessible charts/tables.
+- UI-16 is still not exposed as a complete production screen.
+
+### PR #55 - consolidated G2/G3 language, capability, handwriting and Chinese-game rules - merged and deployed
+Merged commit: `b4e3810664222ece6004e34db18d2f4d31c3f8d1`
+
+- Replaced the conflicting PR #51/#52/#53/#54 heads with one clean integration branch based on current main.
+- Chinese/Japanese profiles now carry phase-aware data-driven rules; Chinese pinyin accepts marked/numbered forms with mandatory tones, Japanese rejects raw romaji and handles kana-only/katakana cases according to AT-25/26.
+- Device capability gates only expose TTS/ASR/pen behavior that has explicit tested capability; offline support is never inferred and speech technical failures do not consume a valid attempt (AT-08/24).
+- Handwriting aggregation records per-character/stroke evidence while producing one word-level result for AT-09; the geometry/stroke-shape engine remains intentionally external and gated by tested/versioned data.
+- Chinese tone/classifier domain rules implement explicit per-syllable tone grading including neutral tone and suppress classifier questions when data is missing.
+- Initial Verify failure was only the generated service-worker manifest; the manifest was regenerated with the four integrated core modules. Final Verify and Browser regression both passed.
+- Railway deployment `aafc0c72-abf3-490d-8677-c29e841f927e` reached terminal **SUCCESS** for commit `b4e3810664222ece6004e34db18d2f4d31c3f8d1`; Railway healthcheck `/api/health` returned 200 on the new container.
+- The production-web smoke job was rerun after deployment and passed against the real Railway production origin.
+- Superseded PRs #51-#54 were closed after #55 merged.
+
 ## Phase 1 gaps now
 
 1. Run physical-device and accessibility acceptance:
@@ -135,15 +174,22 @@ Merged commit: `60b6edb94e978a9b22609ab46859b184b502af94`
 
 ## Phase 2 / Phase 3
 
-Not counted as MVP completion:
-- AI content fill and protected manual edits;
-- sentence bank generation;
-- pronunciation/phonetic data pipeline beyond current Stage-1 English support;
-- Chinese profile, pinyin whole-word input, tone and classifier games;
-- speech/ASR;
-- handwriting;
-- full Japanese profile;
-- advanced statistics.
+Implemented at domain/core level but not yet complete as released end-user flows:
+- AI content-fill job semantics and protected manual edits;
+- sentence-bank validation/selection/reuse/refill semantics;
+- Chinese and Japanese language-profile rules, including pinyin/kana whole-word behavior;
+- device capability gates for TTS/ASR/pen and speech-attempt semantics;
+- handwriting result aggregation and detailed stroke-error evidence;
+- Chinese tone and classifier game rules;
+- advanced-statistics metric definitions and activity aggregation.
+
+Still open before G2/G3 can be called complete:
+- wire the new G2/G3 domain modules into released UI/game flows with phase gates;
+- finish the user-facing statistics screen and accessible chart/table presentation;
+- provide the real stroke-data/geometry engine and license/coverage evidence for handwriting;
+- validate TTS/ASR/pen on real target devices and browsers before exposing those capabilities;
+- complete full Japanese UI/furigana/IME acceptance and Chinese tone/classifier UI acceptance;
+- perform the physical-device and installed-PWA acceptance that cannot be certified from desktop automation.
 
 ## Rule for updating this file
 
