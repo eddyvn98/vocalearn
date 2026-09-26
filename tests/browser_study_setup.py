@@ -31,6 +31,7 @@ def question_state(page):
             game:q.game,face:q.face,answerFace:q.answerFace,prompt:q.prompt,
             answers:q.answers,config:q.config,
             modelEasyMs:app.model.settings.easyMs,
+            modelZone:app.model.settings.zone,
             queueGames:app.session.queue.map(item=>item.game)
           };
         }"""
@@ -123,19 +124,28 @@ def main():
                 tab.locator("#settings-form details summary").click()
                 expect(tab.locator('[name="easyMs"]')).to_be_visible()
                 tab.locator('[name="easyMs"]').fill("9000")
+                tab.locator('[name="zone"]').fill("UTC")
+                warning=[]
+                def accept_timezone(dialog):
+                    warning.append(dialog.message)
+                    dialog.accept()
+                tab.once("dialog",accept_timezone)
                 tab.locator('#settings-form [type="submit"]').click()
                 expect(tab.locator("dialog")).not_to_be_visible()
-                page.wait_for_function("() => import(\'/js/state.js\').then(m => m.app.model.settings.easyMs === 9000)")
+                assert warning and "Existing due dates will not be rewritten" in warning[0]
+                page.wait_for_function("() => import(\'/js/state.js\').then(m => m.app.model.settings.easyMs === 9000 && m.app.model.settings.zone === \'UTC\')")
                 after=question_state(page)
                 assert after["prompt"]==before["prompt"]
                 assert after["answers"]==before["answers"]
                 assert after["config"]["easyMs"]==5000
+                assert after["config"]["zone"]==before["config"]["zone"]
+                assert after["modelZone"]=="UTC"
 
                 page.locator('[data-action="choose"]').filter(has_text=before["answers"][0]).first.click()
                 expect(page.locator("#feedback")).to_be_visible()
                 finish_early(page)
                 tab.close()
-                print("PASS: face readiness blocks invalid setup and current question snapshot stays frozen")
+                print("PASS: UX-29 warns on timezone change and keeps the current question snapshot frozen")
 
                 context.close();browser.close()
         finally:
