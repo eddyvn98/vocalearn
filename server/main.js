@@ -13,7 +13,7 @@ import {confirmPasswordReset,requestPasswordReset} from './recovery.js';
 import {confirmPage,requestPage,successPage} from './reset-page.js';
 import {schemaVersion} from './migrations.js';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const resetDefaults={mode:'disabled',appOrigin:'http://localhost',providerUrl:'',providerToken:'',ttlMs:30*60000};
+const resetDefaults={mode:'disabled',appOrigin:'http://localhost',providerUrl:'',providerToken:'',resendApiKey:'',resendFrom:'',ttlMs:30*60000};
 const ipOf=req=>String(req.socket.remoteAddress||'unknown');
 const retryHeader=result=>({'Retry-After':String(Math.max(1,Math.ceil(result.retryAfterMs/1000)))});
 function checkLimit(limiter,keys,now=Date.now()){
