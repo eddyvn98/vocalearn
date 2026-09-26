@@ -1,6 +1,7 @@
 """Browser acceptance for card metadata, custom fields, topic scope and bulk operations."""
 
 import os
+import re
 from pathlib import Path
 import socket
 import subprocess
@@ -229,6 +230,50 @@ def main():
                 page.locator('[data-action="library"]').click()
                 expect(page.locator(".word-row")).to_have_count(2)
                 print("PASS: scoped reset/delete and bulk restore affect only intended cards")
+
+                # Agent-operability journey: normal business flow through semantic names only.
+                # This block deliberately avoids data-action selectors and direct DOM/JS manipulation.
+                page.get_by_role("button", name=re.compile(r"Chọn bộ học:")).click()
+                expect(page.get_by_role("heading", name="Bắt đầu với bộ từ của bạn")).to_be_visible()
+                page.get_by_role("button", name=re.compile(r"Chọn bộ học: Timed acceptance")).click()
+                expect(page.get_by_role("heading", name="Hôm nay học gì?")).to_be_visible()
+
+                page.get_by_role("button", name=re.compile(r"Kho từ")).click()
+                expect(page.get_by_role("heading", name="Kho từ")).to_be_visible()
+                page.get_by_role("button", name="Sửa thẻ", exact=True).first.click()
+                page.get_by_text("Trường bổ sung", exact=True).click()
+                expect(page.get_by_label("Câu khuyết (một dấu ___)")).to_be_visible()
+                expect(page.get_by_label("Đáp án của câu (ngăn bằng dấu phẩy)")).to_be_visible()
+                page.get_by_role("button", name="Đóng").click()
+
+                page.get_by_role("button", name="Chủ đề", exact=True).first.click()
+                expect(page.get_by_role("heading", name="Chủ đề")).to_be_visible()
+                expect(page.get_by_text("Work", exact=True)).to_be_visible()
+                page.get_by_role("button", name="Đóng").click()
+
+                page.get_by_role("button", name=re.compile(r"Hôm nay")).click()
+                page.get_by_role("button", name="Gõ từ", exact=True).click()
+                expect(page.get_by_role("heading", name="Thiết lập buổi học")).to_be_visible()
+                page.get_by_role("button", name="Bắt đầu học", exact=True).click()
+                expect(page.get_by_label("Từ tiếng Anh")).to_be_visible()
+                page.get_by_label("Từ tiếng Anh").fill("bank")
+                page.get_by_role("button", name="Kiểm tra", exact=True).click()
+                expect(page.get_by_role("status")).to_contain_text("Chính xác")
+                page.get_by_role("button", name="Câu tiếp theo", exact=True).click()
+                if page.get_by_label("Từ tiếng Anh").count():
+                    page.get_by_label("Từ tiếng Anh").fill("bank")
+                    page.get_by_role("button", name="Kiểm tra", exact=True).click()
+                    expect(page.get_by_role("status")).to_contain_text("Chính xác")
+                    page.get_by_role("button", name="Câu tiếp theo", exact=True).click()
+                expect(page.get_by_role("heading", name="Thêm một lần ghi nhớ.")).to_be_visible()
+
+                page.get_by_role("button", name="Cài đặt tài khoản").click()
+                expect(page.get_by_role("heading", name="Cài đặt")).to_be_visible()
+                page.get_by_role("button", name="Đóng").click()
+                page.get_by_role("button", name=re.compile(r"Mở trạng thái đồng bộ")).click()
+                expect(page.get_by_role("heading", name="Đồng bộ")).to_be_visible()
+                page.get_by_role("button", name="Đóng").click()
+                print("PASS: semantic agent journey reaches set -> library/card/cloze -> topic -> study -> results -> settings/sync")
 
                 context.close();browser.close()
         finally:
