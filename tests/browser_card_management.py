@@ -182,6 +182,7 @@ def main():
                 before={b["meaning"]:b["generation"] for b in state_for_banks(page)}
                 page.once("dialog",lambda dialog: dialog.accept())
                 page.locator('[data-action="bulkReset"]').click()
+                expect(page.locator('[data-action="bulkReset"]')).not_to_be_visible()
                 after={b["meaning"]:b["generation"] for b in state_for_banks(page)}
                 assert before["bờ sông"]!=after["bờ sông"]
                 assert before["ngân hàng"]==after["ngân hàng"]
