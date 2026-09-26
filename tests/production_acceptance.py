@@ -191,12 +191,20 @@ def sync_and_offline(page,context):
     context.set_offline(False);page.reload(wait_until="networkidle");wait_home(page)
 
 def password_reset(page):
+    captured={}
+    def remember(req):
+        if "/reset-password/request" in req.url:
+            captured.update(req.all_headers())
+    page.on("request",remember)
     page.goto(ORIGIN+"/reset-password",wait_until="networkidle")
     expect(page.locator('input[name="email"]')).to_be_visible()
     page.locator('input[name="email"]').fill(EMAIL)
-    page.locator('form').locator('[type="submit"]').click()
-    expect(page.locator("body")).to_contain_text("Nếu email tồn tại")
+    with page.expect_navigation() as nav:
+        page.locator('form').locator('[type="submit"]').click()
+    response=nav.value
+    text=page.locator("body").inner_text()
     shot(page,"09-password-reset-request")
+    return {"status":response.status if response else None,"text":text,"headers":captured}
 
 def ux_audit(page,label):
     return page.evaluate("""label => {
@@ -228,7 +236,7 @@ def mobile_audit(browser):
 
 def main():
     OUT.mkdir(parents=True,exist_ok=True)
-    report={"origin":ORIGIN,"checks":[],"consoleErrors":[],"failedResponses":[]}
+    report={"origin":ORIGIN,"checks":[],"issues":[],"consoleErrors":[],"failedResponses":[]}
     with sync_playwright() as p:
         browser=p.chromium.launch()
         ctx=browser.new_context(viewport={"width":1280,"height":900},accept_downloads=True)
@@ -249,14 +257,19 @@ def main():
         export_import(page,temp);report["checks"].append("excel-export-import")
         page.locator('[data-action="home"]').click();wait_home(page)
         report["ux"]=[ux_audit(page,"desktop-home")]
-        password_reset(page);report["checks"].append("password-reset-request")
+        reset=password_reset(page);report["passwordReset"]=reset
+        if reset["status"]==200 and "Nếu email tồn tại" in reset["text"]:
+            report["checks"].append("password-reset-request")
+        else:
+            report["issues"].append({"area":"password-reset-request","detail":reset})
         report["ux"]+=mobile_audit(browser)
-        assert all(x["overflow"]<=1 for x in report["ux"]),report["ux"]
-        assert not report["consoleErrors"],report["consoleErrors"]
-        assert not report["failedResponses"],report["failedResponses"]
+        if not all(x["overflow"]<=1 for x in report["ux"]): report["issues"].append({"area":"horizontal-overflow","detail":report["ux"]})
+        if report["consoleErrors"]: report["issues"].append({"area":"console-errors","detail":report["consoleErrors"]})
+        if report["failedResponses"]: report["issues"].append({"area":"server-5xx","detail":report["failedResponses"]})
         ctx.close();browser.close()
     (OUT/"production-report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
     print(json.dumps(report,ensure_ascii=False,indent=2))
+    if report["issues"]: raise AssertionError("Production acceptance found issues: "+json.dumps(report["issues"],ensure_ascii=False))
     print("PASS: deployed production acceptance completed")
 
 if __name__=="__main__":
