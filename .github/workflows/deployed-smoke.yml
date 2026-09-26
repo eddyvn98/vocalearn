@@ -1,0 +1,41 @@
+name: Deployed smoke
+
+on:
+  push:
+    branches: [feature/core-hardening-mvp]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  railway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      APP_ORIGIN: https://vocalearn-web-production.up.railway.app
+    steps:
+      - name: Wait for health endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            body="$(curl -fsS --max-time 10 "$APP_ORIGIN/api/health" 2>/dev/null || true)"
+            if printf '%s' "$body" | grep -q '"ok":true'; then
+              printf '%s\n' "$body"
+              exit 0
+            fi
+            echo "health not ready (attempt $attempt/30)"
+            sleep 5
+          done
+          echo "health endpoint did not become ready"
+          exit 1
+
+      - name: Check app shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          html="$(curl -fsS --max-time 15 "$APP_ORIGIN/")"
+          test -n "$html"
+          printf '%s' "$html" | grep -qi 'VocaLearn'
+          echo "app shell reachable"
