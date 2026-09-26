@@ -19,7 +19,7 @@ def sync_now(page):
     page.locator('[data-action="sync"]').click()
     expect(page.locator("dialog")).to_contain_text("0 thay đổi chờ đồng bộ")
     page.wait_for_function("() => import('/js/state.js').then(({app}) => !app.busy)")
-    page.locator('dialog [data-action="close"]').last.click()
+    page.keyboard.press("Escape")
     expect(page.locator("dialog")).not_to_be_visible()
 
 
