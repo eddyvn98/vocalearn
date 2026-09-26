@@ -88,11 +88,15 @@ export function availablePool(model,setId,scopeFn,mode,now) {
     .sort((a,b)=>String(a.review.dueDate||'').localeCompare(String(b.review.dueDate||''))
       ||(a.review.dueAt||0)-(b.review.dueAt||0)||a.id.localeCompare(b.id));
 }
+export function dailyNewUsage(model,now) {
+  const day=dayAt(now,model.settings.zone),limit=model.settings.newLimit;
+  const started=Object.values(model.words).filter(w=>w.review.startedDay===day).length;
+  return {day,started,limit,remaining:Math.max(0,limit-started),overflow:Math.max(0,started-limit)};
+}
 export function learningAllowed(model,scoped,now) {
   if(scoped.some(w=>w.ready&&isDue(w.review,now,model.settings.zone)))return 'reviewFirst';
-  const day=dayAt(now,model.settings.zone);
-  const used=Object.values(model.words).filter(w=>w.review.startedDay===day).length;
-  return used>=model.settings.newLimit?'dailyLimit':null;
+  const usage=dailyNewUsage(model,now);
+  return usage.started>=usage.limit?'dailyLimit':null;
 }
 export function question(w,pool,game,face='meaning',mode='review',config={},uuid=()=>crypto.randomUUID(),answerFace,profile={}) {
   const learning=mode==='new'||mode==='review'&&w.review.phase!=='review';

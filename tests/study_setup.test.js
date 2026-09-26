@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {question,reasons,answerFaces,MIX_GAMES} from '../core/questions.js';
+import {question,reasons,answerFaces,MIX_GAMES,dailyNewUsage,learningAllowed} from '../core/questions.js';
 import {initialState,DEFAULTS} from '../core/srs.js';
 import {studySetProfile,maskMonolingualDefinition} from '../core/language-profiles.js';
 
@@ -74,4 +74,18 @@ test('English-English meaning prompts mask the target word and declared variants
   const q=question(word,[word,make('x','confirm','to verify')],'typing','meaning','free',DEFAULTS,()=> 'id',undefined,profile);
   assert.equal(q.prompt,'To ____ a service after the ____ build');
   assert.equal(maskMonolingualDefinition('Deployment is not deploy.','deploy',[]),'Deployment is not ____.');
+});
+
+
+test('AT-32 merged offline new-card starts keep the total and block more starts until the next account day',()=>{
+  const now=Date.parse('2026-09-26T05:00:00Z'),day='2026-09-26';
+  const model={settings:{...DEFAULTS,newLimit:15,zone:'Asia/Ho_Chi_Minh'},words:{}};
+  for(let i=0;i<18;i++)model.words['w'+i]={id:'w'+i,ready:true,deleted:false,review:{...initialState('w'+i),phase:'learning',startedDay:day,dueAt:now+60000}};
+  const usage=dailyNewUsage(model,now);
+  assert.deepEqual(usage,{day,started:18,limit:15,remaining:0,overflow:3});
+  assert.equal(learningAllowed(model,[],now),'dailyLimit');
+  assert.equal(Object.values(model.words).filter(w=>w.review.phase==='learning').length,18);
+  const next=Date.parse('2026-09-27T05:00:00Z');
+  assert.equal(dailyNewUsage(model,next).started,0);
+  assert.equal(learningAllowed(model,[],next),null);
 });

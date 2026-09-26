@@ -238,6 +238,7 @@ def main():
                         expect(page.locator('[data-action="samples"]')).to_be_visible()
                         page.locator('[data-action="samples"]').click()
                         expect(page.locator(".metric")).to_have_count(4)
+                        expect(page.locator("[data-new-usage]")).to_contain_text("0/15")
 
                         settings = page.locator('[data-action="settings"]:visible').first
                         settings.focus()
