@@ -7,7 +7,7 @@ export function shell(content) {
   return `<a class="skip" href="#main">Skip to content</a><div class="layout">
   <aside class="sidebar">${brand()}<nav aria-label="Main navigation">${['home','library','errors'].map(key=>button(`${icon(key==='library'?'list':key==='errors'?'flag':'home')}${t(key)}`,key,app.page===key?'nav active':'nav')).join('')}</nav>
   <div class="sidebar-bottom"><p class="muted small">${t('phaseNotice')}</p>${button(`${icon('gear')}${t('settings')}`,'settings','quiet')}</div></aside>
-  <div><header class="topbar row between wrap"><button class="btn quiet" data-action="sets" aria-label="${t('chooseSet')}: ${esc(set?.name || t('sets'))}">${icon('book')} ${esc(set?.name || t('sets'))} <small>${set?'EN \u2192 '+set.meaningLanguage.toUpperCase():''}</small></button>
+  <div><header class="topbar row between wrap"><button class="btn quiet" data-action="sets" aria-label="${t('switchSet')}: ${esc(set?.name || t('sets'))}">${icon('book')} ${esc(set?.name || t('sets'))} <small>${set?'EN \u2192 '+set.meaningLanguage.toUpperCase():''}</small></button>
   <div class="row">${button(`${navigator.onLine?'':t('offline')+' \u00b7 '}${pendingCount()?pendingCount()+' '+t('pending'):t('saved')}`,'syncInfo','status-button',`aria-label="${t('openSync')}: ${navigator.onLine?'':t('offline')+' · '}${pendingCount()?pendingCount()+' '+t('pending'):t('saved')}"`)}${button(icon('gear'),'settings','icon-button',`aria-label="${t('accountSettings')}"`)}</div></header>
   <main id="main">${content}</main></div></div>`;
 }
