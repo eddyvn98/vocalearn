@@ -233,7 +233,7 @@ def main():
 
                 # Agent-operability journey: normal business flow through semantic names only.
                 # This block deliberately avoids data-action selectors and direct DOM/JS manipulation.
-                page.get_by_role("button", name=re.compile(r"Chọn bộ học:")).click()
+                page.get_by_role("button", name=re.compile(r"Đổi bộ học:")).click()
                 expect(page.get_by_role("heading", name="Bắt đầu với bộ từ của bạn")).to_be_visible()
                 page.get_by_role("button", name=re.compile(r"Chọn bộ học: Timed acceptance")).click()
                 expect(page.get_by_role("heading", name="Hôm nay học gì?")).to_be_visible()
