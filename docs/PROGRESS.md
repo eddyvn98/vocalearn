@@ -9,7 +9,7 @@ This file is the rolling engineering progress note for VocaLearn. The product re
 | Scope | Current estimate | Notes |
 |---|---:|---|
 | Phase 1 / MVP - functionality | ~88% | Core MVP is broadly implemented. AT-27 and richer sentence/cloze authoring are merged; explicit AT/UX traceability is now complete. Remaining work is focused acceptance evidence and smaller edge cases. |
-| Phase 1 / MVP - acceptance evidence | ~81% | Every AT-01..AT-32 and UX-01..UX-30 now has an explicit evidence-backed state. Physical-device, accessibility, PWA lifecycle and selected exact-scenario checks remain. |
+| Phase 1 / MVP - acceptance evidence | ~82% | Every AT-01..AT-32 and UX-01..UX-30 has an explicit evidence-backed state; AT-04, AT-10 and AT-30 now have exact automated acceptance. Physical-device, accessibility, PWA lifecycle and real-device checks remain. |
 | Full specification v0.5 - phases 1-3 | ~60% | Phase 1 moved forward slightly; G2/G3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not complete. |
 
 These are planning estimates, not release certification.
@@ -82,18 +82,28 @@ Merged commit: `85d4de9238c5750c01d54d358f6db995acccf576`
 - Verify and Browser regression both passed before merge.
 - This documentation change does not raise the planning percentages by itself because it clarifies evidence rather than adding runtime behavior.
 
+## Completed after explicit traceability
+
+### PR #37 - AT-04 / AT-10 / AT-30 exact acceptance - merged
+Merged commit: `bafbfddcaa45a5d7a32de70961554230cd4191a7`
+
+- **AT-04** now has exact domain evidence for three quiz choices, three valid match pairs and one-card matching rejection.
+- **AT-10** now has exact schedule-isolation evidence: scheduled recognition changes the schedule; later free-practice failure does not, while the error book still records it.
+- **AT-30** now has exact scope evidence: only ready + due cards inside the selected scope block new learning.
+- Verify and Browser regression both passed before merge.
+- Phase-1 acceptance-evidence planning estimate moves conservatively from ~81% to ~82%.
+
 ## Phase 1 gaps now
 
-1. Add focused automated acceptance for the exact remaining composite cases **AT-04, AT-10 and AT-30**.
-2. Run physical-device and accessibility acceptance:
+1. Run physical-device and accessibility acceptance:
    - mobile virtual keyboard at 320/390 CSS px;
    - screen reader and keyboard-only flow;
    - measured WCAG contrast/target/zoom/focus checks;
    - installed PWA install/upgrade/offline lifecycle;
    - background reminder behavior;
    - real two-device offline AT-32 drill.
-3. Close the explicit timezone-impact warning portion of **UX-29**.
-4. Resend production activation stays deferred in issue #29 until a verified sending domain and real delivery acceptance are available.
+2. Close the explicit timezone-impact warning portion of **UX-29**.
+3. Resend production activation stays deferred in issue #29 until a verified sending domain and real delivery acceptance are available.
 
 ## Phase 2 / Phase 3
 
