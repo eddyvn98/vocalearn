@@ -18,7 +18,7 @@ Physical-device requirements are not upgraded to Pass from desktop emulation alo
 | Scope | Estimated progress | Interpretation |
 |---|---:|---|
 | Phase 1 / MVP functional implementation | **~88%** | Core offline PWA, accounts/sync, card model, topics, Excel, six MVP game families, SRS, error book, session recovery, production hardening, AT-27 topic transfer and guided cloze authoring are implemented. |
-| Phase 1 / MVP acceptance evidence | **~81%** | Automated domain/API/browser coverage is strong. Real-device accessibility, installed-PWA/background behavior and a real two-device AT-32 drill remain. |
+| Phase 1 / MVP acceptance evidence | **~82%** | AT-04, AT-10 and AT-30 now have exact automated acceptance scenarios. Real-device accessibility, installed-PWA/background behavior and a real two-device AT-32 drill remain. |
 | Full specification v0.5, phases 1-3 | **~60%** | Phase-2/3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not released yet. |
 
 These percentages are planning estimates, not release certification.
@@ -51,13 +51,13 @@ These percentages are planning estimates, not release certification.
 | AT-01 | **Pass** | Offline card with only `apple` saves as waiting, has no due date and does not consume new-card learning quota. | `tests/model.test.js` covers bare-word waiting/no due date; daily-new gating is separate from saving and is covered in `tests/grading.test.js`. |
 | AT-02 | **Pass** | Same spelling with different senses creates separate card IDs and schedules. | `tests/model.test.js` plus live card-management acceptance use the two `bank` senses. |
 | AT-03 | **Pass** | Re-import/update the same card without duplicating card/image/row or losing schedule/logs. | Excel browser acceptance covers preview, conflict choice, embedded image handling and retry without duplicate cards; import planning is deterministic/idempotent. |
-| AT-04 | **Partial** | Small scoped decks use valid 2–4-option quiz/matching behavior and do not expose matching with only one usable card. | `tests/grading.test.js` directly covers 2/3 quiz choices and ambiguity; browser CI covers quiz/matching. The exact “3 cards in category + distractor outside category + one-card matching” scenario is not recorded as one acceptance run. |
+| AT-04 | **Pass** | Small scoped decks use valid 2–4-option quiz/matching behavior and do not expose matching with only one usable card. | Exact domain acceptance verifies a three-card pool yields three quiz choices and three valid match pairs, while a one-card pool is blocked for matching; ambiguity remains explicitly rejected. |
 | AT-05 | **Pass** | Ambiguous prompt/answer pairs must not create a question with multiple reasonable correct answers. | `core/questions.js` blocks ambiguous prompt mappings; domain tests and study-setup browser acceptance verify invalid combinations are blocked with a reason. |
 | AT-06 | **Pass** | Cloze `Yesterday, I ___ to school.` accepts only its sentence answer `went`, not generic card variants. | Exact AT-06 domain test in `tests/grading.test.js`; cloze runtime and guided authoring are browser-tested. |
 | AT-07 | **Pass** | One-character typo gets one correction; corrected result is Hard and error evidence is retained without duplicate schedule transitions. | Exact grading/retry test in `tests/grading.test.js`; attempt/error-book behavior and one-final-answer contention are covered. |
 | AT-08 | **N/A (Phase 1)** | Speech retry behavior when microphone/ASR fails. | Speech/ASR is a later-phase capability and is not exposed in Phase 1. |
 | AT-09 | **N/A (Phase 1)** | Handwriting/stroke correction and whole-word grading. | Handwriting is Phase 3 and is not exposed in Phase 1. |
-| AT-10 | **Partial** | Scheduled easy recognition affects schedule once; later wrong free practice affects the error book but not schedule/EF. | Recognition grading cap and free-practice schedule isolation are tested independently. The exact two-step scenario is not recorded as one acceptance test. |
+| AT-10 | **Pass** | Scheduled easy recognition affects schedule once; later wrong free practice affects the error book but not schedule/EF. | Exact scheduler acceptance proves a scheduled recognition transition owns the schedule and a later free-practice failure is excluded from scheduler replay; a paired error-book test proves that free failure is still recorded. |
 | AT-11 | **Pass** | Repeated free practice does not change EF/due date while logs/error-book rules remain active. | Exact AT-11 scheduler test plus runtime free-practice labeling/logging. |
 | AT-12 | **Pass** | Interval/EF calculation uses old EF before the Easy EF increase. | Exact AT-12 scheduler tests in `tests/srs.test.js`. |
 | AT-13 | **Pass** | Overdue interval uses specified rounding and answer-day due-date basis. | Exact AT-13 test in `tests/srs.test.js`. |
@@ -77,7 +77,7 @@ These percentages are planning estimates, not release certification.
 | AT-27 | **Pass** | Moving a multi-topic card replaces only the chosen source membership; other memberships and schedule stay intact. | PR #33; exact domain regression and live card/topic/bulk browser acceptance. |
 | AT-28 | **Pass** | Submit then close/reopen/resend preserves one result/log/schedule transition and the correct next position. | Idempotent event append, deterministic opportunity identity, reload/session persistence and same-opportunity contention are automated. |
 | AT-29 | **Partial** | Long TTS/ASR wait and pause time must not count as recall latency; interruption must not earn Easy or become Forget. | Phase-1 interruption timing is tested: interrupted correct recall cannot earn Easy; audio timing starts after playback. TTS/ASR wait path itself is later-phase. |
-| AT-30 | **Partial** | Only ready/due cards in the current scope block new learning; blocked cards or another scope must not lock the current scope. | `learningAllowed` receives current scoped cards and filters on readiness; Today separates blocked cards. A dedicated exact A/B-scope browser acceptance run is still missing. |
+| AT-30 | **Pass** | Only ready/due cards in the current scope block new learning; blocked cards or another scope must not lock the current scope. | Exact domain acceptance proves a not-ready due card and a due card outside the supplied scope do not block new learning, while a ready due card in the current scope returns `reviewFirst`. |
 | AT-31 | **Partial** | One synced primary reminder device; at most one notification/day; denied permission falls back to in-app. | Reminder planning, primary/secondary/denied-permission behavior and day-marker dedup are automated. Background delivery with an installed/closed PWA still needs physical-device evidence. |
 | AT-32 | **Partial** | Two offline devices may exceed the account daily-new limit; sync keeps all results, shows exact total and blocks further starts until next day. | Deterministic merged-state test and Today counter browser check pass. A real two-device offline/reconnect drill is still pending. |
 
@@ -120,17 +120,16 @@ These percentages are planning estimates, not release certification.
 
 The remaining Phase-1 acceptance work is concentrated rather than broad:
 
-1. Close the exact scenario evidence for **AT-04, AT-10 and AT-30** where implementation exists but the complete specified composition is not yet one acceptance test.
-2. Run physical-device/accessibility evidence for **UX-19, UX-21, UX-22, UX-23, UX-24, UX-25**, including:
+1. Run physical-device/accessibility evidence for **UX-19, UX-21, UX-22, UX-23, UX-24, UX-25**, including:
    - 320/390 CSS px with a real virtual keyboard;
    - keyboard-only primary flow;
    - measured contrast/target/zoom/focus checks;
    - real screen reader;
    - installed PWA install/upgrade/offline lifecycle;
    - background reminder behavior.
-3. Run the real two-device offline/reconnect drill for **AT-32**.
-4. Finish the explicit timezone-warning portion of **UX-29**.
-5. Resend production delivery remains deferred to issue #29 until a verified sending domain and real delivery acceptance are available.
+2. Run the real two-device offline/reconnect drill for **AT-32**.
+3. Finish the explicit timezone-warning portion of **UX-29**.
+4. Resend production delivery remains deferred to issue #29 until a verified sending domain and real delivery acceptance are available.
 
 ## Deferred later-phase cases
 
@@ -162,8 +161,7 @@ Primary evidence currently includes:
 
 ## Next implementation / acceptance order
 
-1. Add focused automated acceptance for AT-04, AT-10 and AT-30.
-2. Run the physical-device/accessibility/PWA matrix and the real two-device AT-32 drill.
-3. Close the UX-29 timezone-warning gap.
-4. Keep Resend production activation in issue #29 until its domain prerequisite is available.
-5. Start Phase 2 only after the remaining Phase-1 acceptance gaps are closed.
+1. Run the physical-device/accessibility/PWA matrix and the real two-device AT-32 drill.
+2. Close the UX-29 timezone-warning gap.
+3. Keep Resend production activation in issue #29 until its domain prerequisite is available.
+4. Start Phase 2 only after the remaining Phase-1 acceptance gaps are closed.
