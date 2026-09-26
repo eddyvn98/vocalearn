@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {validateEvent} from '../core/validation.js';
 import {replay,inScope,descendants,categoryPath} from '../core/model.js';
+import {blankSelection,restoreBlank,validCloze} from '../core/cloze.js';
 
 const event=(id,kind,data,seq=1)=>({id,kind,data,deviceId:'dev',at:seq,seq});
 
@@ -85,4 +86,22 @@ test('AT-27 topic transfer replaces only the source membership and keeps schedul
   assert.deepEqual(after.words.w1.categoryIds.sort(),['other','target']);
   assert.equal(after.words.w1.generation,before.words.w1.generation);
   assert.equal(after.words.w1.review.rev,before.words.w1.review.rev);
+});
+
+
+test('guided cloze authoring blanks a selected span and restores it safely',()=>{
+  const full='Yesterday, I went to school.';
+  const start=full.indexOf('went');
+  const blanked=blankSelection(full,start,start+'went'.length);
+  assert.deepEqual(blanked,{sentence:'Yesterday, I ___ to school.',answer:'went'});
+  assert.equal(validCloze(blanked.sentence,['went','go']),true);
+  assert.equal(restoreBlank(blanked.sentence,['went','go']),full);
+  assert.equal(blankSelection(blanked.sentence,0,9),null);
+});
+
+test('guided cloze selection preserves surrounding whitespace',()=>{
+  const full='I really like this app.';
+  const start=full.indexOf(' really ');
+  const blanked=blankSelection(full,start,start+' really '.length);
+  assert.deepEqual(blanked,{sentence:'I ___ like this app.',answer:'really'});
 });
