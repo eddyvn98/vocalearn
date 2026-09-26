@@ -1,0 +1,62 @@
+name: Production web smoke
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'server/main.js'
+      - 'tests/browser_production_smoke.py'
+      - '.github/workflows/production-smoke.yml'
+      - 'docs/DELIVERY_WORKFLOW.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: production-web-smoke-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  production-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PRODUCTION_ORIGIN: https://vocalearn-web-production.up.railway.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install playwright==1.57.0 && python -m playwright install --with-deps chromium
+      - name: Wait for this main commit on Railway
+        if: github.event_name == 'push'
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os, time, urllib.request
+          origin=os.environ["PRODUCTION_ORIGIN"].rstrip("/")
+          expected=os.environ["EXPECTED_SHA"]
+          deadline=time.time()+420
+          last=None
+          while time.time()<deadline:
+              try:
+                  with urllib.request.urlopen(origin+"/api/health",timeout=10) as response:
+                      data=json.load(response)
+                  last=data
+                  if data.get("commit")==expected:
+                      print("Railway is serving expected commit",expected)
+                      raise SystemExit(0)
+                  print("Waiting for Railway commit; currently",data.get("commit"))
+              except Exception as error:
+                  print("Railway health wait:",repr(error))
+              time.sleep(10)
+          raise SystemExit(f"Railway did not serve {expected} within 7 minutes; last health={last}")
+          PY
+      - name: Run smoke against Railway production URL
+        run: python tests/browser_production_smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-web-evidence
+          path: tests/browser-evidence/production-*.png
+          if-no-files-found: ignore
+          retention-days: 7
