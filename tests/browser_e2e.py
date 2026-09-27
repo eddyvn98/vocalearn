@@ -86,6 +86,9 @@ def run_journey(page, context, browser, origin, errors):
     page.locator("#image-upload").set_input_files(
         {"name": "apple.png", "mimeType": "image/png", "buffer": png}
     )
+    details = page.locator("#word-form details")
+    if not details.get_attribute("open"):
+        details.locator("summary").click()
     expect(page.locator("#media-image img")).to_be_visible()
     page.locator('#word-form [type="submit"]').click()
     expect(page.locator("#word-form")).not_to_be_visible()
@@ -226,6 +229,9 @@ def run_journey(page, context, browser, origin, errors):
         expect(second_page.locator("body")).to_contain_text("banana")
         apple_second = second_page.locator(".word-row", has_text="apple")
         apple_second.locator('[data-action="edit"]').click()
+        details_second = second_page.locator("#word-form details")
+        if not details_second.get_attribute("open"):
+            details_second.locator("summary").click()
         expect(second_page.locator("#media-image img")).to_be_visible(timeout=10000)
         second_page.locator('#modal [data-action="close"]').click()
         print("PASS: content-addressed image syncs into a second browser profile")
