@@ -1,6 +1,6 @@
 import {app} from './state.js';
 import {t,esc,button,badge,modal,closeModal,field,notify} from './ui.js';
-import {prepare,transact,model,uuid} from './storage.js';
+import {prepare,transact,model,uuid,api} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {categoryPath} from '/core/model.js';
 import {WORD_FIELDS} from '/core/validation.js';
@@ -9,7 +9,7 @@ import {parsePinyin} from '/core/chinese-games.js';
 import {hydrateMedia,ingestFile,mediaMarkup} from './media-store.js';
 import {refreshAiPanel} from './ai-client.js';
 import {beginLookupDraft,lookupMetaForSave} from './lookups.js';
-let editing=null,media={};
+let editing=null,media={},strokeDraft=null;
 const listValue=value=>(value||[]).join(', ');
 function customInputs(w) {
   const defs=app.model.sets[app.setId]?.customFields||[],values=w.custom||{};
@@ -61,7 +61,7 @@ export function makeSentenceBlank() {
 }
 
 export function openEditor(id) {
-  editing=id?app.model.words[id]:null;media={};app.dirty=false;beginLookupDraft(editing);
+  editing=id?app.model.words[id]:null;media={};strokeDraft=structuredClone(editing?.strokeData||null);app.dirty=false;beginLookupDraft(editing);
   const w=editing||{};
   const categories=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
   const profile=studySetProfile(app.model.sets[app.setId]);
@@ -71,11 +71,12 @@ export function openEditor(id) {
     :profile?.id==='ja'?`${field('kana','kana',w.kana||w.ipa||'')}${field('onReading','onReading',w.onReading||'')}${field('kunReading','kunReading',w.kunReading||'')}<p class="muted small">${t('japaneseReadingHelp')}</p>`
     :`${field('ipa','ipa',w.ipa)}${lookupButton}<p id="lookup-status" class="muted small"></p>`;
   const wordLabel=['zh','ja'].includes(profile?.id)?'wordGeneric':'word';
+  const strokePanel=['zh','ja'].includes(profile?.id)?`<section class="wait-panel stack"><strong>${t('strokeResources')}</strong><p id="stroke-status" class="muted small">${strokeDraft?esc(strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+(strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):'')):t('strokeResourcesHelp')}</p>${button(t('loadStrokeData'),'loadStrokeData','quiet')}</section>`:'';
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
   ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
-  <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
+  <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${strokePanel}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
   <div class="row wrap">${button('Tạo ô trống từ phần bôi đen','makeSentenceBlank','quiet')}</div>
   <div id="sentence-preview" class="wait-panel stack" aria-live="polite"><strong>Xem thử câu hỏi</strong>${sentencePreview(w.sentence||'',w.answers||[])}</div>
   ${sentencePoolMarkup(w)}
@@ -109,7 +110,7 @@ export async function saveWord(form) {
     collocations:list('collocations'),wordFamily:list('wordFamily'),tags:list('tags'),
     register:String(f.get('register')||'').trim(),level:String(f.get('level')||'').trim(),
     translation:String(f.get('translation')||'').trim(),mnemonic:String(f.get('mnemonic')||'').trim(),
-    source:String(f.get('source')||'').trim(),custom,note:String(f.get('note')).trim(),...media};
+    source:String(f.get('source')||'').trim(),custom,note:String(f.get('note')).trim(),...(strokeDraft?{strokeData:strokeDraft}:{}),...media};
   const profile=studySetProfile(app.model.sets[app.setId]);
   patch.lookupMeta=lookupMetaForSave(form,editing,profile?.id||'en');
   if(profile?.id==='zh'){
@@ -167,4 +168,16 @@ export function trash() {
   const deleted=Object.values(app.model.words).filter(w=>w.deleted&&w.setId===app.setId);
   modal(t('deleted'),`<div class="stack">${deleted.length?button(`${t('restoreAll')} (${deleted.length})`,'restoreAllWords','primary'):''}
     ${deleted.map(w=>`<div class="topic-row"><span>${esc(w.word)} · ${esc(w.meaning)}</span>${button(t('restore'),'restoreWord','',`data-id="${w.id}"`)}</div>`).join('')||`<p>${t('noResults')}</p>`}</div>`);
+}
+
+export async function loadStrokeData(){
+  const form=document.querySelector('#word-form');if(!form)throw new Error(t('lookupNoEditor'));
+  const profile=studySetProfile(app.model.sets[app.setId]),word=String(form.elements.word?.value||'').trim();
+  if(!['zh','ja'].includes(profile?.id)||!word)throw new Error(t('lookupWordFirst'));
+  const payload=await api('strokes?language='+encodeURIComponent(profile.id)+'&text='+encodeURIComponent(word));
+  strokeDraft=payload.result;app.dirty=true;
+  const status=document.querySelector('#stroke-status');
+  if(status)status.textContent=strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+
+    (strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):' · '+t('strokeDataReady'));
+  return strokeDraft;
 }
