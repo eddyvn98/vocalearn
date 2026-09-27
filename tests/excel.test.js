@@ -73,3 +73,18 @@ test('Excel sense-aware duplicate handling: same word different meaning accepted
   assert.equal(result.cards[0].meaning, 'bờ sông');
   assert.equal(result.cards[1].word, 'river');
 });
+
+
+test('Excel custom fields round-trip with text number and select types', async () => {
+  const fields=[
+    {id:'source',name:'Nguồn',type:'text',options:[]},
+    {id:'priority',name:'Ưu tiên',type:'number',options:[]},
+    {id:'register',name:'Ngữ vực',type:'select',options:['formal','casual']}
+  ];
+  const buffer=cardsToXlsx([{
+    word:'deploy',meaning:'triển khai',custom:{source:'meeting',priority:2,register:'formal'}
+  }],{},fields);
+  const result=await xlsxToCards(buffer,[],undefined,fields);
+  assert.equal(result.cards.length,1);
+  assert.deepEqual(result.cards[0].custom,{source:'meeting',priority:2,register:'formal'});
+});
