@@ -2,7 +2,8 @@ import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import {application} from '../server/main.js';
 import {DEFAULTS} from '../core/srs.js';
-import {openDatabase,synchronize} from '../server/database.js';
+import {openDatabase,synchronize,allEvents} from '../server/database.js';
+import {replay} from '../core/model.js';
 
 let server, url, cookie;
 async function request(path, data, session = cookie) {
@@ -181,5 +182,84 @@ test('Clock anchors refresh and clamped event time is explicitly flagged', () =>
   const acceptedThird = three.events.find(e => e.id === third.id);
   assert.equal(acceptedThird.effectiveAt, 101050);
   assert.equal(acceptedThird.clockAdjusted, false);
+  db.close();
+});
+
+
+test('Two devices competing on the same due review produce one conservative transition', () => {
+  const db = openDatabase(':memory:');
+  db.prepare('INSERT INTO users(id,email,hash,salt) VALUES(?,?,?,?)')
+    .run('multi-user', 'multi@test.invalid', 'hash', 'salt');
+  const userId = 'multi-user';
+  const wordRevision = 'multi-word-event';
+  const setEvent = event('multi-set-event', 'set', {
+    id: 'multi-set', name: 'Multi', language: 'en', meaningLanguage: 'vi'
+  }, 'dev-a', 1000);
+  const wordEvent = event(wordRevision, 'word', {
+    id: 'multi-word', setId: 'multi-set', patch: {word: 'apple', meaning: 'qua tao'}
+  }, 'dev-a', 1001);
+  synchronize(db, userId, {
+    events: [setEvent, wordEvent], deviceId: 'dev-a', cursor: 0, clientNow: 1001
+  }, 100000);
+
+  const snapshot = {
+    prompt: 'qua tao', answers: ['apple'], word: 'apple', meaning: 'qua tao',
+    fields: {word: wordRevision, meaning: wordRevision}
+  };
+  const answer = (id, deviceId, baseRev, game, grade, now, extra = {}) => event(id, 'answer', {
+    schemaVersion: 2, wordId: 'multi-word', questionId: 'q-' + id, baseRev,
+    mode: baseRev.startsWith('root-') ? 'new' : extra.mode || 'review',
+    game, grade, hadError: grade === 'forget', assisted: false, activeMs: 6000,
+    config: DEFAULTS, face: 'meaning', input: grade === 'forget' ? 'wrong' : 'apple',
+    unknown: grade === 'forget', familiarize: !!extra.familiarize, question: snapshot
+  }, deviceId, now);
+
+  let state = replay(allEvents(db, userId)).words['multi-word'].review;
+  synchronize(db, userId, {
+    events: [answer('learn-1', 'dev-a', state.rev, 'flash', 'hard', 1100, {familiarize: true})],
+    deviceId: 'dev-a', cursor: 0, clientNow: 1100
+  }, 100100);
+
+  state = replay(allEvents(db, userId)).words['multi-word'].review;
+  synchronize(db, userId, {
+    events: [answer('learn-2', 'dev-a', state.rev, 'flash', 'hard', 61100, {familiarize: true, mode: 'review'})],
+    deviceId: 'dev-a', cursor: 0, clientNow: 61100
+  }, 160100);
+
+  state = replay(allEvents(db, userId)).words['multi-word'].review;
+  synchronize(db, userId, {
+    events: [answer('learn-3', 'dev-a', state.rev, 'typing', 'good', 661100, {mode: 'review'})],
+    deviceId: 'dev-a', cursor: 0, clientNow: 661100
+  }, 760100);
+
+  state = replay(allEvents(db, userId)).words['multi-word'].review;
+  synchronize(db, userId, {
+    events: [answer('learn-4', 'dev-a', state.rev, 'typing', 'good', 1261100, {mode: 'review'})],
+    deviceId: 'dev-a', cursor: 0, clientNow: 1261100
+  }, 1360100);
+
+  state = replay(allEvents(db, userId)).words['multi-word'].review;
+  synchronize(db, userId, {
+    events: [answer('learn-5', 'dev-a', state.rev, 'typing', 'good', 1861100, {mode: 'review'})],
+    deviceId: 'dev-a', cursor: 0, clientNow: 1861100
+  }, 1960100);
+
+  const dueState = replay(allEvents(db, userId)).words['multi-word'].review;
+  assert.equal(dueState.phase, 'review');
+  const dueNow = 200000000;
+  const good = answer('review-good', 'dev-a', dueState.rev, 'typing', 'good', dueNow, {mode: 'review'});
+  const forget = answer('review-forget', 'dev-b', dueState.rev, 'typing', 'forget', dueNow, {mode: 'review'});
+
+  synchronize(db, userId, {
+    events: [good], deviceId: 'dev-a', cursor: 0, clientNow: dueNow
+  }, dueNow);
+  synchronize(db, userId, {
+    events: [forget], deviceId: 'dev-b', cursor: 0, clientNow: dueNow
+  }, dueNow);
+
+  const final = replay(allEvents(db, userId)).words['multi-word'];
+  assert.equal(final.review.phase, 'relearn');
+  assert.equal(final.accepted.has('review-good'), true);
+  assert.equal(final.accepted.has('review-forget'), true);
   db.close();
 });
