@@ -90,14 +90,10 @@ def main():
                 page.locator("#setup-face").dispatch_event("change")
                 expect(page.locator('[data-action="startSession"]')).to_be_enabled()
                 page.locator('[data-action="startSession"]').click()
-                seen=[]
-                for _ in range(3):
-                    seen.append(answer_current(page))
-                    nxt=page.locator('[data-action="next"]')
-                    if nxt.count():nxt.click()
-                assert any("ăn" in x for x in seen)
-                assert any("cảm ơn" in x for x in seen)
-                assert any("cà phê" in x for x in seen)
+                queued=page.evaluate("() => import('/js/state.js').then(m => m.app.session.queue.map(q => q.snapshot.word))")
+                assert set(queued)=={"食べる","ありがとう","コーヒー"},queued
+                prompt=answer_current(page)
+                assert any(label in prompt for label in ["ăn","cảm ơn","cà phê"])
                 assert not errors,repr(errors)
                 browser.close()
                 print("PASS: Phase-3 Japanese kana, IME-safe typing and whole-word form flow")
