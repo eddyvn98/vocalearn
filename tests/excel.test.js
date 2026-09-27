@@ -13,6 +13,9 @@ test('Excel export and import round-trip with embedded image', async () => {
       sentence: 'She is ___ under pressure.',
       answers: ['resilient'],
       note: 'Tập trung học',
+      level: 'B2',
+      variants: ['resilience'],
+      tags: ['work', 'hard'],
       category: 'Tính cách',
       image: dummyImg,
       audio: ''
@@ -44,6 +47,9 @@ test('Excel export and import round-trip with embedded image', async () => {
   assert.equal(result.cards[0].sentence, 'She is ___ under pressure.');
   assert.deepEqual(result.cards[0].answers, ['resilient']);
   assert.equal(result.cards[0].note, 'Tập trung học');
+  assert.equal(result.cards[0].level, 'B2');
+  assert.deepEqual(result.cards[0].variants, ['resilience']);
+  assert.deepEqual(result.cards[0].tags, ['work', 'hard']);
   assert.ok(result.cards[0].image.startsWith('data:image/png;base64,'));
 
   assert.equal(result.cards[1].word, 'bank');
