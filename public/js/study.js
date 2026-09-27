@@ -12,6 +12,9 @@ import {readingMatches,twoStepSnapshot} from '/core/script-typing.js';
 import {gradeTones,gradeClassifier} from '/core/chinese-games.js';
 import {ensureSentencePool} from './sentence-pool.js';
 import {handwritingAction,setHandwritingResultHandler} from './handwriting-ui.js';
+import {speechAttempt} from '/core/capabilities.js';
+import {studySetProfile} from '/core/language-profiles.js';
+import {recognizeSpeech} from './speech.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
 setHandwritingResultHandler(async correct=>{const q=current();if(!q||q.result)return;q.input='[handwriting]';await writeAnswer(q,correct);});
@@ -125,6 +128,27 @@ export async function submitInput(value) {
   }
   await writeAnswer(q,result.kind==='correct');
 }
+async function runSpeech(q){
+  if(q.result||q.speechBusy)return;
+  q.speechBusy=true;q.speechMessage='';stopClock();
+  await setMeta('session',app.session);app.render();
+  const language=studySetProfile(app.model.sets[app.setId])?.id||'en';
+  const recognized=await recognizeSpeech(language);
+  q.speechBusy=false;
+  if(recognized.kind==='technical'){
+    q.speechState=speechAttempt(q.speechState,{kind:'technical',code:recognized.code});
+    q.speechMessage=recognized.code||'speechTechnical';
+    await setMeta('session',app.session);app.render();startClock();return;
+  }
+  q.input=recognized.transcript;q.activeMs+=(recognized.activeMs||0);
+  const correct=checkAnswer(recognized.transcript,q.answers,true).kind==='correct';
+  q.speechState=speechAttempt(q.speechState,{kind:'recognition',correct});
+  if(!correct)q.hadError=true;
+  if(q.speechState.final)return writeAnswer(q,q.speechState.final.correct);
+  await transact([prepare('attempt',{wordId:q.wordId,questionId:q.id,wrong:true,input:recognized.transcript,transcript:recognized.transcript})],app.session);
+  app.model=model();await setMeta('session',app.session);app.render();startClock();
+}
+
 export async function playAudio(slow=false) {
   const q=current(),audio=document.querySelector('#audio');
   if(!audio||q.result)return;
@@ -143,6 +167,7 @@ export async function studyAction(action,element) {
   if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});app.render();pushHistory();return;}
   if(!q)return;
   if(action==='playAudio'||action==='slowAudio')return playAudio(action==='slowAudio');
+  if(action==='speechStart')return runSpeech(q);
   if(action.startsWith('handwriting'))return handwritingAction(action,q);
   if(['flip','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','letter','checkLetters','matchLeft','matchRight'].includes(action))
     await ensureQuestionMedia(action.startsWith('match')?app.session.queue[app.session.selected??0]:q,app.session.match);
