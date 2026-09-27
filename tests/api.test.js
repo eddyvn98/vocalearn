@@ -130,3 +130,21 @@ test('Media usage endpoint is authenticated and reports quota',async()=>{
  assert.equal(body.limit,200*1024*1024);
  assert.equal(body.remaining,body.limit-body.bytes);
 });
+
+
+test('Media deduplication keeps quota stable',async()=>{
+ const login=await request('/api/login',{email:'test@example.com',password:'long-secure-password'},null);
+ const mediaCookie=login.headers.get('set-cookie').split(';')[0];
+ const bytes=Buffer.from('RIFFdedupeWAVEfmt ');
+ const id=createHash('sha256').update(bytes).digest('hex');
+ const uri='data:audio/wav;base64,'+bytes.toString('base64');
+ const before=await (await fetch(url+'/api/media-usage',{headers:{Cookie:mediaCookie}})).json();
+ const first=await request('/api/media',{id,uri},mediaCookie);
+ const afterFirst=await (await fetch(url+'/api/media-usage',{headers:{Cookie:mediaCookie}})).json();
+ const second=await request('/api/media',{id,uri},mediaCookie);
+ const afterSecond=await (await fetch(url+'/api/media-usage',{headers:{Cookie:mediaCookie}})).json();
+ assert.equal(first.status,200);assert.equal(second.status,200);
+ assert.equal(afterFirst.bytes,before.bytes+bytes.length);
+ assert.equal(afterSecond.bytes,afterFirst.bytes);
+ assert.equal(afterSecond.count,afterFirst.count);
+});
