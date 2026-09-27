@@ -76,7 +76,8 @@ export async function beginSession() {
   if(!queue.length)return;
   const session={id:uuid(),setId:app.setId,mode:app.mode,queue,index:0,finished:false,match:queue.every(q=>q.game==='match'),
     matchOrder:queue.map((_,i)=>i).reverse(),selected:null,error:''};
-  await setMeta('session',session);app.session=session;closeModal();app.page='study';app.render();startClock();
+  await setMeta('session',session);app.session=session;closeModal();app.page='study';
+  history.pushState({voca:true,page:'study',setId:app.setId},'','#study');app.render();startClock();
 }
 let submitting=false;
 async function writeAnswer(q,correct) {
@@ -126,9 +127,12 @@ export async function playAudio(slow=false) {
 export async function studyAction(action,element) {
   const q=current();
   if(action==='startSession')return beginSession();
-  if(action==='resume'){app.page='study';app.setId=app.session.setId;app.render();startClock();return;}
-  if(action==='pause'){stopClock(true);await setMeta('session',app.session);app.page='home';app.render();return;}
-  if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';app.render();return;}
+  if(action==='resume'){app.page='study';app.setId=app.session.setId;
+    history.pushState({voca:true,page:'study',setId:app.setId},'','#study');app.render();startClock();return;}
+  if(action==='pause'){stopClock(true);await setMeta('session',app.session);app.page='home';
+    history.pushState({voca:true,page:'home',setId:app.setId},'','#home');app.render();return;}
+  if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';
+    history.pushState({voca:true,page:'results',setId:app.setId},'','#results');app.render();return;}
   if(!q)return;
   if(action==='playAudio'||action==='slowAudio')return playAudio(action==='slowAudio');
   if(action==='flip'){q.flipped=true;await setMeta('session',app.session);app.render();}
