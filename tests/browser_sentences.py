@@ -103,8 +103,11 @@ def main():
 
                 page.locator('[data-action="library"]').first.click()
                 page.get_by_role("button",name="Sửa thẻ",exact=True).click()
-                expect(page.locator('[data-action="sentenceReport"]')).to_have_count(5)
-                page.locator('[data-action="sentenceReport"]').first.click()
+                page.locator("#word-form details summary").click()
+                reports=page.locator('[data-action="sentenceReport"]')
+                expect(reports).to_have_count(5)
+                reports.first.click()
+                page.locator("#word-form details summary").click()
                 expect(page.get_by_text("đã báo cáo",exact=True)).to_be_visible()
 
                 assert not errors,repr(errors)
