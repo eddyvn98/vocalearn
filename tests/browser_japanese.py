@@ -42,7 +42,7 @@ def answer_current(page):
     page.keyboard.press("Enter")
     expect(page.locator("#feedback")).to_have_count(0)
     field.dispatch_event("compositionend")
-    field.press("Enter")
+    page.locator('#answer-form [type="submit"]').click()
     confirm=page.locator('[data-action="formChoice"]')
     if confirm.count():
         expect(confirm).to_have_count(1)
