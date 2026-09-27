@@ -1,4 +1,4 @@
-export const RECOGNITION = new Set(['flash', 'quiz', 'match', 'spell', 'clozeChoice']);
+export const RECOGNITION = new Set(['flash', 'quiz', 'match', 'spell', 'clozeChoice', 'tone', 'classifier']);
 export const RECALL = new Set(['typing', 'dictation', 'cloze']);
 const segmenter = new Intl.Segmenter('en', {granularity: 'grapheme'});
 export const graphemes = s => Array.from(segmenter.segment(s), p => p.segment);
