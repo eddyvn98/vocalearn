@@ -131,7 +131,10 @@ document.addEventListener('submit',async e=>{
     if(form.id==='topic-form'){
       const f=new FormData(form),id=form.dataset.id||uuid(),parentId=f.get('parentId')||null;
       if(parentId&&descendants(app.model.categories,id).has(parentId))throw new Error('Chủ đề không thể tạo vòng lặp');
-      await commit([prepare('category',{id,setId:app.setId,name:f.get('name').trim(),parentId})]);
+      const old=app.model.categories[id];
+      const siblings=Object.values(app.model.categories).filter(c=>c.setId===app.setId&&(c.parentId||null)===(parentId||null)&&c.id!==id);
+      const order=old?.order??siblings.length;
+      await commit([prepare('category',{id,setId:app.setId,name:f.get('name').trim(),parentId,order})]);
       closeModal();app.render();
     }
     if(form.id==='bulk-topic-form'){
@@ -196,16 +199,37 @@ document.addEventListener('dragover',e=>{
   if(e.target.closest?.('[data-topic-drop],[data-topic-drop-root]'))e.preventDefault();
 });
 document.addEventListener('drop',async e=>{
-  const target=e.target.closest?.('[data-topic-drop],[data-topic-drop-root]');
-  if(!target||!e.dataTransfer)return;
+  const zone=e.target.closest?.('[data-topic-drop],[data-topic-drop-root]');
+  if(!zone||!e.dataTransfer)return;
   e.preventDefault();
-  const id=e.dataTransfer.getData('text/plain'),cat=app.model.categories[id];
-  const parentId=target.hasAttribute('data-topic-drop-root')?null:target.dataset.topicDrop;
-  if(!cat||id===parentId)return;
+  const id=e.dataTransfer.getData('text/plain'),source=app.model.categories[id];
+  if(!source)return;
+  let parentId=null,index=0,siblings=[];
+  if(zone.hasAttribute('data-topic-drop-root')){
+    siblings=Object.values(app.model.categories).filter(c=>c.setId===source.setId&&!(c.parentId)&&c.id!==id)
+      .sort((a,b)=>(a.order??999999)-(b.order??999999)||a.name.localeCompare(b.name,'vi'));
+    index=siblings.length;
+  }else{
+    const target=app.model.categories[zone.dataset.topicDrop];
+    if(!target||target.id===id)return;
+    const rect=zone.getBoundingClientRect(),ratio=rect.height?(e.clientY-rect.top)/rect.height:0.5;
+    if(ratio>0.3&&ratio<0.7){
+      parentId=target.id;
+      siblings=Object.values(app.model.categories).filter(c=>c.setId===source.setId&&c.parentId===parentId&&c.id!==id)
+        .sort((a,b)=>(a.order??999999)-(b.order??999999)||a.name.localeCompare(b.name,'vi'));
+      index=siblings.length;
+    }else{
+      parentId=target.parentId||null;
+      siblings=Object.values(app.model.categories).filter(c=>c.setId===source.setId&&(c.parentId||null)===parentId&&c.id!==id)
+        .sort((a,b)=>(a.order??999999)-(b.order??999999)||a.name.localeCompare(b.name,'vi'));
+      const targetIndex=siblings.findIndex(c=>c.id===target.id);
+      index=Math.max(0,targetIndex+(ratio>=0.7?1:0));
+    }
+  }
   if(parentId&&descendants(app.model.categories,id).has(parentId)){notify('Không thể kéo chủ đề vào nhánh con của chính nó.',true);return;}
-  if((cat.parentId||null)===(parentId||null))return;
+  siblings.splice(index,0,source);
   try{
-    await commit([prepare('category',{id:cat.id,setId:cat.setId,name:cat.name,parentId})]);
-    topics();app.render();
+    const events=siblings.map((cat,order)=>prepare('category',{id:cat.id,setId:cat.setId,name:cat.name,parentId,order}));
+    await commit(events);topics();app.render();
   }catch(error){showError(error);}
 });
