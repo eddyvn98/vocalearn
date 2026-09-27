@@ -8,6 +8,7 @@ import {studySetProfile} from '/core/language-profiles.js';
 import {parsePinyin} from '/core/chinese-games.js';
 import {hydrateMedia,ingestFile,mediaMarkup} from './media-store.js';
 import {refreshAiPanel} from './ai-client.js';
+import {beginLookupDraft,lookupMetaForSave} from './lookups.js';
 let editing=null,media={};
 const listValue=value=>(value||[]).join(', ');
 function customInputs(w) {
@@ -60,13 +61,14 @@ export function makeSentenceBlank() {
 }
 
 export function openEditor(id) {
-  editing=id?app.model.words[id]:null;media={};app.dirty=false;
+  editing=id?app.model.words[id]:null;media={};app.dirty=false;beginLookupDraft(editing);
   const w=editing||{};
   const categories=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
   const profile=studySetProfile(app.model.sets[app.setId]);
+  const lookupButton=button(t(profile?.id==='zh'?'lookupChinese':'lookupIpa'),'lookupReading','quiet',`data-language="${profile?.id||'en'}"`);
   const languageFields=profile?.id==='zh'
-    ?`${field('pinyin','pinyin',w.pinyin||w.ipa||'')}${field('hanViet','hanViet',w.hanViet||'')}${field('radical','radical',w.radical||'')}${field('strokeCount','strokeCount',w.strokeCount||0,'type="number" min="0"')}${field('classifier','classifier',listValue(w.classifiers))}`
-    :field('ipa','ipa',w.ipa);
+    ?`${field('pinyin','pinyin',w.pinyin||w.ipa||'')}${field('hanViet','hanViet',w.hanViet||'')}${lookupButton}<p id="lookup-status" class="muted small"></p>${field('radical','radical',w.radical||'')}${field('strokeCount','strokeCount',w.strokeCount||0,'type="number" min="0"')}${field('classifier','classifier',listValue(w.classifiers))}`
+    :`${field('ipa','ipa',w.ipa)}${lookupButton}<p id="lookup-status" class="muted small"></p>`;
   const wordLabel=profile?.id==='zh'?'wordGeneric':'word';
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
   ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
@@ -108,6 +110,7 @@ export async function saveWord(form) {
     translation:String(f.get('translation')||'').trim(),mnemonic:String(f.get('mnemonic')||'').trim(),
     source:String(f.get('source')||'').trim(),custom,note:String(f.get('note')).trim(),...media};
   const profile=studySetProfile(app.model.sets[app.setId]);
+  patch.lookupMeta=lookupMetaForSave(form,editing,profile?.id||'en');
   if(profile?.id==='zh'){
     const pinyin=String(f.get('pinyin')||'').trim();
     Object.assign(patch,{ipa:pinyin,pinyin,pinyinSyllables:parsePinyin(pinyin),
