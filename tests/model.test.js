@@ -67,3 +67,21 @@ test('Category order is retained while hierarchy replay stays stable',()=>{
  assert.equal(state.categories.b.order,0);
  assert.throws(()=>validateEvent(event('bad-order','category',{id:'x',setId:'set',name:'X',order:-1})));
 });
+
+
+test('Custom field definitions and values are validated',()=>{
+ assert.doesNotThrow(()=>validateEvent(event('set-custom','set',{
+   id:'custom-set',name:'Custom',language:'en',meaningLanguage:'vi',
+   customFields:[{id:'source',name:'Nguồn',type:'text',options:[]},{id:'priority',name:'Ưu tiên',type:'number',options:[]}]
+ })));
+ assert.throws(()=>validateEvent(event('bad-custom','set',{
+   id:'custom-set',name:'Custom',language:'en',meaningLanguage:'vi',
+   customFields:[{id:'x',name:'Bad',type:'unknown',options:[]}]
+ })));
+ assert.doesNotThrow(()=>validateEvent(event('word-custom','word',{
+   id:'custom-word',setId:'set',patch:{word:'x',custom:{source:'meeting',priority:2}}
+ })));
+ assert.throws(()=>validateEvent(event('word-custom-bad','word',{
+   id:'custom-word',setId:'set',patch:{word:'x',custom:{'bad key':'x'}}
+ })));
+});
