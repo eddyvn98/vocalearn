@@ -4,5 +4,6 @@ export const viSpeech={
   speechAttempt:"Lần nhận dạng hợp lệ",speechUnavailable:"Nhận dạng giọng nói cục bộ chưa được kiểm thử trên thiết bị/ngôn ngữ này.",
   notTested:"Chưa có bộ nhận dạng cục bộ đã kiểm thử.",permissionDenied:"Chưa có quyền micro.",
   offlineUnavailable:"Bộ nhận dạng hiện tại không dùng được khi offline.",lowConfidence:"Nhận dạng chưa đủ tin cậy.",
+  mic:"Không thu được âm thanh từ micro.",noSpeech:"Không nhận được giọng nói.",timeout:"Hết thời gian nhận dạng.",
   recognitionError:"Lỗi nhận dạng giọng nói."
 };
