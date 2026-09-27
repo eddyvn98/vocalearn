@@ -185,3 +185,27 @@ try{
   if(user)await authenticated(user);else app.render();
   if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }catch(error){document.querySelector('#app').textContent=t('loadError');showError(error);}
+
+document.addEventListener('dragstart',e=>{
+  const row=e.target.closest?.('[data-topic-drag]');
+  if(!row||!e.dataTransfer)return;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',row.dataset.topicDrag);
+});
+document.addEventListener('dragover',e=>{
+  if(e.target.closest?.('[data-topic-drop],[data-topic-drop-root]'))e.preventDefault();
+});
+document.addEventListener('drop',async e=>{
+  const target=e.target.closest?.('[data-topic-drop],[data-topic-drop-root]');
+  if(!target||!e.dataTransfer)return;
+  e.preventDefault();
+  const id=e.dataTransfer.getData('text/plain'),cat=app.model.categories[id];
+  const parentId=target.hasAttribute('data-topic-drop-root')?null:target.dataset.topicDrop;
+  if(!cat||id===parentId)return;
+  if(parentId&&descendants(app.model.categories,id).has(parentId)){notify('Không thể kéo chủ đề vào nhánh con của chính nó.',true);return;}
+  if((cat.parentId||null)===(parentId||null))return;
+  try{
+    await commit([prepare('category',{id:cat.id,setId:cat.setId,name:cat.name,parentId})]);
+    topics();app.render();
+  }catch(error){showError(error);}
+});
