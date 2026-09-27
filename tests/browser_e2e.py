@@ -355,6 +355,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     answer = page.locator("#answer")
     prompt_text = page.locator(".prompt").inner_text()
     retry_value = "applf" if "táo" in prompt_text else "bananb"
+    correct_value = "apple" if "táo" in prompt_text else "banana"
     answer.fill(retry_value)
     page.locator('#answer-form [type="submit"]').click()
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
@@ -363,7 +364,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.locator('[data-action="resume"]').first.click()
     expect(page.locator("#answer")).to_have_value(retry_value)
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
-    page.locator("#answer").fill("apple")
+    page.locator("#answer").fill(correct_value)
     page.locator('#answer-form [type="submit"]').click()
     expect(page.locator("#feedback")).to_contain_text("Đúng sau khi sửa")
     page.locator('[data-action="next"]').click()
