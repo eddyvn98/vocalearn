@@ -1,6 +1,6 @@
 import {app} from './state.js';
 import {t,esc,button,badge,modal,closeModal,field,notify} from './ui.js';
-import {prepare,transact,model,uuid} from './storage.js';
+import {prepare,transact,model,uuid,storeMediaUri,mediaSrc} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {WORD_FIELDS} from '/core/validation.js';
 let editing=null,media={};
@@ -17,7 +17,7 @@ export function openEditor(id) {
   ${field('level','level',w.level||'','placeholder="A1, HSK 2, JLPT N4..."')}${field('variants','variants',w.variants?.join(', ')||'','placeholder="went, gone"')}${field('tags','tags',w.tags?.join(', ')||'','placeholder="hay-nhầm, công-việc"')}
   ${customFields.map(cf=>cf.type==='select'?`<label>${esc(cf.name)}<select name="custom:${cf.id}"><option value="">—</option>${(cf.options||[]).map(o=>`<option value="${esc(o)}" ${String(w.custom?.[cf.id]??'')===o?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`:`<label>${esc(cf.name)}<input name="custom:${cf.id}" type="${cf.type==='number'?'number':'text'}" value="${esc(w.custom?.[cf.id]??'')}"></label>`).join('')}
   <label>${t('note')}<textarea name="note" rows="3">${esc(w.note||'')}</textarea></label>
-  <label>${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label><div id="media-image">${w.image?`<img class="editor-image" src="${esc(w.image)}" alt="${t('image')}">`:''}</div>${button(t('clear'),'clearImage','quiet')}
+  <label>${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label><div id="media-image">${w.image&&mediaSrc(w.image)?`<img class="editor-image" src="${esc(mediaSrc(w.image))}" alt="${t('image')}">`:''}</div>${button(t('clear'),'clearImage','quiet')}
   <label>${t('audioFile')}<input type="file" id="audio-upload" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"></label><small id="audio-status">${w.audio?t('saved'):t('missingAudio')}</small>${button(t('clear'),'clearAudio','quiet')}
   <p class="muted small">${t('mediaHelp')}</p></div></details>
   ${editing?`<label>${t('changeMeaning')}<select name="identity"><option value="copy">${t('createCopy')}</option><option value="reset">${t('resetProgress')}</option></select></label>`:''}
@@ -60,7 +60,7 @@ export async function mediaFile(file,type) {
   const uri=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file);});
   if(type==='image'&&!/^data:image\/(png|jpeg|webp);base64,/.test(uri))throw new Error('PNG, JPEG or WebP only');
   if(type==='audio'&&!/^data:audio\/(mpeg|wav|ogg|webm|mp4);base64,/.test(uri))throw new Error('Unsupported audio type');
-  media[type]=uri;app.dirty=true;
+  media[type]=await storeMediaUri(uri);app.dirty=true;
   if(type==='image')document.querySelector('#media-image').innerHTML=`<img class="editor-image" src="${esc(uri)}" alt="${t('image')}">`;
   else document.querySelector('#audio-status').textContent=file.name;
 }
