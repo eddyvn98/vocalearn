@@ -49,6 +49,13 @@ function spelling(q) {
   const used=q.letters||[];
   return `<p class="assembled" aria-live="polite">${esc(used.map(id=>letters[id].ch).join(''))||'\u2026'}</p><div class="letters">${order.map(a=>button(esc(a.ch),'letter','',`data-index="${a.id}" ${q.result||!q.audioPlayed||used.includes(a.id)?'disabled':''}`)).join('')}</div><div class="row between wrap">${button(t('clear'),'clearLetters','quiet',q.result?'disabled':'')}${button(t('dontKnow'),'unknown','quiet',!q.audioPlayed||q.result?'disabled':'')}${button(t('check'),'checkLetters','primary',q.result||!q.audioPlayed?'disabled':'')}</div>`;
 }
+function speechMarkup(q){
+  const attempts=q.speechState?.validAttempts||0,transcript=q.input||'';
+  return `<div class="stack speech-panel"><p class="muted">${t('speechAttempt')}: ${attempts}/2</p>
+    ${transcript?`<p><strong>${t('speechTranscript')}:</strong> ${esc(transcript)}</p>`:''}
+    ${q.speechMessage?`<p class="info" role="status">${t(q.speechMessage)||t('speechTechnical')}</p>`:''}
+    ${!q.result?button(t(q.speechBusy?'speechListening':attempts?'speechAgain':'speechStart'),'speechStart','primary full',q.speechBusy?'disabled':''):''}</div>`;
+}
 export function studyView() {
   const s=app.session, q=current(),completed=s.queue.filter(x=>x.result).length;
   if(s.match)return matchView();
@@ -58,7 +65,7 @@ export function studyView() {
   ${q.game==='typing'&&!q.twoStep?`<p class="muted">${t('typePrompt')}</p>`:''}${q.game==='quiz'||q.game==='clozeChoice'?`<p class="muted">${t('quizPrompt')}</p>`:''}</div>
   ${q.fallback?`<p class="info">${t(q.fallback)} \u2192 ${t(q.game)}</p>`:''}
   ${q.hint?`<p class="info">${t('hint')}: ${esc(q.snapshot.pinyin||q.snapshot.ipa||q.answers[0].slice(0,1)+'\u2026')} \u00b7 ${t('helpCap')}</p>`:''}
-  ${q.game==='handwriting'?handwritingMarkup(q):['typing','dictation','cloze'].includes(q.game)?typing(q):['tone','classifier'].includes(q.game)?chineseGame(q):q.game==='spell'?spelling(q):q.game==='flash'?`
+  ${q.game==='handwriting'?handwritingMarkup(q):q.game==='speak'?speechMarkup(q):['typing','dictation','cloze'].includes(q.game)?typing(q):['tone','classifier'].includes(q.game)?chineseGame(q):q.game==='spell'?spelling(q):q.game==='flash'?`
   ${q.flipped?`<div class="flash-back"><h2>${rubyWord(q)}</h2><p>${esc(q.snapshot.meaning)}</p><p class="muted">${esc(q.snapshot.kana||q.snapshot.pinyin||q.snapshot.ipa||'')}</p><p>${esc(q.snapshot.note||'')}</p></div>${!q.result?`<div class="row center wrap">${q.familiarize?button(t('next'),'remember','primary'):button(t('forget'),'unknown')+button(t('remember'),'remember','primary')}</div>`:''}`:button(t('show'),'flip','primary full',usesAudio(q)&&!q.audioPlayed?'disabled':'')}`:
   `<div class="answers">${q.choices.map((choice,i)=>button(
     `${String.fromCharCode(65+i)}. ${faceValue(q.answerFace,choice.label,q.answerFace==='image'?t('image'):'')}${q.result&&choice.correct?' ✓':''}`,
