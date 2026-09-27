@@ -18,8 +18,8 @@ export const GAME_FACES = Object.freeze({
   mix:['meaning','word','ipa','pinyin','hanViet','image','audio','sentence'],
 });
 export const GAME_ANSWER_FACES = Object.freeze({
-  flash:['word'], quiz:['word','meaning','ipa','image'],
-  match:['word','meaning','ipa','image'], typing:['word'],
+  flash:['word'], quiz:['word','meaning','ipa','pinyin','hanViet','image'],
+  match:['word','meaning','ipa','pinyin','hanViet','image'], typing:['word'],
   spell:['word'], dictation:['word'], cloze:['word'], clozeChoice:['word'], tone:['word'], classifier:['word'],
 });
 export const FACES = ['word','meaning','ipa','pinyin','hanViet','image','audio','sentence'];
