@@ -6,6 +6,7 @@ import {inScope} from '/core/model.js';
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
 import {studySetProfile,chineseReadingMatches,japaneseReadingMatches} from '/core/language-profiles.js';
 import {gameAvailability} from '/core/capabilities.js';
+import {gradeTones,gradeClassifier} from '/core/chinese-games.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories,app.scopeChildren);
 const MIXABLE=['flash','quiz','typing','spell','dictation','cloze','clozeChoice'];
 const profile=()=>studySetProfile(app.model?.sets?.[app.setId]);
@@ -55,8 +56,7 @@ export function previewQueue() {
       seenWords.add(left);seenMeanings.add(right);
     }
     let game=app.game;
-    const gate=gatedGame(game,w);
-    if(!gate.available)return {blocked:[gate.reason],wordId:w.id};
+    if(['speak','dictation','handwriting'].includes(game)){const gate=gatedGame(game,w);if(!gate.available)return {blocked:[gate.reason],wordId:w.id};}
     if(game==='mix'){
       const choices=app.mixGames.length?app.mixGames:['typing'];
       for(let n=0;n<choices.length;n++){
@@ -167,6 +167,19 @@ export async function studyAction(action,element) {
   if(action==='unknown')await writeAnswer(q,false);
   if(action==='remember')await writeAnswer(q,true);
   if(action==='choose'){q.chosen=Number(element.dataset.index);q.input=q.choices[q.chosen].label;await writeAnswer(q,q.choices[q.chosen].correct);}
+  if(action==='toneChoice'){
+    const index=Number(element.dataset.index),tone=Number(element.dataset.tone);
+    q.toneAnswers??=Array(q.tone.syllables.length).fill(null);q.toneAnswers[index]=tone;
+    await setMeta('session',app.session);app.render();
+  }
+  if(action==='checkTones'){
+    q.input=(q.toneAnswers||[]).join(',');
+    await writeAnswer(q,gradeTones(q.tone,q.toneAnswers||[]));
+  }
+  if(action==='classifierChoice'){
+    q.input=element.dataset.value||'';
+    await writeAnswer(q,gradeClassifier(q.classifier,q.input));
+  }
   if(action==='next'){
     if(!q.result)return;
     if(app.session.index+1>=app.session.queue.length)return studyAction('finish');
