@@ -1,7 +1,8 @@
 import {viAi} from './vi-ai.js';
 import {viSentences} from './vi-sentences.js';
 import {viLookups} from './vi-lookups.js';
-export const vi = {...viAi,...viSentences,...viLookups,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
+import {viStatistics} from './vi-statistics.js';
+export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
   invalidAnswerFace:"Mặt đáp phải hợp lệ và khác mặt hỏi",
   missingAnswerFace:"Thiếu dữ liệu cho mặt đáp",
   noMixGames:"Hãy bật ít nhất một game trong Trộn",
