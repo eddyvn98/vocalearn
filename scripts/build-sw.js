@@ -1,6 +1,7 @@
 import {readdir,readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 async function walk(path){return(await Promise.all((await readdir(path,{withFileTypes:true})).map(async e=>e.isDirectory()?walk(`${path}/${e.name}`):`${path}/${e.name}`))).flat();}
+const vendor=['node_modules/fflate/esm/browser.js'];
 const sources=[...await walk('public'),...await walk('core')].filter(f=>!f.endsWith('/sw.js')).sort();
 const hash=createHash('sha256');
 for(const file of sources)hash.update(file).update(await readFile(file));
