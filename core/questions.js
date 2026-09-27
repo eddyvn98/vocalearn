@@ -8,10 +8,10 @@ import {toneQuestion,classifierQuestion} from './chinese-games.js';
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
 export const MIX_GAMES = ['flash','quiz','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
 export const GAME_FACES = Object.freeze({
-  flash:['meaning','word','ipa','image','audio'],
-  quiz:['meaning','word','ipa','image','audio'],
-  match:['word','meaning','ipa','image'],
-  typing:['meaning','ipa','image'],
+  flash:['meaning','word','ipa','pinyin','hanViet','image','audio'],
+  quiz:['meaning','word','ipa','pinyin','hanViet','image','audio'],
+  match:['word','meaning','ipa','pinyin','hanViet','image'],
+  typing:['meaning','ipa','pinyin','hanViet','image'],
   spell:['audio'], dictation:['audio'],
   cloze:['sentence'], clozeChoice:['sentence'],
   tone:['pinyin'], classifier:['word','meaning'],
