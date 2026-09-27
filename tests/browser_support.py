@@ -1,8 +1,9 @@
-import os, socket, subprocess, tempfile, time
+import itertools, os, socket, subprocess, tempfile, time
 from pathlib import Path
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
+_ACCOUNT_SEQ = itertools.count(1)
 
 def free_port():
     with socket.socket() as sock:
@@ -46,8 +47,9 @@ def stop_server(server, log):
 def register_and_create_set(page, origin):
     page.goto(origin, wait_until="networkidle")
     page.locator('[data-action="toggleAuth"]').click()
-    page.locator('[name="email"]').fill("aux-e2e@example.test")
+    page.locator('[name="email"]').fill(f"aux-e2e-{next(_ACCOUNT_SEQ)}@example.test")
     page.locator('[name="password"]').fill("disposable-password-123")
     page.locator('#auth-form [type="submit"]').click()
+    page.locator("#set-form").wait_for(state="visible", timeout=10000)
     page.locator('#set-form [name="name"]').fill("Aux E2E")
     page.locator('#set-form [type="submit"]').click()
