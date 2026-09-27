@@ -39,6 +39,7 @@ const migrations=[
       retry_count INTEGER NOT NULL DEFAULT 0,
       input_content_version INTEGER NOT NULL DEFAULT 0,
       input_field_revisions TEXT NOT NULL,
+      input_snapshot TEXT NOT NULL,
       result TEXT,
       safe_patch TEXT NOT NULL DEFAULT '{}',
       suggestions TEXT NOT NULL DEFAULT '{}',
