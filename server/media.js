@@ -20,7 +20,11 @@ export function putMedia(db,userId,input,root) {
   const digest=createHash('sha256').update(data).digest('hex');
   if(digest!==input.id)throw new Error('Media hash mismatch');
   const prior=db.prepare('SELECT id FROM media_files WHERE user_id=? AND id=?').get(userId,input.id);
-  if(prior)return {id:input.id,size:data.length,deduplicated:true};
+  if(prior){
+    const file=pathFor(root,userId,input.id);
+    if(!existsSync(file))writeFileSync(file,data,{mode:0o600,flag:'wx'});
+    return {id:input.id,size:data.length,deduplicated:true,repaired:true};
+  }
   const used=Number(db.prepare('SELECT COALESCE(SUM(size),0) AS total FROM media_files WHERE user_id=?').get(userId).total);
   if(used+data.length>maxUser)throw new Error('Media quota exceeded');
   const dir=join(root,safeUser(userId));mkdirSync(dir,{recursive:true,mode:0o700});
