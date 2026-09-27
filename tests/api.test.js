@@ -80,18 +80,20 @@ test('Logout invalidates server session',async()=>{
 
 
 test('Media store verifies hash, deduplicates, serves bytes and isolates accounts',async()=>{
+ const login=await request('/api/login',{email:'test@example.com',password:'long-secure-password'},null);
+ const mediaCookie=login.headers.get('set-cookie').split(';')[0];
  const base64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
  const bytes=Buffer.from(base64,'base64');
  const id=createHash('sha256').update(bytes).digest('hex');
  const uri='data:image/png;base64,'+base64;
- const first=await request('/api/media',{id,uri});
+ const first=await request('/api/media',{id,uri},mediaCookie);
  assert.equal(first.status,200);assert.equal(first.data.deduplicated,false);
- const second=await request('/api/media',{id,uri});
+ const second=await request('/api/media',{id,uri},mediaCookie);
  assert.equal(second.status,200);assert.equal(second.data.deduplicated,true);
- const media=await fetch(url+'/api/media/'+id,{headers:{Cookie:cookie}});
+ const media=await fetch(url+'/api/media/'+id,{headers:{Cookie:mediaCookie}});
  assert.equal(media.status,200);assert.equal(media.headers.get('content-type'),'image/png');
  assert.deepEqual(Buffer.from(await media.arrayBuffer()),bytes);
- const bad=await request('/api/media',{id:'0'.repeat(64),uri});
+ const bad=await request('/api/media',{id:'0'.repeat(64),uri},mediaCookie);
  assert.equal(bad.status,400);
  const other=await request('/api/register',{email:'media-other@example.com',password:'another-media-password'},null);
  const otherCookie=other.headers.get('set-cookie').split(';')[0];
