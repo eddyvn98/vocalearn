@@ -156,4 +156,3 @@ export async function sync() {
   finally {syncing=false;}
 }
 channel?.addEventListener('message',async e=>{if(e.data.owner===owner){if(e.data.media)await loadMedia();window.dispatchEvent(new CustomEvent('voca-external'));}});
-if (typeof window !== 'undefined') window.addEventListener('online', () => sync().catch(() => {}));
