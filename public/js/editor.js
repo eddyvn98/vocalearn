@@ -9,6 +9,11 @@ function editorDirty(){
   const form=document.querySelector('#word-form');
   return app.dirty||!!(form&&editing&&['word','meaning','pos','ipa','sentence','note'].some(name=>
     String(new FormData(form).get(name)??'')!==String(editing[name]??'')));
+  if(!form||!editing)return app.dirty;
+  const profile=studySetProfile(app.model.sets[app.setId]),f=new FormData(form);
+  if(profile?.id==='zh'&&['pinyin','hanViet','radical','strokeCount','classifier'].some(name=>String(f.get(name)??'')!==String(name==='classifier'?(editing.classifiers||[]).join(', '):editing[name]??'')))return true;
+  if(profile?.id==='ja'&&['kana','onReading','kunReading'].some(name=>String(f.get(name)??'')!==String(editing[name]??'')))return true;
+  return app.dirty;
 }
 export function canCloseEditor(){
   return !editorDirty()||confirm(t('discardChanges'));
