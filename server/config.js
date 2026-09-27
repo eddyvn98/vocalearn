@@ -42,9 +42,13 @@ export function loadConfig(env=process.env){
   const providerToken=String(env.PASSWORD_RESET_PROVIDER_TOKEN||'');
   const resendApiKey=String(env.RESEND_API_KEY||'').trim();
   const resendFrom=String(env.RESEND_FROM||'').trim();
+  const aiBaseUrl=String(env.AI_BASE_URL||'').trim().replace(/\/$/,'');
+  const aiModel=String(env.AI_MODEL||'').trim();
+  const aiApiKey=String(env.AI_API_KEY||'');
   const config={
     production,host:String(env.HOST||'127.0.0.1'),port:integer(env.PORT,3000,1,65535,'PORT'),
     dbPath:String(env.DB_PATH||'./data/vocalearn.sqlite'),appOrigin:origin,allowSignup,
+    ai:{baseUrl:aiBaseUrl,model:aiModel,apiKey:aiApiKey,timeoutMs:integer(env.AI_TIMEOUT_SECONDS,30,5,180,'AI_TIMEOUT_SECONDS')*1000},
     reset:{mode:resetMode,appOrigin:origin,providerUrl,providerToken,resendApiKey,resendFrom,
       ttlMs:integer(env.PASSWORD_RESET_TTL_MINUTES,30,10,1440,'PASSWORD_RESET_TTL_MINUTES')*60000},
     limits:{
@@ -64,6 +68,8 @@ export function loadConfig(env=process.env){
     if(resetMode==='return-token')throw new Error('return-token password recovery is development-only');
     if(allowSignup&&!['webhook','resend'].includes(resetMode))throw new Error('Production signup requires webhook or Resend password recovery');
   }
+  if((aiBaseUrl&&!aiModel)||(!aiBaseUrl&&aiModel))throw new Error('AI_BASE_URL and AI_MODEL must be configured together');
+  if(aiBaseUrl){let parsed;try{parsed=new URL(aiBaseUrl);}catch{throw new Error('AI_BASE_URL must be a valid URL');}if(!['http:','https:'].includes(parsed.protocol))throw new Error('AI_BASE_URL must use HTTP or HTTPS');}
   if(resetMode==='resend'){
     if(!resendApiKey)throw new Error('Resend password recovery requires RESEND_API_KEY');
     if(!resendFrom)throw new Error('Resend password recovery requires RESEND_FROM');
