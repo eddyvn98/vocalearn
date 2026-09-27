@@ -22,10 +22,14 @@ function showError(error){
   if(el)el.textContent=error.message;notify(error.message,true);
 }
 async function commit(events){await transact(events);app.model=model();}
-async function navigate(page){
+function historyState(page,mode='push'){
+  const state={voca:true,page,setId:app.setId};
+  history[mode+'State'](state,'','#'+page);
+}
+async function navigate(page,mode='push'){
   app.selectedCards.clear();
   if(app.page==='study'){stopClock(true);await setMeta('session',app.session);}
-  app.page=page;app.render('h1');await persistView();
+  app.page=page;app.render('h1');historyState(page,mode);await persistView();
 }
 async function authenticated(user){
   app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
@@ -35,7 +39,7 @@ async function authenticated(user){
   if(!app.model.sets[app.setId])app.setId=Object.keys(app.model.sets)[0]||null;
   app.session=await getMeta('session')||null;
   if(app.session&&!app.session.finished){for(const q of app.session.queue)if(!q.result)q.interrupted=true;await setMeta('session',app.session);}
-  app.page='home';app.render();
+  app.page='home';app.render();historyState('home','replace');
 }
 function pruneSelection(){const ids=new Set(filtered().map(w=>w.id));for(const id of app.selectedCards)if(!ids.has(id))app.selectedCards.delete(id);}
 async function click(action,el){
@@ -183,6 +187,12 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('voca-external',async()=>{
   await refresh();app.model=model();if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();
+});
+window.addEventListener('popstate',async e=>{
+  if(!app.user||!e.state?.voca)return;
+  if(app.page==='study'&&app.session){stopClock(true);await setMeta('session',app.session);}
+  const target=e.state.page==='study'&&(!app.session||app.session.finished)?'home':e.state.page;
+  app.page=target;app.render('h1');if(target==='study')startClock();await persistView();
 });
 window.addEventListener('online',()=>{if(app.user)syncNow().catch(error=>notify(t('syncError')+': '+error.message,true));});
 setInterval(async()=>{
