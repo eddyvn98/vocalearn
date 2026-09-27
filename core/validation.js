@@ -35,7 +35,8 @@ export function validateEvent(e) {
           if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).some(k=>!id(k))
             || Object.values(v).some(x=>!(text(x,5000)||Number.isFinite(x)))) fail('Invalid custom values');
         } else if (['image','audio'].includes(key)) {
-          if (!text(v, 2200000) || (v && !/^data:(image\/(png|jpeg|webp)|audio\/(mpeg|wav|ogg|webm|mp4));base64,[A-Za-z0-9+/=]+$/.test(v))) fail('Invalid media');
+          if (!text(v, 2200000) || (v && !/^media:[a-f0-9]{64}$/.test(v)
+            && !/^data:(image\/(png|jpeg|webp)|audio\/(mpeg|wav|ogg|webm|mp4));base64,[A-Za-z0-9+/=]+$/.test(v))) fail('Invalid media');
         } else if (!text(v, key === 'word' ? 100 : 5000)) fail('Invalid word text');
       }
       if ('word' in d.patch && !d.patch.word.trim()) fail('A word is required');
