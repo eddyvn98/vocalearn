@@ -55,7 +55,7 @@ export function synchronize(db, userId, input, now = Date.now()) {
   } catch (error) {db.exec('ROLLBACK'); throw error;}
   return {received, events: existing.filter(e => e.seq > (Number(input.cursor) || 0) || received.includes(e.id)),
     cursor: existing.at(-1)?.seq ?? 0, serverNow: now,
-    anchorServer: anchor?.server_at ?? now, anchorClient: anchor?.client_at ?? input.clientNow};
+    anchorServer: now, anchorClient: input.clientNow};
 }
 function assertReferences(state, event, existing = []) {
   const {kind, data: d} = event;
