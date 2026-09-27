@@ -1,5 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {startAiJob,completeAiJob} from '../core/ai.js';
+import {sentenceContentVersion} from '../core/sentences.js';
 
 const retryDelay=[5000,30000,120000];
 const parse=value=>{try{return JSON.parse(value||'{}')}catch{return {}}};
@@ -40,8 +41,13 @@ export async function runJob(db,userId,id,word,provider,now=Date.now(),loadCurre
   db.prepare(`UPDATE ai_jobs SET status='running',updated=? WHERE user_id=? AND id=?`).run(now,userId,id);
   try{
     const result=await provider.generate({word:job.inputSnapshot||word,type:job.type});
-    const candidate={mnemonic:result.mnemonic||''};
     const currentWord=loadCurrent?loadCurrent():word;
+    if(job.type==='sentence-bank'&&sentenceContentVersion(job.inputSnapshot)!==sentenceContentVersion(currentWord)){
+      db.prepare(`UPDATE ai_jobs SET status='stale',result=?,safe_patch='{}',suggestions='{}',error_code='STALE_CONTENT',updated=? WHERE user_id=? AND id=?`)
+        .run(JSON.stringify(result),Date.now(),userId,id);
+      return getJob(db,userId,id);
+    }
+    const candidate=job.type==='sentence-bank'?{sentencePool:result.sentences||[]}:{mnemonic:result.mnemonic||''};
     const done=completeAiJob(job,currentWord,candidate,Date.now());
     db.prepare(`UPDATE ai_jobs SET status=?,result=?,safe_patch=?,suggestions=?,error_code=NULL,updated=? WHERE user_id=? AND id=?`)
       .run(done.status,JSON.stringify(result),JSON.stringify(done.safePatch||{}),JSON.stringify(done.suggestions||{}),Date.now(),userId,id);
