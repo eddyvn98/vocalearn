@@ -8,12 +8,14 @@ export function speechCapability(language){
 export function speechAvailability(language,{offline=typeof navigator!=='undefined'&&!navigator.onLine}={}){
   return gameAvailability('speak',{asr:{[language]:speechCapability(language)}},language,{offline});
 }
-export async function recognizeSpeech(language){
+export async function recognizeSpeech(language,onState=()=>{}){
   const available=speechAvailability(language);
   if(!available.available)return {kind:'technical',code:available.reason||'notTested'};
   const a=adapter();
   try{
-    const started=performance.now(),result=await a.recognize(language);
+    onState('recording');
+    const started=performance.now(),result=await a.recognize(language,{onState});
+    onState('recognizing');
     if(!result?.transcript||result.confidence===0)return {kind:'technical',code:'lowConfidence'};
     return {kind:'recognition',transcript:String(result.transcript),activeMs:Number.isFinite(result.activeMs)?Math.max(0,result.activeMs):Math.max(0,performance.now()-started)};
   }catch(error){
