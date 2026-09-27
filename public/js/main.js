@@ -5,8 +5,7 @@ import {t,notify,closeModal,modal,esc,setModalTrigger,clearModalTrigger} from '.
 import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
-import {studyView,resultsView} from './views/study.js';
-import {statisticsView} from './views/statistics.js';
+import {studyView,resultsView} from './views/study.js';import {statisticsView} from './views/statistics.js';
 import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash,makeSentenceBlank,updateSentencePreview} from './editor.js';
 import {customFields,saveCustomField,deleteCustomField} from './card-schema.js';
