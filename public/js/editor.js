@@ -7,6 +7,7 @@ import {WORD_FIELDS} from '/core/validation.js';
 import {studySetProfile} from '/core/language-profiles.js';
 import {parsePinyin} from '/core/chinese-games.js';
 import {hydrateMedia,ingestFile,mediaMarkup} from './media-store.js';
+import {refreshAiPanel} from './ai-client.js';
 let editing=null,media={};
 const listValue=value=>(value||[]).join(', ');
 function customInputs(w) {
@@ -76,10 +77,11 @@ export function openEditor(id) {
   <label>${t('audioFile')}<input type="file" id="audio-upload" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"></label><small id="audio-status">${w.audio?t('saved'):t('missingAudio')}</small>${button(t('clear'),'clearAudio','quiet')}
   <p class="muted small">${t('mediaHelp')}</p></div></details>
   ${editing?`<label>${t('changeMeaning')}<select name="identity"><option value="copy">${t('createCopy')}</option><option value="reset">${t('resetProgress')}</option></select></label>`:''}
+  ${editing?`<section id="ai-panel" class="panel stack" data-word-id="${editing.id}"><p class="muted">${t('aiLoading')}</p></section>`:''}
   ${w.errors?.inBook?`<section class="info"><p>${w.errors.failures} ${t('mistakes')} \u00b7 ${w.errors.evidence.length}/2 ${t('evidence')}</p><p>${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p>${t(e.game)} \u00b7 ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
   <div class="row between wrap">${editing?button(t('delete'),'deleteWord','danger',`data-id="${editing.id}"`):button(t('cancel'),'close','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div></form>`);
   hydrateMedia(document.querySelector('#modal')).catch(()=>{});
-  updateSentencePreview();
+  updateSentencePreview();if(editing)refreshAiPanel(editing.id);
 }
 export async function saveWord(form) {
   const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean);
