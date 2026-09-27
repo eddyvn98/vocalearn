@@ -12,6 +12,7 @@ export function validateEvent(e) {
       break;
     case 'category':
       if (!id(d.id) || !id(d.setId) || !text(d.name, 100) || !d.name.trim() || (d.parentId && !id(d.parentId))) fail('Invalid category');
+      if ('order' in d && (!Number.isInteger(d.order) || d.order < 0 || d.order > 1000000)) fail('Invalid category order');
       break;
     case 'word':
       if (!id(d.id) || !id(d.setId) || !d.patch || typeof d.patch !== 'object' || Array.isArray(d.patch)) fail('Invalid word');
