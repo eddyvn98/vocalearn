@@ -91,3 +91,8 @@ CI is intentionally treated as a parallel feedback loop; failures are fixed as e
 - Fixed two test-harness visibility/modal issues found by CI: Advanced settings must be expanded before editing maximum interval, and sync-info must close before navigation.
 - Commit `5e19db9`: Verify and deployed smoke passed; browser regression exposed the modal-transition harness issue rather than an application runtime failure.
 - Latest browser rerun is gated on `ed8af1d`; do not mark timed browser acceptance passed until that run is green.
+
+
+### 2026-09-27 hardening checkpoint
+
+Batch includes browser audio/IME/responsive acceptance plus media quota, deduplication, validation and missing-file repair tests. Run the full CI checkpoint before production integration; do not mark Railway production verified until the merged main SHA reaches a terminal SUCCESS deployment and the production smoke/browser checks pass.
