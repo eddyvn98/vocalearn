@@ -7,6 +7,6 @@ COPY --chown=node:node server ./server
 COPY --chown=node:node public ./public
 RUN mkdir -p /app/data && chown node:node /app/data
 USER node
-ENV HOST=0.0.0.0 PORT=3000 DB_PATH=/app/data/vocalearn.sqlite
+ENV HOST=0.0.0.0 PORT=3000 DB_PATH=/app/data/vocalearn.sqlite MEDIA_PATH=/app/data/media
 EXPOSE 3000
 CMD ["node", "server/main.js"]
