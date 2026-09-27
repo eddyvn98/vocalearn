@@ -1,13 +1,17 @@
 import {createServer} from 'node:http';
 import {fileURLToPath} from 'node:url';
 import {resolve, dirname} from 'node:path';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
 import {openDatabase, synchronize} from './database.js';
 import {authenticate, sessionUser, logout, cookie} from './auth.js';
 import {body, json, staticFile, securityHeaders} from './http.js';
 import {putMedia,getMedia} from './media.js';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), secure = false,
-  origin = '', allowSignup = true} = {}) {
+export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), mediaPath,
+  secure = false, origin = '', allowSignup = true} = {}) {
+  const temporaryMedia=!mediaPath&&dbPath===':memory:';
+  const mediaRoot=mediaPath || (temporaryMedia?mkdtempSync(resolve(tmpdir(),'vocalearn-media-')):resolve(dirname(dbPath),'media'));
   const db = openDatabase(dbPath), attempts = new Map();
   const server = createServer(async (req, res) => {
     securityHeaders(res);
@@ -39,9 +43,9 @@ export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), sec
       if (url.pathname === '/api/logout' && req.method === 'POST') {
         logout(db,req);return json(res,200,{ok:true},{'Set-Cookie':cookie('',secure,true)});
       }
-      if (url.pathname === '/api/media' && req.method === 'POST') return json(res,200,putMedia(db,user.id,await body(req)));
+      if (url.pathname === '/api/media' && req.method === 'POST') return json(res,200,putMedia(db,user.id,await body(req),mediaRoot));
       if (url.pathname.startsWith('/api/media/') && req.method === 'GET') {
-        const media=getMedia(db,user.id,url.pathname.slice('/api/media/'.length));
+        const media=getMedia(db,user.id,url.pathname.slice('/api/media/'.length),mediaRoot);
         if(!media)return json(res,404,{error:'Media not found'});
         res.writeHead(200,{'Content-Type':media.mime,'Content-Length':media.size,'Cache-Control':'private, max-age=31536000, immutable'});
         return res.end(media.data);
@@ -53,14 +57,14 @@ export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), sec
       else res.end();
     }
   });
-  server.on('close',()=>db.close());
+  server.on('close',()=>{db.close();if(temporaryMedia)rmSync(mediaRoot,{recursive:true,force:true});});
   return server;
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try { process.loadEnvFile?.(); } catch {}
   const production = process.env.NODE_ENV === 'production';
   if (production && !process.env.APP_ORIGIN?.startsWith('https://')) throw new Error('Production requires HTTPS APP_ORIGIN');
-  const server = application({dbPath:process.env.DB_PATH, secure:production,
+  const server = application({dbPath:process.env.DB_PATH,mediaPath:process.env.MEDIA_PATH,secure:production,
     origin:process.env.APP_ORIGIN, allowSignup:process.env.ALLOW_SIGNUP !== 'false'});
   const port = Number(process.env.PORT || 3000), host = process.env.HOST || '127.0.0.1';
   server.listen(port,host,()=>console.log(`VocaLearn: http://${host}:${port}`));
