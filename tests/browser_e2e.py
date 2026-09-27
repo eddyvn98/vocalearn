@@ -148,7 +148,28 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     expect(page.locator('[name="pinyin"]')).to_be_visible()
     expect(page.locator('[name="hanViet"]')).to_be_visible()
     expect(page.locator('[name="radical"]')).to_be_visible()
-    page.locator('#modal [data-action="close"]').first.click()
+    page.locator('[name="word"]').fill("你好")
+    page.locator('[name="meaning"]').fill("xin chào")
+    page.locator('[name="pinyin"]').fill("nǐ hǎo")
+    page.locator('[name="classifier"]').fill("句")
+    page.locator('#word-form [type="submit"]').click()
+    expect(page.locator("#word-form")).not_to_be_visible()
+    chinese_data = page.evaluate("""async () => {
+      const user = JSON.parse(localStorage.getItem('vocalearn-user'));
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('vocalearn-' + user.id);
+        req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error);
+      });
+      const events = await new Promise((resolve, reject) => {
+        const req = db.transaction('events').objectStore('events').getAll();
+        req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error);
+      });
+      db.close();
+      const event = events.filter(e => e.kind === 'word' && e.data.patch.word === '你好').at(-1);
+      return {pinyinSyllables:event?.data.patch.pinyinSyllables,classifiers:event?.data.patch.classifiers};
+    }""")
+    assert chinese_data["pinyinSyllables"] == [{"base":"ni","tone":3},{"base":"hao","tone":3}]
+    assert chinese_data["classifiers"] == ["句"]
     page.locator('[data-action="sets"]').click()
     page.locator('[data-action="selectSet"]', has_text="English").click()
     print("PASS: Chinese study set exposes language-specific editor fields")
