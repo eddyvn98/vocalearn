@@ -45,6 +45,7 @@ export function scopeModal() {
   const tree = buildTopicTree(Object.fromEntries(cs.map(cat => [cat.id, cat])));
   const allCards = words();
   modal(t('scope'), `<form id="scope-form" class="stack"><p>${t('all')}: ${t('clear')}</p>
+    <label class="check-label"><input type="checkbox" name="includeChildren" ${app.scopeChildren?'checked':''}>Bao gồm chủ đề con</label>
     ${tree.map(c => {
       const count = allCards.filter(w => inScope(w, [c.id], app.model.categories)).length;
       const indent = '\u00a0\u00a0\u00a0\u00a0'.repeat(c.depth) + (c.depth ? '└─ ' : '');
