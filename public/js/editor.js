@@ -58,8 +58,9 @@ export function openEditor(id) {
   const languageFields=profile?.id==='zh'
     ?`${field('pinyin','pinyin',w.pinyin||w.ipa||'')}${field('hanViet','hanViet',w.hanViet||'')}${field('radical','radical',w.radical||'')}${field('strokeCount','strokeCount',w.strokeCount||0,'type="number" min="0"')}${field('classifier','classifier',listValue(w.classifiers))}`
     :field('ipa','ipa',w.ipa);
+  const wordLabel=profile?.id==='zh'?'wordGeneric':'word';
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
-  ${field('word','word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
+  ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
