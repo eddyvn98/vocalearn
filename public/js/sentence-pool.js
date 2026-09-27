@@ -9,9 +9,11 @@ const jobsFor=async wordId=>api('ai/jobs?wordId='+encodeURIComponent(wordId));
 async function applySentenceJob(wordId,job){
   const word=app.model.words[wordId],pool=job?.safePatch?.sentencePool;
   if(!word||word.deleted||!Array.isArray(pool)||!pool.length)return false;
-  const version=sentenceContentVersion(word);
-  if(!pool.some(sentence=>validateSentence(sentence,version).ok))return false;
-  await transact([prepare('word',{id:word.id,setId:word.setId,patch:{sentencePool:pool},baseFields:word.fields})]);
+  const version=sentenceContentVersion(word),inactive=new Map((word.sentencePool||[])
+    .filter(sentence=>['reported','deleted'].includes(sentence.status)).map(sentence=>[sentence.id,sentence.status]));
+  const merged=pool.map(sentence=>inactive.has(sentence.id)?{...sentence,status:inactive.get(sentence.id)}:sentence);
+  if(!merged.some(sentence=>validateSentence(sentence,version).ok))return false;
+  await transact([prepare('word',{id:word.id,setId:word.setId,patch:{sentencePool:merged},baseFields:word.fields})]);
   app.model=model();sync().catch(()=>{});return true;
 }
 
