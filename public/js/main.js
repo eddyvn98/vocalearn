@@ -70,7 +70,11 @@ async function click(action,el){
   if(action==='aiStart')return startAi(el.dataset.wordId);
   if(action==='aiApply'){const id=await applyAi(el.dataset.wordId,el.dataset.jobId);return openEditor(id);}
   if(action==='aiApplyField'){const id=await applyAiField(el.dataset.wordId,el.dataset.jobId,el.dataset.field);return openEditor(id);}
-  if(action==='aiMeaning'){const id=await applyAiMeaning(el.dataset.wordId,el.dataset.jobId,el.dataset.index);return openEditor(id);}
+  if(action==='aiMeaning'){
+    const value=await applyAiMeaning(el.dataset.wordId,el.dataset.jobId,el.dataset.index);
+    const form=document.querySelector('#word-form');if(!form)throw new Error(t('aiWordMissing'));
+    form.elements.meaning.value=value;app.dirty=true;return;
+  }
   if(action==='aiRetry')return retryAi(el.dataset.wordId,el.dataset.jobId);
   if(action==='deleteWord')return deleteWord(el.dataset.id);
   if(action==='clearImage'||action==='clearAudio')return clearMedia(action==='clearImage'?'image':'audio');
