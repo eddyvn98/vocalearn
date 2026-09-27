@@ -91,7 +91,7 @@ def main():
         draw(page,20,50,80,50)
         expect(page.locator(".handwriting-meta")).to_contain_text("Nét 2/2")
         draw(page,50,20,50,80)
-        expect(page.locator(".handwriting-meta")).to_contain_text("人")
+        expect(page.locator(".handwriting-meta")).to_contain_text("十 ✓")
         draw(page,50,20,25,82)
         expect(page.locator(".handwriting-meta")).to_contain_text("Nét 2/2")
         draw(page,50,20,78,82)
