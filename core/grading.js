@@ -1,4 +1,4 @@
-export const RECOGNITION = new Set(['flash', 'quiz', 'match', 'spell', 'clozeChoice']);
+export const RECOGNITION = new Set(['flash', 'quiz', 'match', 'spell', 'clozeChoice', 'tone', 'classifier']);
 export const RECALL = new Set(['typing', 'dictation', 'cloze']);
 const segmenter = new Intl.Segmenter('en', {granularity: 'grapheme'});
 export const graphemes = s => Array.from(segmenter.segment(s), p => p.segment);
@@ -30,10 +30,10 @@ export function checkAnswer(input, answers, retried = false) {
   return {kind: 'wrong'};
 }
 export function gradeAnswer({correct, game, hint = false, hadError = false,
-  activeMs = Infinity, interrupted = false, answer = '', easyMs = 5000}) {
+  activeMs = Infinity, interrupted = false, answer = '', easyMs = 5000, gradeCap = null}) {
   if (!correct) return {grade: 'forget', assisted: false};
   const assisted = hint || hadError;
-  if (assisted || RECOGNITION.has(game)) return {grade: 'hard', assisted};
+  if (assisted || RECOGNITION.has(game) || gradeCap === 'hard') return {grade: 'hard', assisted};
   const units = normalize(answer).split(' ').filter(Boolean).length;
   const threshold = (game === 'cloze' ? Math.max(10000, easyMs) : easyMs) + Math.max(0, units - 1) * 2000;
   return {grade: !interrupted && activeMs < threshold ? 'easy' : 'good', assisted: false};
