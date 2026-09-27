@@ -95,6 +95,18 @@ test('Server rejects attempt added after question already answered', async () =>
   assert.equal(r.status, 400);
 });
 
+test('Server accepts a logically earlier same-device retry attempt delivered after its answer', async () => {
+  const answer=freeTyping('a-reordered','q-reordered','word1','cat','con meo','w1','hard');
+  answer.data.hadError=true;answer.data.assisted=true;answer.localOrder=200;
+  assert.equal((await request('/api/sync',batch([answer]))).status,200);
+
+  const attempt=event('att-reordered','attempt',{
+    wordId:'word1',questionId:'q-reordered',wrong:true,input:'car'
+  });
+  attempt.localOrder=100;
+  assert.equal((await request('/api/sync',batch([attempt]))).status,200);
+});
+
 test('Two devices can submit independent answers without dropping either log', async () => {
   const newWord = event('w2', 'word', {id: 'word2', setId: 'set1', patch: {word: 'dog', meaning: 'con cho'}});
   await request('/api/sync', batch([newWord]));
