@@ -94,11 +94,12 @@ def main():
                 page.locator('#answer-form [type="submit"]').click()
                 expect(page.locator("#feedback")).to_be_visible(timeout=5000)
                 assert "Chưa đúng" in page.locator("#feedback").inner_text()
-                page.locator('[data-action="finish"]').click()
+                page.locator('[data-action="next"]').click()
+                expect(page.get_by_text("Kết quả buổi học",exact=True)).to_be_visible()
 
                 second=choose_cloze(page)
                 assert second!=first,(first,second)
-                page.locator('[data-action="finish"]').click()
+                page.locator('[data-action="pause"]').click()
 
                 page.locator('[data-action="library"]').first.click()
                 page.get_by_role("button",name="Sửa thẻ",exact=True).click()
