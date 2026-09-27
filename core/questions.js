@@ -1,11 +1,12 @@
 import {normalize} from './grading.js';
 import {isDue, dayAt} from './time.js';
-export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'];
+import {toneQuestion,classifierQuestion} from './chinese-games.js';
+export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
 // Only expose implemented, valid pairs. Typing always answers the target word.
 export const GAME_FACES = Object.freeze({
   flash:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'], quiz:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'],
   typing:['meaning','ipa','pinyin','kana','hanViet','image'], match:['word'], spell:['audio'], dictation:['audio'],
-  cloze:['sentence'], clozeChoice:['sentence'], mix:['meaning','ipa','pinyin','kana','hanViet','image'],
+  cloze:['sentence'], clozeChoice:['sentence'], tone:['pinyin'], classifier:['word'], mix:['meaning','ipa','pinyin','kana','hanViet','image'],
 });
 export const FACES = ['meaning','word','ipa','pinyin','kana','hanViet','image','audio'];
 export const usesAudio = q => ['spell','dictation'].includes(q.game) || q.face === 'audio';
@@ -42,6 +43,8 @@ export function reasons(w, game, face = 'meaning', pool = []) {
   face = promptFace(game, face);
   if (!GAME_FACES[game]?.includes(face)) return ['invalidFace'];
   if (!w.word || w.deleted || !w.ready && game !== 'flash') return ['missingPrompt'];
+  if(game==='tone'&&!toneQuestion(w.pinyinSyllables||[]))return ['missingToneData'];
+  if(game==='classifier'&&!classifierQuestion(w))return ['missingClassifierData'];
   if (!w[face] && !['match','cloze','clozeChoice'].includes(game)) return [face === 'audio' ? 'missingAudio' : face === 'image' ? 'missingImage' : 'missingPrompt'];
   if (['typing','quiz','spell','dictation','cloze','clozeChoice'].includes(game) && ambiguous(w,game,face,pool)) return ['ambiguousPrompt'];
   if (game === 'quiz' && face === 'word' && !w.meaning) return ['missingMeaning'];
@@ -85,13 +88,14 @@ export function question(w, pool, game, face = 'meaning', mode = 'review', confi
   const why = reasons(w,game,face,pool);
   if (why.length) return {blocked:why,wordId:w.id};
   const reverse = game === 'quiz' && face === 'word';
-  const answers = game.startsWith('cloze') ? [...w.answers] : reverse ? [w.meaning] : [w.word];
-  const prompt = game.startsWith('cloze') ? w.sentence : game === 'match' ? w.word : w[face];
+  const answers = game.startsWith('cloze') ? [...w.answers] : game==='tone' ? (w.pinyinSyllables||[]).map(s=>String(s.tone)) : game==='classifier' ? [...(w.classifiers||[])] : reverse ? [w.meaning] : [w.word];
+  const prompt = game.startsWith('cloze') ? w.sentence : game === 'match' ? w.word : game==='classifier' ? classifierQuestion(w).prompt : w[face];
   const choices = ['quiz','clozeChoice'].includes(game) ? [answers[0],...alternatives(w,pool,game,face)].slice(0,4)
     .map((label,index) => ({label,correct:index === 0})) : [];
   const rotation = w.word.length % Math.max(1,choices.length); choices.push(...choices.splice(0,rotation));
   return {id:uuid(),eventId:uuid(),wordId:w.id,baseRev:w.review.rev,mode,game,face,
     config:{...config},snapshot:structuredClone(w),prompt,answers,choices,fallback,familiarize,
     input:'',hadError:false,hint:false,retry:false,flipped:false,result:null,
+    tone:game==='tone'?toneQuestion(w.pinyinSyllables||[],w.audio):null,classifier:game==='classifier'?classifierQuestion(w):null,
     activeMs:0,interrupted:false,audioPlayed:false};
 }
