@@ -2,18 +2,22 @@ import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {application} from '../server/main.js';
 import {createHash} from 'node:crypto';
-let server,url,cookie,user;
+import {mkdtempSync,readdirSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+let server,url,cookie,user,mediaPath;
 async function request(path,data,session=cookie,extra={}) {
   const response=await fetch(url+path,{method:data===undefined?'GET':'POST',
     headers:{'Content-Type':'application/json',...(session?{Cookie:session}:{}),...extra},body:data===undefined?undefined:JSON.stringify(data)});
   return {status:response.status,headers:response.headers,data:await response.json()};
 }
 before(async()=>{
- server=application({dbPath:':memory:'});await new Promise(r=>server.listen(0,'127.0.0.1',r));url=`http://127.0.0.1:${server.address().port}`;
+ mediaPath=mkdtempSync(join(tmpdir(),'vocalearn-api-media-'));
+ server=application({dbPath:':memory:',mediaPath});await new Promise(r=>server.listen(0,'127.0.0.1',r));url=`http://127.0.0.1:${server.address().port}`;
  const r=await request('/api/register',{email:'test@example.com',password:'long-secure-password'},null);
  assert.equal(r.status,200);cookie=r.headers.get('set-cookie').split(';')[0];user=r.data.user;
 });
-after(async()=>{server.closeAllConnections();await new Promise(r=>server.close(r));});
+after(async()=>{server.closeAllConnections();await new Promise(r=>server.close(r));rmSync(mediaPath,{recursive:true,force:true});});
 const event=(id,kind,data,deviceId='device',at=Date.now())=>({id,kind,data,deviceId,at});
 const batch=(events,deviceId='device',cursor=0)=>({events,deviceId,cursor,clientNow:Date.now()});
 test('Authenticated session is HttpOnly, account owns its data',async()=>{
