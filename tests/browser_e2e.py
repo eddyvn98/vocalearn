@@ -170,7 +170,10 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     # Advance the trusted server clock through the 1/10/10-minute learning waits.
     # With one card, step 1 quiz falls back to flash; step 2 spell falls back to typing.
     base_clock = int(time.time() * 1000)
-    clock_path.write_text(str(base_clock + 61_000))
+    page.evaluate("() => { window.__realDateNow = Date.now; }")
+    phase_now = base_clock + 61_000
+    clock_path.write_text(str(phase_now))
+    page.evaluate("(ms) => { Date.now = () => ms; }", phase_now)
     sync_from_ui(page)
     page.locator('[data-action="setupReview"]').click()
     expect(page.locator("#modal")).to_contain_text("1/1")
@@ -182,7 +185,9 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.locator('[data-action="next"]').click()
     page.locator('[data-action="home"]').first.click()
 
-    clock_path.write_text(str(base_clock + 61_000 + 601_000))
+    phase_now = base_clock + 61_000 + 601_000
+    clock_path.write_text(str(phase_now))
+    page.evaluate("(ms) => { Date.now = () => ms; }", phase_now)
     sync_from_ui(page)
     page.locator('[data-action="setupReview"]').click()
     expect(page.locator("#modal")).to_contain_text("1/1")
@@ -194,7 +199,9 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.locator('[data-action="next"]').click()
     page.locator('[data-action="home"]').first.click()
 
-    clock_path.write_text(str(base_clock + 61_000 + 1_202_000))
+    phase_now = base_clock + 61_000 + 1_202_000
+    clock_path.write_text(str(phase_now))
+    page.evaluate("(ms) => { Date.now = () => ms; }", phase_now)
     sync_from_ui(page)
     page.locator('[data-action="setupReview"]').click()
     expect(page.locator("#modal")).to_contain_text("1/1")
@@ -205,6 +212,8 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     expect(page.locator("#feedback")).to_be_visible()
     page.locator('[data-action="next"]').click()
     page.locator('[data-action="home"]').first.click()
+    page.evaluate("() => { Date.now = window.__realDateNow; delete window.__realDateNow; }")
+    clock_path.write_text(str(int(time.time() * 1000)))
     print("PASS: trusted fake clock completes 1/10/10-minute learning progression")
 
     page.locator('[data-action="setupFree"]').click()
