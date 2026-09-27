@@ -24,11 +24,26 @@ function alternatives(w, pool, game, face) {
     .map(x => face === 'word' && !cloze ? x.meaning : x.word)
     .filter(x => {if (!x || seen.has(normalize(x))) return false; seen.add(normalize(x)); return true;});
 }
+function ambiguous(w, game, face, pool) {
+  const prompt = game.startsWith('cloze') ? w.sentence : w[face];
+  if(!prompt)return false;
+  const answer = game.startsWith('cloze') ? (w.answers || []).map(normalize).sort().join('|')
+    : game==='quiz'&&face==='word' ? normalize(w.meaning || '') : normalize(w.word || '');
+  return pool.some(x=>{
+    if(x.id===w.id||x.deleted)return false;
+    const otherPrompt=game.startsWith('cloze')?x.sentence:x[face];
+    if(!otherPrompt||normalize(otherPrompt)!==normalize(prompt))return false;
+    const otherAnswer=game.startsWith('cloze')?(x.answers || []).map(normalize).sort().join('|')
+      : game==='quiz'&&face==='word'?normalize(x.meaning || ''):normalize(x.word || '');
+    return otherAnswer!==answer;
+  });
+}
 export function reasons(w, game, face = 'meaning', pool = []) {
   face = promptFace(game, face);
   if (!GAME_FACES[game]?.includes(face)) return ['invalidFace'];
   if (!w.word || w.deleted || !w.ready && game !== 'flash') return ['missingPrompt'];
   if (!w[face] && !['match','cloze','clozeChoice'].includes(game)) return [face === 'audio' ? 'missingAudio' : face === 'image' ? 'missingImage' : 'missingPrompt'];
+  if (['typing','quiz','spell','dictation','cloze','clozeChoice'].includes(game) && ambiguous(w,game,face,pool)) return ['ambiguousPrompt'];
   if (game === 'quiz' && face === 'word' && !w.meaning) return ['missingMeaning'];
   if (['spell','dictation'].includes(game) && !w.audio) return ['missingAudio'];
   if (['cloze','clozeChoice'].includes(game) && (!w.sentence || w.sentence.split('___').length !== 2 || !w.answers?.length)) return ['missingSentence'];
