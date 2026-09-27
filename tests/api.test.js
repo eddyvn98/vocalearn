@@ -1,6 +1,7 @@
 import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {application} from '../server/main.js';
+import {createHash} from 'node:crypto';
 let server,url,cookie,user;
 async function request(path,data,session=cookie,extra={}) {
   const response=await fetch(url+path,{method:data===undefined?'GET':'POST',
@@ -75,4 +76,25 @@ test('An event ID cannot be reused with different data',async()=>{
 test('Logout invalidates server session',async()=>{
  assert.equal((await request('/api/logout',{})).status,200);
  assert.equal((await request('/api/me')).status,401);
+});
+
+
+test('Media store verifies hash, deduplicates, serves bytes and isolates accounts',async()=>{
+ const base64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+ const bytes=Buffer.from(base64,'base64');
+ const id=createHash('sha256').update(bytes).digest('hex');
+ const uri='data:image/png;base64,'+base64;
+ const first=await request('/api/media',{id,uri});
+ assert.equal(first.status,200);assert.equal(first.data.deduplicated,false);
+ const second=await request('/api/media',{id,uri});
+ assert.equal(second.status,200);assert.equal(second.data.deduplicated,true);
+ const media=await fetch(url+'/api/media/'+id,{headers:{Cookie:cookie}});
+ assert.equal(media.status,200);assert.equal(media.headers.get('content-type'),'image/png');
+ assert.deepEqual(Buffer.from(await media.arrayBuffer()),bytes);
+ const bad=await request('/api/media',{id:'0'.repeat(64),uri});
+ assert.equal(bad.status,400);
+ const other=await request('/api/register',{email:'media-other@example.com',password:'another-media-password'},null);
+ const otherCookie=other.headers.get('set-cookie').split(';')[0];
+ const hidden=await fetch(url+'/api/media/'+id,{headers:{Cookie:otherCookie}});
+ assert.equal(hidden.status,404);
 });
