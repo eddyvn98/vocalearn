@@ -1,5 +1,5 @@
 export const viSpeech={
-  speak:"Nói",speechStart:"Bắt đầu nói",speechAgain:"Nói lại",speechListening:"Đang nghe…",
+  speak:"Nói",speechStart:"Bắt đầu nói",speechAgain:"Nói lại",speechListening:"Đang nghe…",speech_ready:"Sẵn sàng",speech_recording:"Đang thu",speech_recognizing:"Đang nhận dạng",
   speechTranscript:"Đã nhận",speechTechnical:"Chưa nhận dạng được. Lần này không tính là trả lời sai.",
   speechAttempt:"Lần nhận dạng hợp lệ",speechUnavailable:"Nhận dạng giọng nói cục bộ chưa được kiểm thử trên thiết bị/ngôn ngữ này.",
   notTested:"Chưa có bộ nhận dạng cục bộ đã kiểm thử.",permissionDenied:"Chưa có quyền micro.",
