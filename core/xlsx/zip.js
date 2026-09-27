@@ -1,9 +1,8 @@
-import {zipSync,unzipSync,crc32 as fflateCrc32} from 'fflate';
+import {zipSync,unzipSync} from 'fflate';
 
 const encoder=new TextEncoder(),decoder=new TextDecoder();
 export const bytes=value=>typeof value==='string'?encoder.encode(value):new Uint8Array(value);
 export const text=value=>decoder.decode(value);
-export const crc32=data=>fflateCrc32(bytes(data))>>>0;
 
 const safeName=name=>name&&!name.startsWith('/')&&!name.includes('\\')&&!name.split('/').includes('..');
 
