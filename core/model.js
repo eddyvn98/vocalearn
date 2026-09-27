@@ -58,9 +58,9 @@ export function descendants(categories, root) {
   }
   return found;
 }
-export function inScope(w, scope, categories) {
+export function inScope(w, scope, categories, includeChildren = true) {
   if (!scope?.length) return true;
   if (scope.includes('uncategorized') && !w.categoryIds.length) return true;
-  const ids = new Set(scope.flatMap(id => [...descendants(categories, id)]));
+  const ids = new Set(scope.flatMap(id => includeChildren ? [...descendants(categories, id)] : [id]));
   return w.categoryIds.some(id => ids.has(id));
 }
