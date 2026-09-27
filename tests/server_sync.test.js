@@ -104,10 +104,12 @@ test('Server rejects attempt added after question already answered', async () =>
 });
 
 test('Server accepts a logically earlier same-device retry attempt delivered after its answer', async () => {
-  const answer = {...event('a-reordered', 'answer', typingAnswer({
+  const answerData=typingAnswer({
     wordId: 'word1', questionId: 'q-reordered', word: 'cat', meaning: 'con meo',
     revision: 'w1', hadError: true, grade: 'hard', input: 'cat', activeMs: 6000
-  })), localOrder: 200};
+  });
+  answerData.assisted=true;
+  const answer = {...event('a-reordered', 'answer', answerData), localOrder: 200};
   assert.equal((await request('/api/sync', batch([answer]))).status, 200);
 
   const attempt = {...event('att-reordered', 'attempt', {
