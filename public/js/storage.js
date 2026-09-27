@@ -131,28 +131,41 @@ export async function api(path, body) {
   if(!response.ok)throw new Error(payload.error || `HTTP ${response.status}`);
   return payload;
 }
-let syncing = false;
+let syncPromise = null;
 export async function sync() {
-  if(syncing)return;
-  syncing=true;
+  if(syncPromise)return syncPromise;
   const run = async()=>{
     await refresh();await loadMedia();await uploadMedia();
-    // Bound event batches by serialized size and count. Media bytes sync separately.
-    const batch=[];let bytes=0;
-    for(const e of cached.filter(e=>!e.seq).sort((a,b)=>a.localOrder-b.localOrder)) {
-      const size=JSON.stringify(e).length;
-      if(batch.length && (bytes+size>6000000||batch.length===150))break;
-      batch.push(e);bytes+=size;
+    let first=true;
+    while(first||pendingCount()) {
+      first=false;
+      // Bound each request by serialized size and count, but drain all pending
+      // batches before resolving one user-visible sync action.
+      const pending=cached.filter(e=>!e.seq).sort((a,b)=>a.localOrder-b.localOrder);
+      const batch=[];let bytes=0;
+      for(const e of pending) {
+        const size=JSON.stringify(e).length;
+        if(batch.length && (bytes+size>6000000||batch.length===150))break;
+        batch.push(e);bytes+=size;
+      }
+      const before=pending.length;
+      const data=await api('sync',{events:batch,cursor,deviceId,clientNow:Date.now()});
+      const tx=db.transaction(['events','meta'],'readwrite');
+      for(const e of data.events)tx.objectStore('events').put(e);
+      tx.objectStore('meta').put(data.cursor,'cursor');
+      offset=data.anchorServer-data.anchorClient;tx.objectStore('meta').put(offset,'offset');
+      tx.objectStore('meta').put(Date.now(),'lastSync');
+      await done(tx);await refresh();await hydrateMedia(data.events);
+      if(batch.length&&pendingCount()>=before)throw new Error('Sync did not acknowledge local changes');
     }
-    const data=await api('sync',{events:batch,cursor,deviceId,clientNow:Date.now()});
-    const tx=db.transaction(['events','meta'],'readwrite');
-    for(const e of data.events)tx.objectStore('events').put(e);
-    tx.objectStore('meta').put(data.cursor,'cursor');
-    offset=data.anchorServer-data.anchorClient;tx.objectStore('meta').put(offset,'offset');
-    tx.objectStore('meta').put(Date.now(),'lastSync');
-    await done(tx);await refresh();await hydrateMedia(data.events);channel?.postMessage({owner});
+    channel?.postMessage({owner});
   };
-  try {await queue.catch(()=>{});await(navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());}
-  finally {syncing=false;}
+  const execute=async()=>{
+    await queue.catch(()=>{});
+    await(navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());
+  };
+  syncPromise=execute();
+  try {return await syncPromise;}
+  finally {syncPromise=null;}
 }
 channel?.addEventListener('message',async e=>{if(e.data.owner===owner){if(e.data.media)await loadMedia();window.dispatchEvent(new CustomEvent('voca-external'));}});
