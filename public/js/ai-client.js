@@ -61,8 +61,10 @@ export async function applyAiField(wordId,jobId,field){
   const job=await findJob(wordId,jobId);return applyPatch(wordId,{[field]:job.suggestions?.[field]});
 }
 export async function applyAiMeaning(wordId,jobId,index){
+  assertClean(wordId);
   const job=await findJob(wordId,jobId),value=job.result?.meaningCandidates?.[Number(index)];
-  if(!value)throw new Error(t('aiMeaningMissing'));return applyPatch(wordId,{meaning:value});
+  if(!value)throw new Error(t('aiMeaningMissing'));
+  return value;
 }
 export async function retryAi(wordId,jobId){
   assertClean(wordId);await api('ai/jobs/'+encodeURIComponent(jobId)+'/retry',{});await refreshAiPanel(wordId);return wordId;
