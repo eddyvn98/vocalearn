@@ -37,7 +37,7 @@ export const saveStudySetup=()=>setMeta('studySetup',{
 function makeQuestion(w,pool,game) {
   const profile=studySetProfile(app.model.sets[app.setId]);
   const q=question(w,pool,game,app.face,app.mode,app.model.settings,uuid,answerFaceFor(game),profile||{});
-  if(q.handwriting)q.handwriting.level=app.handwritingLevel;
+  if(q.handwriting){q.handwriting.level=app.handwritingLevel;if(app.handwritingLevel==='trace')q.familiarize=true;}
   return q;
 }
 function matchQueue(pool) {
