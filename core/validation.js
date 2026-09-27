@@ -1,6 +1,6 @@
 import {DEFAULTS} from './srs.js';
 import {isMediaRef} from './media.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','kana','onReading','kunReading','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','lookupMeta','custom']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','kana','onReading','kunReading','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','lookupMeta','strokeData','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -57,6 +57,18 @@ export function validateEvent(e) {
               || typeof meta.confirmed !== 'boolean' || typeof meta.needsCheck !== 'boolean'
               || (meta.ambiguous!==undefined&&(!Array.isArray(meta.ambiguous)||meta.ambiguous.length>100||meta.ambiguous.some(x=>!text(x,20))))) fail('Invalid lookup metadata');
           }
+        } else if (key === 'strokeData') {
+          if (!v || typeof v !== 'object' || Array.isArray(v) || !['zh','ja'].includes(v.language)
+            || !text(v.source,200) || !text(v.version,100) || !text(v.license,100)
+            || !Array.isArray(v.characters) || v.characters.length > 16 || !Array.isArray(v.missing)) fail('Invalid stroke data');
+          for (const char of v.characters) {
+            if (!char || !text(char.char,8) || !['points','svg-path'].includes(char.format)
+              || !Array.isArray(char.strokes) || !char.strokes.length || char.strokes.length>64) fail('Invalid stroke character');
+            if (char.format==='points' && char.strokes.some(stroke=>!Array.isArray(stroke)||stroke.length<2||stroke.length>200
+              ||stroke.some(point=>!Array.isArray(point)||point.length!==2||point.some(n=>!Number.isFinite(n)||n<0||n>100)))) fail('Invalid stroke points');
+            if (char.format==='svg-path' && char.strokes.some(path=>!text(path,5000)||!path.startsWith('M'))) fail('Invalid stroke path');
+          }
+          if(v.missing.length>16||v.missing.some(char=>!text(char,8)))fail('Invalid missing stroke data');
         } else if (key === 'custom') {
           if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).length > 30) fail('Invalid custom data');
           for (const [customId,value] of Object.entries(v)) {
@@ -94,13 +106,26 @@ export function validateEvent(e) {
     case 'answer':
       if (!id(d.wordId) || !id(d.questionId) || !text(d.baseRev, 200)
         || !['review','new','free','errors'].includes(d.mode)
-        || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'].includes(d.game)
+        || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting'].includes(d.game)
         || !['forget','hard','good','easy'].includes(d.grade)
         || typeof d.hadError !== 'boolean' || typeof d.assisted !== 'boolean') fail('Invalid answer');
       if (d.schemaVersion === 2 && (!text(d.opportunityId, 500) || !d.opportunityId)) fail('Invalid opportunity');
       if ('readingInput' in d && !text(d.readingInput,500)) fail('Invalid reading input');
       if ('selectedForm' in d && !text(d.selectedForm,500)) fail('Invalid selected form');
       if ('sentenceId' in d && d.sentenceId && !id(d.sentenceId)) fail('Invalid sentence ID');
+      if (d.game==='handwriting') {
+        const s=d.handwritingState;
+        if (!['trace','guided','memory'].includes(d.handwritingLevel) || !s || typeof s!=='object' || Array.isArray(s)
+          || !Array.isArray(s.characters) || !s.characters.length || s.characters.length>16
+          || !Number.isInteger(s.index) || s.index<0 || s.index>s.characters.length
+          || typeof s.hadError!=='boolean' || typeof s.unknown!=='boolean') fail('Invalid handwriting evidence');
+        for (const item of s.characters) {
+          if (!item || !text(item.ch,8) || !Array.isArray(item.wrongStrokes) || item.wrongStrokes.length>256
+            || item.wrongStrokes.some(value=>!Number.isInteger(value)||value<0||value>63)
+            || typeof item.completed!=='boolean' || typeof item.assisted!=='boolean') fail('Invalid handwriting character evidence');
+        }
+        if (d.handwritingErrors!==undefined && (!Array.isArray(d.handwritingErrors)||d.handwritingErrors.length>256)) fail('Invalid handwriting errors');
+      }
       if (d.config) validateEvent({...e, kind: 'settings', data: d.config});
       break;
     case 'attempt':

@@ -7,7 +7,7 @@ import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';import {statisticsView} from './views/statistics.js';
 import {setup,studyAction,submitInput,startClock,stopClock,applyStudySetup,saveStudySetup} from './study.js';
-import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash,makeSentenceBlank,updateSentencePreview} from './editor.js';
+import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash,makeSentenceBlank,updateSentencePreview,loadStrokeData} from './editor.js';
 import {customFields,saveCustomField,deleteCustomField} from './card-schema.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,moveTopic,logoutAction,offlineResources,cleanupResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
@@ -16,9 +16,8 @@ import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './nav
 import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
 import {reminderPlan} from '/core/reminders.js';
 import {startAi,applyAi,applyAiField,applyAiMeaning,retryAi} from './ai-client.js';
-import {updateSentenceStatus} from './sentence-pool.js';
-import {lookupEditorReading} from './lookups.js';
-const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
+import {updateSentenceStatus} from './sentence-pool.js';import {lookupEditorReading} from './lookups.js';
+const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight','handwritingUndo','handwritingClear']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
     :app.page==='study'?studyView():app.page==='results'?resultsView():app.page==='statistics'?statisticsView():['library','errors'].includes(app.page)?libraryView():homeView();
@@ -69,7 +68,7 @@ async function click(action,el){
   if(action==='practice')return setup('free',el.dataset.game);
   if(action==='add'||action==='edit')return openEditor(el.dataset.id);
   if(action==='makeSentenceBlank')return makeSentenceBlank();
-  if(action==='lookupReading')return lookupEditorReading(el.dataset.language||'en');
+  if(action==='lookupReading')return lookupEditorReading(el.dataset.language||'en');if(action==='loadStrokeData')return loadStrokeData();
   if(action==='aiStart')return startAi(el.dataset.wordId);
   if(action==='aiApply'){const id=await applyAi(el.dataset.wordId,el.dataset.jobId);return openEditor(id);}
   if(action==='aiApplyField'){const id=await applyAiField(el.dataset.wordId,el.dataset.jobId,el.dataset.field);return openEditor(id);}
@@ -235,6 +234,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='setup-game'){app.game=e.target.value;await saveStudySetup();setup();}
     if(e.target.id==='setup-face'){app.face=e.target.value;await saveStudySetup();setup();}
     if(e.target.id==='setup-answer-face'){app.answerFace=e.target.value;await saveStudySetup();setup();}
+    if(e.target.id==='setup-handwriting-level'){app.handwritingLevel=e.target.value;await saveStudySetup();setup();}
     if(e.target.dataset.mixGame){
       const game=e.target.dataset.mixGame;
       app.mixGames=e.target.checked?[...new Set([...app.mixGames,game])]:app.mixGames.filter(value=>value!==game);

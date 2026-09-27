@@ -43,11 +43,19 @@ def answer_current(page):
     expect(page.locator("#feedback")).to_have_count(0)
     field.dispatch_event("compositionend")
     page.locator('#answer-form [type="submit"]').click()
-    confirm=page.locator('[data-action="formChoice"]')
-    if confirm.count():
+    next_state=page.locator('[data-action="formChoice"]:not([disabled]), #feedback').first
+    expect(next_state).to_be_visible()
+    feedback=page.locator("#feedback")
+    if not (feedback.count() and feedback.first.is_visible()):
+        confirm=page.locator('[data-action="formChoice"]:not([disabled])')
         expect(confirm).to_have_count(1)
-        confirm.click()
-    expect(page.locator("#feedback")).to_be_visible()
+        confirm.first.click()
+    try:
+        expect(page.locator("#feedback")).to_be_visible(timeout=10000)
+    except AssertionError:
+        print("JAPANESE_STUDY_ERROR:",page.locator("#study-error").inner_text())
+        print("JAPANESE_STATE:",page.evaluate("() => import('/js/state.js').then(m => ({error:m.app.session?.error,q:m.app.session?.queue?.[m.app.session?.index]}))"))
+        raise
     return prompt
 
 def main():

@@ -3,6 +3,7 @@ import {DEFAULTS,scheduleFor} from '../core/srs.js';
 import {question as makeQuestion,GAME_FACES,answerFaces,defaultAnswerFace,reasons} from '../core/questions.js';
 import {isDue} from '../core/time.js';
 import {WORD_FIELDS} from '../core/validation.js';
+import {handwritingResult} from '../core/handwriting.js';
 const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 function snapshotFor(current, q, events) {
   if(!q || typeof q !== 'object' || !Array.isArray(q.answers) || !q.answers.length)throw new Error('Missing question snapshot');
@@ -59,8 +60,20 @@ export function validateReview(state, event, events) {
   if(d.game==='flash')correct=!unknown;
   if(d.game==='quiz'&&d.answerFace==='image')correct=!unknown&&d.selectedWordId===d.wordId;
   if(d.game==='match')correct=!unknown && (d.selectedWordId===d.wordId || d.schemaVersion!==2 && d.grade!=='forget');
-  const expected=gradeAnswer({correct,game:d.game,hint:d.hint||false,hadError:d.hadError,
-    activeMs:d.activeMs,interrupted:d.interrupted||false,answer:answers[0],easyMs:d.config?.easyMs});
+  let expected;
+  if(d.game==='handwriting'){
+    if(!['trace','guided','memory'].includes(d.handwritingLevel)||!d.handwritingState
+      ||!Array.isArray(d.handwritingState.characters))throw new Error('Invalid handwriting evidence');
+    const chars=[...String(snapshot.word||'')];
+    if(d.handwritingState.characters.length!==chars.length
+      ||d.handwritingState.characters.some((item,index)=>item.ch!==chars[index]))throw new Error('Handwriting word mismatch');
+    const strokes=snapshot.strokeData?.characters?.reduce((sum,item)=>sum+(item.strokes?.length||0),0)||0;
+    const hw=handwritingResult(d.handwritingState,{memory:d.handwritingLevel==='memory',
+      activeMs:d.activeMs,easyMs:Math.max(8000,strokes*2000)});
+    expected={grade:hw.grade,assisted:hw.grade==='hard'&&hw.hadError};correct=hw.grade!=='forget';
+  }else expected=gradeAnswer({correct,game:d.game,hint:d.hint||false,hadError:d.hadError,
+    activeMs:d.activeMs,interrupted:d.interrupted||false,answer:answers[0],easyMs:d.config?.easyMs,
+    gradeCap:d.question?.twoStep?.gradeCap||null});
   if(expected.grade!==d.grade||expected.assisted!==d.assisted)throw new Error('Grade does not match the recorded response');
   if(!correct&&!d.hadError)throw new Error('Incorrect response must record an error');
   if(['free','errors'].includes(d.mode))return;
