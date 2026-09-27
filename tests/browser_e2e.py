@@ -167,14 +167,26 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.locator('[data-action="home"]').first.click()
     print("PASS: duplicate UI action still records one final answer")
 
-    # Advance the trusted server clock past the first learning wait. Browser time stays
-    # real; the next sync refreshes the client/server anchor used for effectiveAt.
-    clock_path.write_text(str(int(time.time() * 1000) + 61_000))
+    # Advance the trusted server clock through the 1/10/10-minute learning waits.
+    # With one card, step 1 quiz falls back to flash; step 2 spell falls back to typing.
+    base_clock = int(time.time() * 1000)
+    clock_path.write_text(str(base_clock + 61_000))
     sync_from_ui(page)
     page.locator('[data-action="home"]').first.click()
-    expect(page.locator('[data-action="setupReview"]')).to_be_visible()
     page.locator('[data-action="setupReview"]').click()
-    expect(page.locator("#modal")).to_be_visible()
+    expect(page.locator("#modal")).to_contain_text("1/1")
+    page.locator('#modal [data-action="startSession"]').click()
+    expect(page.locator('[data-action="flip"]')).to_be_visible()
+    page.locator('[data-action="flip"]').click()
+    page.locator('[data-action="remember"]').click()
+    expect(page.locator("#feedback")).to_be_visible()
+    page.locator('[data-action="next"]').click()
+    page.locator('[data-action="home"]').first.click()
+
+    clock_path.write_text(str(base_clock + 61_000 + 601_000))
+    sync_from_ui(page)
+    page.locator('[data-action="home"]').first.click()
+    page.locator('[data-action="setupReview"]').click()
     expect(page.locator("#modal")).to_contain_text("1/1")
     page.locator('#modal [data-action="startSession"]').click()
     expect(page.locator("#answer")).to_be_visible()
@@ -183,7 +195,20 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     expect(page.locator("#feedback")).to_be_visible()
     page.locator('[data-action="next"]').click()
     page.locator('[data-action="home"]').first.click()
-    print("PASS: trusted fake clock unlocks the 1-minute learning step")
+
+    clock_path.write_text(str(base_clock + 61_000 + 1_202_000))
+    sync_from_ui(page)
+    page.locator('[data-action="home"]').first.click()
+    page.locator('[data-action="setupReview"]').click()
+    expect(page.locator("#modal")).to_contain_text("1/1")
+    page.locator('#modal [data-action="startSession"]').click()
+    expect(page.locator("#answer")).to_be_visible()
+    page.locator("#answer").fill("apple")
+    page.locator('#answer-form [type="submit"]').click()
+    expect(page.locator("#feedback")).to_be_visible()
+    page.locator('[data-action="next"]').click()
+    page.locator('[data-action="home"]').first.click()
+    print("PASS: trusted fake clock completes 1/10/10-minute learning progression")
 
     page.locator('[data-action="setupFree"]').click()
     expect(page.locator("#modal")).to_be_visible()
