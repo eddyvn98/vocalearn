@@ -96,6 +96,11 @@ def main():
                     assert choice_text == {'书', '输'}, choice_text
                     page.locator('[data-action="formChoice"]', has_text=expected_form).click()
                     expect(page.locator('#feedback')).to_be_visible()
+                    page.locator('[data-action="next"]').click()
+                    if page.locator('[data-action="home"]').count():
+                        page.locator('[data-action="home"]').first.click()
+                    elif page.locator('[data-action="pause"]').count():
+                        page.locator('[data-action="pause"]').click()
 
                     sync_from_ui(page)
                     assert not errors, 'Chinese browser runtime errors: ' + repr(errors)

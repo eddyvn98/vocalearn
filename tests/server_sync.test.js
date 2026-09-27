@@ -103,6 +103,20 @@ test('Server rejects attempt added after question already answered', async () =>
   assert.equal(r.status, 400);
 });
 
+test('Server accepts a logically earlier same-device retry attempt delivered after its answer', async () => {
+  const answer = {...event('a-reordered', 'answer', typingAnswer({
+    wordId: 'word1', questionId: 'q-reordered', word: 'cat', meaning: 'con meo',
+    revision: 'w1', hadError: true, grade: 'hard', input: 'cat', activeMs: 6000
+  })), localOrder: 200};
+  assert.equal((await request('/api/sync', batch([answer]))).status, 200);
+
+  const attempt = {...event('att-reordered', 'attempt', {
+    wordId: 'word1', questionId: 'q-reordered', wrong: true, input: 'car'
+  }), localOrder: 100};
+  const late = await request('/api/sync', batch([attempt]));
+  assert.equal(late.status, 200);
+});
+
 test('Two devices preserve competing deferred reviews for conservative replay', async () => {
   const newWord = event('w2', 'word', {id: 'word2', setId: 'set1', patch: {word: 'dog', meaning: 'con cho'}});
   await request('/api/sync', batch([newWord]));
