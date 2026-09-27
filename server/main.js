@@ -4,6 +4,7 @@ import {resolve, dirname} from 'node:path';
 import {openDatabase, synchronize} from './database.js';
 import {authenticate, sessionUser, logout, cookie} from './auth.js';
 import {body, json, staticFile, securityHeaders} from './http.js';
+import {putMedia,getMedia} from './media.js';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), secure = false,
   origin = '', allowSignup = true} = {}) {
@@ -37,6 +38,13 @@ export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), sec
       if (url.pathname === '/api/me' && req.method === 'GET') return json(res,200,{user});
       if (url.pathname === '/api/logout' && req.method === 'POST') {
         logout(db,req);return json(res,200,{ok:true},{'Set-Cookie':cookie('',secure,true)});
+      }
+      if (url.pathname === '/api/media' && req.method === 'POST') return json(res,200,putMedia(db,user.id,await body(req)));
+      if (url.pathname.startsWith('/api/media/') && req.method === 'GET') {
+        const media=getMedia(db,user.id,url.pathname.slice('/api/media/'.length));
+        if(!media)return json(res,404,{error:'Media not found'});
+        res.writeHead(200,{'Content-Type':media.mime,'Content-Length':media.size,'Cache-Control':'private, max-age=31536000, immutable'});
+        return res.end(media.data);
       }
       if (url.pathname === '/api/sync' && req.method === 'POST') return json(res,200,synchronize(db,user.id,await body(req)));
       return json(res,404,{error:'Not found'});
