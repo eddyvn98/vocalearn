@@ -1,11 +1,22 @@
 import {app,current,words} from './state.js';
 import {t,notify,modal,button,esc,closeModal} from './ui.js';
-import {prepare,transact,model,setMeta,uuid} from './storage.js';
+import {prepare,transact,model,setMeta,getMeta,uuid} from './storage.js';
 import {availablePool,learningAllowed,question,GAMES,GAME_FACES,usesAudio} from '/core/questions.js';
 import {inScope} from '/core/model.js';
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories,app.scopeChildren);
+const MIXABLE=['flash','quiz','typing','spell','dictation','cloze','clozeChoice'];
 let started=0;
+export async function restoreSetup() {
+  const saved=await getMeta(`setup:${app.setId}`);
+  if(!saved)return;
+  if(saved.game&&['mix',...GAMES].includes(saved.game))app.game=saved.game;
+  if(saved.face)app.face=saved.face;
+  if(Array.isArray(saved.mixGames))app.mixGames=saved.mixGames.filter(g=>MIXABLE.includes(g));
+}
+function persistSetup() {
+  setMeta(`setup:${app.setId}`,{game:app.game,face:app.face,mixGames:app.mixGames}).catch(()=>{});
+}
 export function startClock() {
   const q=current();
   started=q&&!q.result&&(!usesAudio(q)||q.audioPlayed)?performance.now():0;
@@ -28,7 +39,7 @@ export function previewQueue() {
     }
     let game=app.game;
     if(game==='mix'){
-      const choices=['quiz','typing','cloze','flash'];
+      const choices=app.mixGames.length?app.mixGames:['typing'];
       for(let n=0;n<choices.length;n++){
         const candidate=question(w,all,choices[(i+n)%choices.length],app.face,app.mode,app.model.settings,uuid);
         if(!candidate.blocked)return candidate;
@@ -49,6 +60,7 @@ export function setup(mode=app.mode,game=app.game) {
   modal(t('setup'),`<div class="stack"><p>${t(mode)} \u00b7 ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
     ${mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...GAMES].map(g=>`<option value="${g}" ${g===app.game?'selected':''}>${t(g)}</option>`).join('')}</select></label>`}
     <label ${['mix','typing','flash','quiz'].includes(app.game)?'':'hidden'}>${t('face')}<select id="setup-face">${(GAME_FACES[app.game]||[]).map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
+    ${app.game==='mix'?`<fieldset><legend>${t('mixGames')}</legend><div class="row wrap">${MIXABLE.map(g=>`<label class="check-label"><input type="checkbox" data-mix-game="${g}" ${app.mixGames.includes(g)?'checked':''}>${t(g)}</label>`).join('')}</div></fieldset>`:''}
     <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>${errors.map(e=>`<p class="info">${t(e)}</p>`).join('')}
     ${blocked||limited?`<p class="error-text">${t(blocked||'missingChoices')}</p>`:''}
     ${button(t('start'),'startSession','primary full',!good.length||blocked||limited?'disabled':'')}</div>`);
