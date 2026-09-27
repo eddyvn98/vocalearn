@@ -1,6 +1,6 @@
 # Implementation coverage: v0.1.0 against specification v0.5
 
-This is a runnable Phase-1 implementation, **not full specification completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Current planning estimate: **~86% Phase-1 functional implementation, ~78% Phase-1 acceptance evidence, ~59% of the complete v0.5 scope across phases 1-3**. See `SPEC_TRACEABILITY_V0.5.md`.
+This is a runnable web implementation through the verified Phase-2 release gate, **not full specification completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Planning percentages are tracked in `PROGRESS.md` and are not changed by release evidence alone. See `SPEC_TRACEABILITY_V0.5.md`.
 
 Status meanings:
 - Implemented: source exists and is connected to the runtime. Not equivalent to browser acceptance.
@@ -23,7 +23,8 @@ Status meanings:
 | UI-12 | Error-book filter, practice, episode counts/evidence display. Pure evidence rules tested; richer remaining-condition UI pending. |
 | UI-13 | Daily limit, timezone, basic SRS factors, open-app reminder. No background notifications or primary-device scheduler. |
 | UI-14 | IndexedDB journal, authenticated sync, authoritative server snapshot & grade validation, opportunity deduplication, conservative multi-device merge, offline resource status modal. |
-| UI-15/16 | G2/G3 AI, advanced statistics, Chinese/Japanese profiles, recognition/handwriting are not implemented or shown as playable. |
+| UI-15 | Phase-2 content assistance is wired into the released editor/runtime: protected AI jobs/suggestions, sentence-pool semantics, deterministic English IPA lookup, Chinese Pinyin + Hán-Việt lookup with source/version/license provenance, and the released Chinese profile/game flow. Ambiguous or unsupported readings remain review/missing states instead of fabricated grading data. |
+| UI-16 | Advanced statistics remains Phase 3 UI scope. Japanese full-profile UI, handwriting and speech remain phase-gated and are not exposed as released Phase-2 capabilities. |
 
 ## High-priority work before calling this MVP complete
 
@@ -70,3 +71,13 @@ AT-31 logic now has a synced primary reminder device, browser-permission fallbac
 ## Daily-new overflow update (2026-09-26)
 
 AT-32 merged-state behavior is now explicit: the account-wide count of cards started today is shown on Today, synced overflow can display values above the configured limit, learned results are not undone, and the new-learning gate remains closed until the next account day. A real two-device offline drill is still useful as final acceptance evidence.
+
+
+## Phase-2 release-gate evidence (2026-09-27)
+
+- Feature merge on `main`: `17dd49e0839e5f5a19b49919e538fa9c4f0f5148` (PR #69).
+- Verify run `36315084208`: **SUCCESS** on the merged SHA.
+- Browser regression run `36315084206`: **SUCCESS** across the declared push matrix. The Ubuntu Chromium slice includes Phase-2 Chinese, AI editor, sentence-pool and lookup-editor acceptance.
+- Railway deployment `31340611-c8eb-400c-bf19-877c76779cbf`: terminal **SUCCESS** for the feature merge after GitHub checks completed.
+- Production web smoke run `36315084159`, attempt 2: **SUCCESS** after deployment; the post-deploy gate verified `/api/health.commit` equals `17dd49e0839e5f5a19b49919e538fa9c4f0f5148` before browser smoke.
+- Phase-3-only Japanese full-profile, handwriting and speech UI stays gated; this Phase-2 gate does not promote those capabilities.
