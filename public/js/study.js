@@ -130,17 +130,17 @@ export async function submitInput(value) {
 }
 async function runSpeech(q){
   if(q.result||q.speechBusy)return;
-  q.speechBusy=true;q.speechMessage='';stopClock();
+  q.speechBusy=true;q.speechPhase='recording';q.speechMessage='';stopClock();
   await setMeta('session',app.session);app.render();
   const language=studySetProfile(app.model.sets[app.setId])?.id||'en';
-  const recognized=await recognizeSpeech(language);
+  const recognized=await recognizeSpeech(language,phase=>{q.speechPhase=phase;setMeta('session',app.session).then(()=>app.render()).catch(()=>{});});
   q.speechBusy=false;
   if(recognized.kind==='technical'){
     q.speechState=speechAttempt(q.speechState,{kind:'technical',code:recognized.code});
-    q.speechMessage=recognized.code||'speechTechnical';
+    q.speechPhase='ready';q.speechMessage=recognized.code||'speechTechnical';
     await setMeta('session',app.session);app.render();startClock();return;
   }
-  q.input=recognized.transcript;q.activeMs+=(recognized.activeMs||0);
+  q.speechPhase='ready';q.input=recognized.transcript;q.activeMs+=(recognized.activeMs||0);
   const correct=checkAnswer(recognized.transcript,q.answers,true).kind==='correct';
   q.speechState=speechAttempt(q.speechState,{kind:'recognition',correct});
   if(!correct)q.hadError=true;
