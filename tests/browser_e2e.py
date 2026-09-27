@@ -172,7 +172,6 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     base_clock = int(time.time() * 1000)
     clock_path.write_text(str(base_clock + 61_000))
     sync_from_ui(page)
-    page.locator('[data-action="home"]').first.click()
     page.locator('[data-action="setupReview"]').click()
     expect(page.locator("#modal")).to_contain_text("1/1")
     page.locator('#modal [data-action="startSession"]').click()
