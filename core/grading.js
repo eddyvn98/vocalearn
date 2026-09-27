@@ -1,5 +1,5 @@
 export const RECOGNITION = new Set(['flash', 'quiz', 'match', 'spell', 'clozeChoice', 'tone', 'classifier']);
-export const RECALL = new Set(['typing', 'dictation', 'cloze']);
+export const RECALL = new Set(['typing', 'dictation', 'cloze', 'speak']);
 const segmenter = new Intl.Segmenter('en', {granularity: 'grapheme'});
 export const graphemes = s => Array.from(segmenter.segment(s), p => p.segment);
 export const normalize = s => String(s).normalize('NFC').trim().replace(/\s+/gu, ' ').toLocaleLowerCase('en');
