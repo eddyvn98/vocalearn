@@ -3,7 +3,7 @@ import {button,icon,t,esc,badge} from '../ui.js';
 import {inScope} from '/core/model.js';
 import {isDue} from '/core/time.js';
 import {shell} from './shell.js';
-export const scoped=()=>words().filter(w=>inScope(w,app.scope,app.model.categories));
+export const scoped=()=>words().filter(w=>inScope(w,app.scope,app.model.categories,app.scopeChildren));
 export function homeView() {
   const list=scoped(),now=Date.now(),zone=app.model.settings.zone;
   const due=list.filter(w=>w.ready&&isDue(w.review,now,zone));
