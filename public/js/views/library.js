@@ -1,6 +1,7 @@
 import {app,words} from '../state.js';
 import {button,t,esc,badge} from '../ui.js';
 import {isDue} from '/core/time.js';
+import {recoveryStatus} from '/core/errors.js';
 import {scoped} from './home.js';
 import {shell} from './shell.js';
 export function filtered() {
@@ -13,10 +14,20 @@ export function filtered() {
     return text.includes(query)&&status;
   });
 }
+function recoveryLine(w) {
+  if (!w.errors.inBook) return '';
+  const status=recoveryStatus(w.errors);
+  if (!status.remaining) return '';
+  const recall=status.needsRecall?' · cần 1 game nhớ lại':'';
+  const wait=status.waitMs>0?' · lượt tiếp theo sau '+Math.ceil(status.waitMs/60000)+' phút':'';
+  const different=status.usedGames.length?' · chọn game khác '+status.usedGames.join(', '):'';
+  return `<small class="muted recovery-status">Cần thêm ${status.remaining} lượt đúng sạch${recall}${different}${wait}</small>`;
+}
+
 export function rows() {
   app.selectedCards = app.selectedCards || new Set();
   const list = filtered();
-  return list.map(w => `<article class="word-row ${app.selectedCards.has(w.id) ? 'selected' : ''}"><div class="row items-center"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id) ? 'checked' : ''} aria-label="Chọn ${esc(w.word)}"><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}</div>${button(t('edit'),'edit','quiet',`data-id="${w.id}"`)}</article>`).join('') || `<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
+  return list.map(w => `<article class="word-row ${app.selectedCards.has(w.id) ? 'selected' : ''}"><div class="row items-center"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id) ? 'checked' : ''} aria-label="Chọn ${esc(w.word)}"><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn')+recoveryLine(w):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}</div>${button(t('edit'),'edit','quiet',`data-id="${w.id}"`)}</article>`).join('') || `<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
 }
 
 export function libraryView() {
