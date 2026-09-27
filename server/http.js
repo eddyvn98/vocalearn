@@ -51,5 +51,5 @@ export function securityHeaders(res){
   res.setHeader('Referrer-Policy','no-referrer');
   res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
-  res.setHeader('Permissions-Policy','microphone=(), geolocation=(), camera=()');
+  res.setHeader('Permissions-Policy','microphone=(self), on-device-speech-recognition=(self), geolocation=(), camera=()');
 }
