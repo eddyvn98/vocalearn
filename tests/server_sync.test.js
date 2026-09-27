@@ -239,7 +239,7 @@ test('Two devices competing on the same due review produce one conservative tran
   }, 1360100);
   const dueState = replay(allEvents(db, userId)).words['multi-word'].review;
   assert.equal(dueState.phase, 'review');
-  const dueNow = 200000000;
+  const dueNow = 864000000;
   const good = answer('review-good', 'dev-a', dueState.rev, 'typing', 'good', dueNow, {mode: 'review'});
   const forget = answer('review-forget', 'dev-b', dueState.rev, 'typing', 'forget', dueNow, {mode: 'review'});
 
