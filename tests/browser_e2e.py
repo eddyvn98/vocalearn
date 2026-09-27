@@ -43,7 +43,22 @@ def wait_for_server(server, origin):
     raise RuntimeError("Test server did not become ready")
 
 
-def run_journey(page, context, errors):
+def login(page):
+    expect(page.locator("#auth-form")).to_be_visible(timeout=10000)
+    page.locator('[name="email"]').fill("e2e@example.test")
+    page.locator('[name="password"]').fill("disposable-password-123")
+    page.locator('#auth-form [type="submit"]').click()
+    expect(page.locator('[data-action="library"]')).to_be_visible(timeout=10000)
+
+
+def sync_from_ui(page):
+    page.locator('[data-action="syncInfo"]').first.click()
+    expect(page.locator("#modal")).to_be_visible()
+    page.locator('#modal [data-action="sync"]').click()
+    page.locator('#modal [data-action="close"]').click()
+
+
+def run_journey(page, context, browser, origin, errors):
     page.goto(page.url, wait_until="networkidle")
     expect(page.locator("#auth-form")).to_be_visible(timeout=10000)
     assert not errors, "Browser module/runtime errors: " + repr(errors)
@@ -94,8 +109,56 @@ def run_journey(page, context, errors):
     expect(page.locator("body")).to_contain_text("apple")
     expect(page.locator("body")).to_contain_text("banana")
     assert pending_before, "Expected an offline pending-sync status"
-    assert not errors, "Browser runtime errors: " + repr(errors)
     print("PASS: reconnect syncs pending events without losing cards")
+
+    second = browser.new_context(viewport={"width": 1280, "height": 900})
+    second_page = second.new_page()
+    second_errors = []
+    second_page.on("pageerror", lambda error: second_errors.append(str(error)))
+    try:
+        second_page.goto(origin, wait_until="networkidle")
+        login(second_page)
+        second_page.locator('[data-action="library"]').click()
+        expect(second_page.locator("body")).to_contain_text("apple")
+        expect(second_page.locator("body")).to_contain_text("banana")
+
+        second.set_offline(True)
+        add_word(second_page, "cherry", "quả anh đào")
+        expect(second_page.locator('[data-action="syncInfo"]').first).to_contain_text(
+            "thay đổi chờ đồng bộ"
+        )
+        second_page.reload(wait_until="domcontentloaded")
+        expect(second_page.locator("body")).to_contain_text("cherry")
+        second.set_offline(False)
+        expect(second_page.locator('[data-action="syncInfo"]').first).not_to_contain_text(
+            "thay đổi chờ đồng bộ", timeout=10000
+        )
+
+        sync_from_ui(page)
+        page.locator('[data-action="library"]').click()
+        expect(page.locator("body")).to_contain_text("cherry")
+        print("PASS: second browser profile reconnects and merges into first profile")
+        assert not second_errors, "Second profile runtime errors: " + repr(second_errors)
+    finally:
+        second.close()
+
+    tab = context.new_page()
+    tab_errors = []
+    tab.on("pageerror", lambda error: tab_errors.append(str(error)))
+    try:
+        tab.goto(origin, wait_until="networkidle")
+        expect(tab.locator('[data-action="library"]')).to_be_visible(timeout=10000)
+        tab.locator('[data-action="library"]').click()
+        add_word(page, "delta", "thay đổi")
+        add_word(tab, "echo", "tiếng vọng")
+        expect(page.locator("body")).to_contain_text("echo", timeout=10000)
+        expect(tab.locator("body")).to_contain_text("delta", timeout=10000)
+        print("PASS: multi-tab IndexedDB transactions broadcast without losing edits")
+        assert not tab_errors, "Second tab runtime errors: " + repr(tab_errors)
+    finally:
+        tab.close()
+
+    assert not errors, "Browser runtime errors: " + repr(errors)
 
 
 def main():
@@ -132,7 +195,7 @@ def main():
                     page.on("pageerror", lambda error: errors.append(str(error)))
                     try:
                         page.goto(origin, wait_until="domcontentloaded")
-                        run_journey(page, context, errors)
+                        run_journey(page, context, browser, origin, errors)
                     finally:
                         page.screenshot(
                             path=str(EVIDENCE / "last-page.png"), full_page=True
