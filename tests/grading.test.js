@@ -1,7 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {checkAnswer,distance,normalize,gradeAnswer} from '../core/grading.js';
-import {errorBook,recoveryStatus} from '../core/errors.js';
+import {errorBook} from '../core/errors.js';
+import {recoveryStatus} from '../core/recovery.js';
 import {question,reasons,learningAllowed} from '../core/questions.js';
 import {initialState,DEFAULTS} from '../core/srs.js';
 const at=Date.parse('2026-09-25T00:00:00Z');
