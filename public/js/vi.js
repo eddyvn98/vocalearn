@@ -146,6 +146,7 @@ export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidF
   "duplicate": "Thẻ cùng từ và nghĩa đã tồn tại.",
   "confirmDelete": "Xóa thẻ này? Lịch sử không bị xóa.",
   "unsaved": "Bạn có thay đổi chưa lưu. Bỏ thay đổi?",
+  "discardChanges": "Bạn có thay đổi chưa lưu. Bỏ các thay đổi này?",
   "parent": "Chủ đề cha",
   "root": "Cấp gốc",
   "addTopic": "Thêm chủ đề",
