@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {checkAnswer,distance,normalize,gradeAnswer} from '../core/grading.js';
-import {errorBook} from '../core/errors.js';
+import {errorBook,recoveryStatus} from '../core/errors.js';
 import {question,reasons,learningAllowed} from '../core/questions.js';
 import {initialState,DEFAULTS} from '../core/srs.js';
 const at=Date.parse('2026-09-25T00:00:00Z');
@@ -76,4 +76,14 @@ test('Typing blocks identical prompts that map to different answers',()=>{
 test('Reverse quiz blocks one spelling with multiple meanings unless context differs',()=>{
  const a=card('a','bank','ngân hàng'),b=card('b','bank','bờ sông');
  assert.deepEqual(reasons(a,'quiz','word',[a,b]),['ambiguousPrompt']);
+});
+
+test('Error-book recovery status exposes remaining evidence requirements',()=>{
+ const empty=recoveryStatus({inBook:true,evidence:[]},at);
+ assert.deepEqual(empty,{remaining:2,needsRecall:true,nextAfter:null,waitMs:0,usedGames:[]});
+ const one=recoveryStatus({inBook:true,evidence:[{game:'quiz',recall:false,at}]},at+120000);
+ assert.equal(one.remaining,1);assert.equal(one.needsRecall,true);assert.equal(one.nextAfter,at+600000);assert.equal(one.waitMs,480000);
+ const recall=recoveryStatus({inBook:true,evidence:[{game:'typing',recall:true,at}]},at+700000);
+ assert.equal(recall.remaining,1);assert.equal(recall.needsRecall,false);assert.equal(recall.waitMs,0);
+ assert.equal(recoveryStatus({inBook:false,evidence:[]},at).remaining,0);
 });
