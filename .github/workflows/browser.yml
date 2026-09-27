@@ -24,6 +24,7 @@ jobs:
           path: source.zip
           retention-days: 1
       - run: npm ci --ignore-scripts
+      - run: npm run build:sw
       - run: npm run verify
       - uses: actions/setup-python@v5
         with:

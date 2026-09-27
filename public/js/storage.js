@@ -27,6 +27,13 @@ export async function refresh() {
   const tx = db.transaction(['events','meta'],'readonly');
   const [events,c] = await Promise.all([request(tx.objectStore('events').getAll()),request(tx.objectStore('meta').get('cursor'))]);
   cached=events;cursor=c || 0;
+  // localOrder must survive reloads and clock changes. Without restoring the
+  // high-water mark, a new event can sort before an older unsynced dependency
+  // and the server will see an answer before the word revision it references.
+  if(deviceId)for(const e of events)if(e.deviceId===deviceId){
+    const order=Number.isFinite(e.localOrder)?e.localOrder:Number(e.at)*1000;
+    if(Number.isFinite(order))lastOrder=Math.max(lastOrder,order);
+  }
   return replay(cached);
 }
 export const model = () => replay(cached);
