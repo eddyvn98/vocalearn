@@ -51,20 +51,20 @@ function refs(record,state,index,level){
     const done=index<state.charIndex||index===state.charIndex&&i<state.strokeIndex,next=index===state.charIndex&&i===state.strokeIndex;
     if(level==='memory'&&!done)return '';
     const cls='handwriting-ref '+(done?'done':next?'next':'');
-    if(record.format==='points')return \`<polyline class="\${cls}" points="\${stroke.map(p=>p.join(',')).join(' ')}"/>\`;
-    return \`<path class="\${cls}" d="\${esc(stroke)}" transform="scale(.917431)"/>\`;
+    if(record.format==='points')return `<polyline class="${cls}" points="${stroke.map(p=>p.join(',')).join(' ')}"/>`;
+    return `<path class="${cls}" d="${esc(stroke)}" transform="scale(.917431)"/>`;
   }).join('');
 }
 export function handwritingMarkup(q){
   const s=stateFor(q),data=q.handwriting.strokeData,record=data.characters[s.charIndex],level=q.handwriting.level;
-  const chars=data.characters.map((item,index)=>\`<span class="\${index===s.charIndex?'badge good':'badge'}">\${esc(item.char)}\${index<s.charIndex?' ✓':''}</span>\`).join(' ');
+  const chars=data.characters.map((item,index)=>`<span class="${index===s.charIndex?'badge good':'badge'}">${esc(item.char)}${index<s.charIndex?' ✓':''}</span>`).join(' ');
   const allRefs=data.characters.map((item,index)=>refs(item,s,index,level)).join('');
   const status=s.lastError?t('handwritingWrong')+' · '+t('handwriting_'+s.lastError):t('handwritingDraw');
-  return \`<div class="stack handwriting-meta"><div>\${chars}</div><p>\${t('handwritingLevel')}: <strong>\${t('handwriting_'+level)}</strong> · \${t('stroke')} \${s.strokeIndex+1}/\${record.strokes.length}</p>
-    <div class="handwriting-stage"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="handwriting-grid" d="M50 0V100M0 50H100M0 0L100 100M100 0L0 100"/>\${allRefs}</svg><canvas data-handwriting-canvas width="500" height="500" aria-label="\${t('handwritingCanvas')}"></canvas></div>
-    <p class="\${s.lastError?'error-text':'muted'}" role="status">\${status}</p>
-    <div class="row center wrap">\${button(t('undo'),'handwritingUndo','quiet')}\${button(t('clear'),'handwritingClear','quiet')}\${button(t('dontKnow'),'unknown','quiet')}</div>
-    <p class="muted small handwriting-source">\${esc(data.source)} · \${esc(data.version)} · \${esc(data.license)}</p></div>\`;
+  return `<div class="stack handwriting-meta"><div>${chars}</div><p>${t('handwritingLevel')}: <strong>${t('handwriting_'+level)}</strong> · ${t('stroke')} ${s.strokeIndex+1}/${record.strokes.length}</p>
+    <div class="handwriting-stage"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="handwriting-grid" d="M50 0V100M0 50H100M0 0L100 100M100 0L0 100"/>${allRefs}</svg><canvas data-handwriting-canvas width="500" height="500" aria-label="${t('handwritingCanvas')}"></canvas></div>
+    <p class="${s.lastError?'error-text':'muted'}" role="status">${status}</p>
+    <div class="row center wrap">${button(t('undo'),'handwritingUndo','quiet')}${button(t('clear'),'handwritingClear','quiet')}${button(t('dontKnow'),'unknown','quiet')}</div>
+    <p class="muted small handwriting-source">${esc(data.source)} · ${esc(data.version)} · ${esc(data.license)}</p></div>`;
 }
 function canvasPoint(canvas,event){
   const box=canvas.getBoundingClientRect();
