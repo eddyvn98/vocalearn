@@ -111,8 +111,8 @@ These percentages are planning estimates, not release certification.
 | UX-23 | **Partial** | Contrast, target size and zoom/reflow must be measured against the declared criteria. | Responsive reflow and focus styles exist; measured WCAG contrast/target/zoom acceptance is still pending. |
 | UX-24 | **Pending** | Screen reader receives labels, errors, status and save results without revealing the answer early. | ARIA labels/live regions are present in source, but no real screen-reader acceptance run has been recorded. |
 | UX-25 | **Partial** | Denying reminder permission uses in-app fallback, does not promise background delivery and does not repeatedly prompt. | Denied-permission fallback and primary-device planning are automated. Physical installed-PWA/background behavior remains pending. |
-| UX-26 | **Pass** | Unreleased features must not appear as selectable games or mandatory learning steps. | Phase-2/3 AI, speech, handwriting, Chinese/Japanese and advanced-statistics capabilities remain hidden/not selectable in Phase 1. |
-| UX-27 | **N/A (Phase 1)** | G2/G3 pinyin/kana/IME whole-word behavior. | Chinese/Japanese input is not released. Generic IME Enter protection is already present in browser regression but does not certify the later language flows. |
+| UX-26 | **Pass** | Unreleased features must not appear as selectable games or mandatory learning steps. | Released Phase-2/3 capabilities appear only when their data/device gates are satisfied; unsupported or still-unreleased capabilities stay unavailable and never become mandatory learning steps. |
+| UX-27 | **Pass** | G2/G3 pinyin/kana/IME whole-word behavior. | Released Chinese/Japanese browser acceptance verifies whole-word reading/form steps, IME-safe Enter, kana-only skip and katakana normalization. |
 | UX-28 | **Pass (software UI)** | G3 speech/handwriting feedback and non-leaking hints. | Speech shows recognition states/transcript without pronunciation scoring; handwriting levels control reference visibility and memory mode does not expose future strokes. Physical pen/palm behavior remains issue #84. |
 | UX-29 | **Pass** | Changing settings during a session must not mutate the current snapshot/past schedule; timezone impact must be warned. | Live browser acceptance changes Easy threshold and account timezone from another tab, captures and accepts the timezone-impact warning, verifies the model adopts the new timezone, and proves the active question keeps its original config snapshot. |
 | UX-30 | **Pass** | Production UI must use real persistence/schedule/sync rather than demo labels/mock state. | Live app browser and Railway production acceptance exercise real auth, persistence, schedule, sync, offline reload and import/export; demo-only data is not used as completion evidence. |
@@ -131,14 +131,13 @@ The remaining Phase-1 acceptance work is concentrated rather than broad:
 2. Run the real two-device offline/reconnect drill for **AT-32**.
 3. Resend production delivery remains deferred to issue #29 until a verified sending domain and real delivery acceptance are available.
 
-## Deferred later-phase cases
+## Remaining cross-phase evidence
 
-The following are explicitly not Phase-1 pass/fail blockers while their features remain unreleased:
+Released Phase-2/3 cases have been promoted to evidence-backed states above. One cross-phase acceptance item remains intentionally Partial:
 
-- AT-22, AT-23: AI fill and generated sentence-bank behavior;
-- AT-26: explicit historical Phase-2 → Phase-3 migration drill remains useful evidence;
+- AT-26: run an explicit historical Phase-2 → Phase-3 Chinese-card migration drill to complement the current proof that handwriting is optional and missing stroke resources do not block core games.
 
-When those phases are enabled, these rows must be changed from N/A to real evidence-backed states.
+Physical-device-only evidence is tracked separately in issue #84 and is not inferred from desktop automation.
 
 ## Evidence sources in the repository
 
