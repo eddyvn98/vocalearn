@@ -125,7 +125,9 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
       if(path==='/api/ai/jobs'&&req.method==='POST'){
         const input=await body(req,configuredLimits.maxRequestBytes),word=loadWord(user.id,String(input.wordId||''));
         if(!word||word.deleted)return json(res,404,{error:'Word not found'});
-        const job=createJob(db,user.id,word,String(input.type||'fill'));setImmediate(kickAi);
+        const type=String(input.type||'fill');
+        if(!['fill','sentence-bank'].includes(type))return json(res,400,{error:'Unsupported AI job type'});
+        const job=createJob(db,user.id,word,type);setImmediate(kickAi);
         return json(res,202,{job,configured:provider.configured!==false});
       }
       if(/^\/api\/ai\/jobs\/[\w-]+\/retry$/.test(path)&&req.method==='POST'){
