@@ -2,8 +2,7 @@ import {viAi} from './vi-ai.js';
 import {viSentences} from './vi-sentences.js';
 import {viLookups} from './vi-lookups.js';
 import {viStatistics} from './vi-statistics.js';
-import {viJapanese} from './vi-japanese.js';
-import {viHandwriting} from './vi-handwriting.js';
+import {viJapanese} from './vi-japanese.js';import {viHandwriting} from './vi-handwriting.js';
 export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,...viJapanese,...viHandwriting,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
   invalidAnswerFace:"Mặt đáp phải hợp lệ và khác mặt hỏi",
   missingAnswerFace:"Thiếu dữ liệu cho mặt đáp",
