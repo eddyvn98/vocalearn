@@ -63,6 +63,7 @@ def main():
         valid=page.evaluate("() => import('/js/state.js').then(m => m.app.session.queue[0].speechState.validAttempts)")
         assert valid==1,valid
         page.locator('[data-action="speechStart"]').click();expect(page.locator("#feedback")).to_be_visible()
+        expect(page.locator("#feedback")).to_contain_text("Đã nhận ra đúng từ")
         expect(page.locator("#feedback")).to_contain_text("Khó")
         assert not errors,repr(errors)
         browser.close();print("PASS: Phase-3 Speak local-ASR gating and technical-error attempt semantics")
