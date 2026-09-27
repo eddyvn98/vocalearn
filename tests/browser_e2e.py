@@ -9,6 +9,7 @@ from pathlib import Path
 import socket
 import subprocess
 import tempfile
+import sys
 import time
 import wave
 from urllib.request import urlopen
@@ -265,10 +266,16 @@ def main():
                         )
                     finally:
                         prefix = f"{browser_name}-{width}x{height}"
-                        page.screenshot(
-                            path=str(EVIDENCE / f"{prefix}-last-page.png"),
-                            full_page=True,
-                        )
+                        active_error = sys.exc_info()[0] is not None
+                        try:
+                            page.screenshot(
+                                path=str(EVIDENCE / f"{prefix}-last-page.png"),
+                                full_page=True,
+                            )
+                        except Exception as screenshot_error:
+                            (EVIDENCE / f"{prefix}-screenshot-error.txt").write_text(str(screenshot_error))
+                            if not active_error:
+                                raise
                         (EVIDENCE / f"{prefix}-page-errors.json").write_text(
                             json.dumps(errors, indent=2)
                         )
