@@ -3,11 +3,11 @@ import {isDue, dayAt} from './time.js';
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'];
 // Only expose implemented, valid pairs. Typing always answers the target word.
 export const GAME_FACES = Object.freeze({
-  flash:['meaning','word','ipa','image','audio'], quiz:['meaning','word','ipa','image','audio'],
-  typing:['meaning','ipa','image'], match:['word'], spell:['audio'], dictation:['audio'],
-  cloze:['sentence'], clozeChoice:['sentence'], mix:['meaning','ipa','image'],
+  flash:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'], quiz:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'],
+  typing:['meaning','ipa','pinyin','kana','hanViet','image'], match:['word'], spell:['audio'], dictation:['audio'],
+  cloze:['sentence'], clozeChoice:['sentence'], mix:['meaning','ipa','pinyin','kana','hanViet','image'],
 });
-export const FACES = ['meaning','word','ipa','image','audio'];
+export const FACES = ['meaning','word','ipa','pinyin','kana','hanViet','image','audio'];
 export const usesAudio = q => ['spell','dictation'].includes(q.game) || q.face === 'audio';
 export function requiredGame(w) {
   if (w.review.phase === 'new') return 'flash';
