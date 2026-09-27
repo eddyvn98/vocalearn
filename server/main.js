@@ -12,6 +12,9 @@ import {createLogger,noopLogger} from './logger.js';
 import {confirmPasswordReset,requestPasswordReset} from './recovery.js';
 import {confirmPage,requestPage,successPage} from './reset-page.js';
 import {schemaVersion} from './migrations.js';
+import {replay} from '../core/model.js';
+import {createAiProvider} from './ai-provider.js';
+import {createJob,listJobs,retryJob,runDueJobs} from './ai-jobs.js';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const resetDefaults={mode:'disabled',appOrigin:'http://localhost',providerUrl:'',providerToken:'',resendApiKey:'',resendFrom:'',ttlMs:30*60000};
 const ipOf=req=>String(req.socket.remoteAddress||'unknown');
@@ -30,8 +33,16 @@ function rejectOrigin(req,origin){
   return Boolean(supplied&&supplied!==expected);
 }
 export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure=false,origin='',allowSignup=true,
-  limits={},reset={},logger=noopLogger}={}){
+  limits={},reset={},ai={},aiProvider=null,logger=noopLogger}={}){
   const db=openDatabase(dbPath),configuredLimits={...DEFAULT_LIMITS,...limits},resetConfig={...resetDefaults,...reset};
+  const provider=aiProvider||createAiProvider(ai);
+  const loadWord=(userId,wordId)=>{
+    const word=replay(allEvents(db,userId)).words[wordId];if(!word)return null;
+    const set=replay(allEvents(db,userId)).sets[word.setId]||{};
+    return {...word,language:set.language,meaningLanguage:set.meaningLanguage};
+  };
+  const kickAi=()=>runDueJobs(db,provider,loadWord).catch(error=>logger.warn('ai_worker_failed',{message:error.message}));
+  const aiTimer=setInterval(kickAi,2000);aiTimer.unref?.();
   const authLimiter=createRateLimiter({limit:configuredLimits.authAttempts,windowMs:configuredLimits.authWindowMs});
   const resetLimiter=createRateLimiter({limit:configuredLimits.resetAttempts,windowMs:configuredLimits.resetWindowMs});
   const server=createServer(async(req,res)=>{
@@ -107,6 +118,19 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
       if(path==='/api/media-info'&&req.method==='GET')return json(res,200,mediaStats(db,user.id));
       if(path==='/api/media-cleanup'&&req.method==='POST')return json(res,200,cleanupMedia(db,user.id,allEvents(db,user.id)));
       if(path.startsWith('/api/media/')&&req.method==='GET')return sendMedia(res,getMedia(db,user.id,decodeURIComponent(path.slice('/api/media/'.length))));
+      if(path==='/api/ai/jobs'&&req.method==='GET'){
+        const wordId=url.searchParams.get('wordId')||'';if(!/^[\w-]{1,100}$/.test(wordId))return json(res,400,{error:'wordId required'});
+        return json(res,200,{jobs:listJobs(db,user.id,wordId),configured:provider.configured!==false});
+      }
+      if(path==='/api/ai/jobs'&&req.method==='POST'){
+        const input=await body(req,configuredLimits.maxRequestBytes),word=loadWord(user.id,String(input.wordId||''));
+        if(!word||word.deleted)return json(res,404,{error:'Word not found'});
+        const job=createJob(db,user.id,word,String(input.type||'fill'));setImmediate(kickAi);
+        return json(res,202,{job,configured:provider.configured!==false});
+      }
+      if(/^\/api\/ai\/jobs\/[\w-]+\/retry$/.test(path)&&req.method==='POST'){
+        const id=path.split('/')[4],job=retryJob(db,user.id,id);setImmediate(kickAi);return json(res,202,{job});
+      }
       if(path==='/api/sync'&&req.method==='POST')return json(res,200,synchronize(db,user.id,
         await body(req,configuredLimits.maxRequestBytes),Date.now(),configuredLimits.maxSyncEvents,configuredLimits.maxAccountEvents));
       return json(res,404,{error:'Not found'});
@@ -116,14 +140,14 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
       if(!res.headersSent)json(res,status,{error:error.message});else res.end();
     }
   });
-  server.on('close',()=>db.close());
+  server.on('close',()=>{clearInterval(aiTimer);db.close();});
   return server;
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){
   try{process.loadEnvFile?.();}catch{}
   const config=loadConfig();
   const server=application({dbPath:config.dbPath,secure:config.production,origin:config.appOrigin,
-    allowSignup:config.allowSignup,limits:config.limits,reset:config.reset,logger:createLogger()});
+    allowSignup:config.allowSignup,limits:config.limits,reset:config.reset,ai:config.ai,logger:createLogger()});
   server.listen(config.port,config.host,()=>console.log(`VocaLearn: http://${config.host}:${config.port}`));
   process.on('SIGTERM',()=>server.close());process.on('SIGINT',()=>server.close());
 }
