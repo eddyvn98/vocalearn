@@ -119,6 +119,8 @@ def english_acceptance(page, origin):
 
     form = open_add(page, "live", "sống")
     form.locator('[data-action="lookupReading"]').click()
+    expect(form.locator('[name="ipa"]')).not_to_have_value("")
+    expect(form.locator("#lookup-status")).to_contain_text("có nhiều cách đọc")
     form.locator('[name="ipa"]').fill("manual-reading")
     form.locator('[type="submit"]').click()
     expect(form).not_to_be_visible()
