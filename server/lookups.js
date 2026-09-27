@@ -2,12 +2,14 @@ import {readFileSync} from 'node:fs';
 
 const IPA_SOURCE={
   id:'open-dict-data/ipa-dict:en_US',
+  source:'open-dict-data/ipa-dict:en_US',
   version:'43c3570eb3553bdd19fccd2bd0091534889af023',
   license:'MIT',
   dialect:'en-US'
 };
 const UNIHAN_SOURCE={
   id:'Unicode Unihan via @vearvip/hanzi-readings',
+  source:'Unicode Unihan via @vearvip/hanzi-readings',
   version:'Unicode-17.0.0 readings / variants 7882d33e4e8d49fa53dfef70f5778c54edcd3a9f',
   license:'Unicode-3.0 (data), MIT (adapter snapshot)'
 };
