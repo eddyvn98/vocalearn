@@ -16,7 +16,7 @@ app.render=(focus)=>{
     :app.page==='study'?studyView():app.page==='results'?resultsView():['library','errors'].includes(app.page)?libraryView():homeView();
   if(focus)requestAnimationFrame(()=>document.querySelector(focus)?.focus());
 };
-async function persistView(){await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});}
+async function persistView(){await setMeta('view',{setId:app.setId,scope:app.scope,scopeChildren:app.scopeChildren,page:app.page,filter:app.filter,query:app.query});}
 function showError(error){
   const el=document.querySelector('#form-error')||document.querySelector('#auth-error')||document.querySelector('#study-error');
   if(el)el.textContent=error.message;notify(error.message,true);
@@ -61,7 +61,7 @@ async function click(action,el){
   if(action==='sync'){await syncNow();return syncInfo();}
   if(action==='logout')return logoutAction();
   if(action==='scope')return scopeModal();
-  if(action==='clearScope'){app.selectedCards.clear();app.scope=[];closeModal();app.render();return persistView();}
+  if(action==='clearScope'){app.selectedCards.clear();app.scope=[];app.scopeChildren=true;closeModal();app.render();return persistView();}
   if(action==='topicScope'){app.selectedCards.clear();app.scope=[el.dataset.id];app.render();return persistView();}
   if(action==='topics'||action==='editTopic')return topics(el.dataset.id);
   if(action==='deleteTopic'){
@@ -127,7 +127,7 @@ document.addEventListener('submit',async e=>{
     if(form.id==='word-form')await saveWord(form);
     if(form.id==='answer-form')await submitInput(new FormData(form).get('answer'));
     if(form.id==='settings-form')await saveSettings(form);
-    if(form.id==='scope-form'){app.selectedCards.clear();app.scope=new FormData(form).getAll('scope');closeModal();app.render();await persistView();}
+    if(form.id==='scope-form'){const f=new FormData(form);app.selectedCards.clear();app.scope=f.getAll('scope');app.scopeChildren=f.has('includeChildren');closeModal();app.render();await persistView();}
     if(form.id==='topic-form'){
       const f=new FormData(form),id=form.dataset.id||uuid(),parentId=f.get('parentId')||null;
       if(parentId&&descendants(app.model.categories,id).has(parentId))throw new Error('Chủ đề không thể tạo vòng lặp');
