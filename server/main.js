@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {openDatabase, synchronize} from './database.js';
 import {authenticate, sessionUser, logout, cookie} from './auth.js';
 import {body, json, staticFile, securityHeaders} from './http.js';
-import {putMedia,getMedia} from './media.js';
+import {putMedia,getMedia,mediaUsage} from './media.js';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), mediaPath,
   secure = false, origin = '', allowSignup = true, now = Date.now} = {}) {
@@ -44,6 +44,7 @@ export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), med
         logout(db,req);return json(res,200,{ok:true},{'Set-Cookie':cookie('',secure,true)});
       }
       if (url.pathname === '/api/media' && req.method === 'POST') return json(res,200,putMedia(db,user.id,await body(req),mediaRoot));
+      if (url.pathname === '/api/media-usage' && req.method === 'GET') return json(res,200,mediaUsage(db,user.id));
       if (url.pathname.startsWith('/api/media/') && req.method === 'GET') {
         const media=getMedia(db,user.id,url.pathname.slice('/api/media/'.length),mediaRoot);
         if(!media)return json(res,404,{error:'Media not found'});
