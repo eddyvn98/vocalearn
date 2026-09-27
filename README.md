@@ -4,7 +4,7 @@
 
 A runnable **first implementation**, based on `docs/spec-v0.5.docx` and the approved vocabulary-app UI. Version **0.1.0**. This is not a completed or production-certified implementation of the 37-page specification.
 
-**GitHub status:** this archive was built locally. No remote repository was created or pushed by the assistant. Use the publishing script below from your authenticated computer.
+**GitHub status:** active development is on `eddyvn98/vocalearn`, branch `feature/core-hardening-mvp`. GitHub Actions runs Verify, Browser regression and Deployed smoke workflows on this branch.
 
 ## Run locally
 
@@ -33,7 +33,7 @@ The development server binds to `127.0.0.1:3000`. Persistent server data lives i
 - Per-user IndexedDB event journal, saved in-progress session and service-worker app shell. Events and session outcome are committed together locally.
 - Email/password authentication, HttpOnly session cookie, SQLite append-only journal and authenticated per-account sync endpoint.
 - Card editing, image/audio attachments, category hierarchy and multiple topic membership. Explicit delete/restore and field-conflict history.
-- JSON content transfer as an additional utility. It is **not Excel support**, a complete backup, or a substitute for specification section 6.
+- Excel import/export is implemented in pure JavaScript with OpenXML/ZIP, including column mapping, row validation, sense-aware duplicate handling and embedded-image support. JSON transfer remains a separate utility and is not a full journal backup.
 
 See [Implementation status](docs/STATUS.md) for specific boundaries. Presence of a button or implementation is not proof that all acceptance cases passed.
 
@@ -86,6 +86,7 @@ docs/               original spec, reference demo, status and test report
 - [Architecture](docs/ARCHITECTURE.md)
 - [Status / next implementation steps](docs/STATUS.md)
 - [Test report](docs/TEST_REPORT.md)
+- [Rolling development progress](docs/PROGRESS.md)
 - [Agent instructions](AGENTS.md)
 
 The supplied specification and this code are private project materials. No open-source license has been selected on the owner's behalf.
