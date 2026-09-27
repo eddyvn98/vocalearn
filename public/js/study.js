@@ -12,9 +12,17 @@ import {readingMatches,twoStepSnapshot} from '/core/script-typing.js';
 import {gradeTones,gradeClassifier} from '/core/chinese-games.js';
 import {ensureSentencePool} from './sentence-pool.js';
 import {handwritingAction,setHandwritingResultHandler} from './handwriting-ui.js';
+import {handwritingResult,strokeErrors} from '/core/handwriting.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
-setHandwritingResultHandler(async correct=>{const q=current();if(!q||q.result)return;q.input='[handwriting]';await writeAnswer(q,correct);});
+setHandwritingResultHandler(async()=>{const q=current();if(!q||q.result)return;
+  stopClock();const strokes=q.handwriting.strokeData.characters.reduce((sum,item)=>sum+item.strokes.length,0);
+  const result=handwritingResult(q.handwritingState.grading,{memory:q.handwriting.level==='memory',
+    activeMs:Math.round(q.activeMs),easyMs:Math.max(8000,strokes*2000)});
+  q.input=q.answers[0];q.hadError=result.hadError;q.handwritingErrors=strokeErrors(q.handwritingState.grading);
+  if(q.handwriting.level==='trace')q.familiarize=true;
+  await writeAnswer(q,result.grade!=='forget',{grade:result.grade,assisted:result.grade==='hard'&&result.hadError});
+});
 async function ensureQuestionMedia(q,allMatch=false) {
   const values=[];
   if(q?.face==='image'){
@@ -57,22 +65,24 @@ export async function beginSession() {
   await setMeta('session',session);app.session=session;closeModal();app.page='study';app.render();pushHistory();startClock();
 }
 let submitting=false;
-async function writeAnswer(q,correct) {
+async function writeAnswer(q,correct,forcedResult=null) {
   if(submitting||q.result)return;
   submitting=true;
   try {
     stopClock();
     await ensureQuestionMedia(q);
     if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
-    const result=gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,gradeCap:q.twoStep?.gradeCap,
+    const result=forcedResult||gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,gradeCap:q.twoStep?.gradeCap,
       activeMs:Math.round(q.activeMs),interrupted:q.interrupted,answer:q.answers[0],easyMs:q.config.easyMs});
     const next=structuredClone(app.session),target=next.queue.find(x=>x.id===q.id);
     target.result=result;if(!correct)target.hadError=true;
     next.error='';
-    const data={schemaVersion:2,wordId:q.wordId,questionId:q.id,opportunityId:q.opportunityId,baseRev:q.baseRev,mode:q.mode,game:q.game,
+    const data={schemaVersion:2,wordId:q.wordId,questionId:q.id,opportunityId:q.opportunityId,baseRev:q.baseRev,
+      mode:q.game==='handwriting'&&q.handwriting?.level==='trace'?'free':q.mode,game:q.game,
       answerFace:q.answerFace,...(q.sentenceId?{sentenceId:q.sentenceId}:{}),
       ...result,hadError:target.hadError,config:q.config,familiarize:q.familiarize,
       activeMs:Math.round(q.activeMs),input:q.input,readingInput:q.twoStep?.readingInput||'',selectedForm:q.twoStep?.selected||'',face:q.face,hint:q.hint,interrupted:q.interrupted,
+      ...(q.handwriting?{handwritingLevel:q.handwriting.level,handwritingState:structuredClone(q.handwritingState?.grading),handwritingErrors:q.handwritingErrors||[]}:{ }),
       unknown:!correct,selectedWordId:q.selectedWordId,question:{prompt:['image','audio'].includes(q.face)?`[${q.face}]`:q.prompt,answers:q.answers,
         word:q.snapshot.word,meaning:q.snapshot.meaning,fields:q.snapshot.fields,twoStep:twoStepSnapshot(q.twoStep)}};
     const event=q.pendingAnswer || prepare('answer',data,q.eventId);
