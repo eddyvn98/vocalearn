@@ -103,6 +103,9 @@ jobs:
       - name: Run Phase-3 Japanese acceptance
         if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
         run: python tests/browser_japanese.py
+      - name: Run Phase-3 handwriting acceptance
+        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
+        run: python tests/browser_handwriting.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
