@@ -69,7 +69,7 @@ def main():
           const strokeData={language:'zh',source:'acceptance fixture',version:'test-v2',license:'test-only',
             complete:true,missing:[],characters:[
               {char:'十',format:'points',strokes:[[[20,50],[80,50]],[[50,20],[50,80]]]},
-              {char:'人',format:'points',strokes:[[[50,20],[25,82]],[[50,20],[78,82]]]}
+              {char:'人',format:'points',strokes:[[[20,35],[80,35]],[[50,20],[50,80]]]}
             ]};
           await m.transact([m.prepare('word',{id:w.id,setId:w.setId,patch:{strokeData},baseFields:w.fields})]);
           s.app.model=m.model();}""")
@@ -92,9 +92,9 @@ def main():
         expect(page.locator(".handwriting-meta")).to_contain_text("Nét 2/2")
         draw(page,50,20,50,80)
         expect(page.locator(".handwriting-meta")).to_contain_text("十 ✓")
-        draw(page,50,20,25,82)
+        draw(page,20,35,80,35)
         expect(page.locator(".handwriting-meta")).to_contain_text("Nét 2/2")
-        draw(page,50,20,78,82)
+        draw(page,50,20,50,80)
         expect(page.locator("#feedback")).to_be_visible()
         expect(page.locator("#feedback")).to_contain_text("Khó")
         evidence=page.evaluate("() => import('/js/state.js').then(m => m.app.session.queue[0].handwritingErrors)")
