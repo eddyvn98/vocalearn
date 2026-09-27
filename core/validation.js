@@ -69,6 +69,8 @@ export function validateEvent(e) {
         || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'].includes(d.game)
         || !['forget','hard','good','easy'].includes(d.grade)
         || typeof d.hadError !== 'boolean' || typeof d.assisted !== 'boolean') fail('Invalid answer');
+      if ('readingInput' in d && !text(d.readingInput,500)) fail('Invalid reading input');
+      if ('selectedForm' in d && !text(d.selectedForm,500)) fail('Invalid selected form');
       if (d.config) validateEvent({...e, kind: 'settings', data: d.config});
       break;
     case 'attempt':

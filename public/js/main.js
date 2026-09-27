@@ -1,4 +1,5 @@
 import {descendants} from '/core/model.js';
+import {languageProfile} from '/core/language-profiles.js';
 import {app,current} from './state.js';
 import {api,openStore,model,prepare,transact,setMeta,getMeta,refresh,sync,pendingCount,uuid} from './storage.js';
 import {t,notify,closeModal,modal,esc} from './ui.js';
@@ -10,7 +11,7 @@ import {setup,restoreSetup,studyAction,submitInput,startClock,stopClock} from '.
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,customFields,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
-const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
+const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
     :app.page==='study'?studyView():app.page==='results'?resultsView():['library','errors'].includes(app.page)?libraryView():homeView();
@@ -182,9 +183,9 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',async e=>{
   try{
     if(e.target.id==='set-language'){
-      const options={en:[['vi','Tiếng Việt'],['en','English']],zh:[['vi','Tiếng Việt'],['zh','中文']],ja:[['vi','Tiếng Việt'],['ja','日本語']]};
-      const target=document.querySelector('#set-meaning-language');
-      if(target)target.innerHTML=(options[e.target.value]||options.en).map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
+      const labels={vi:'Tiếng Việt',en:'English',zh:'中文',ja:'日本語'};
+      const target=document.querySelector('#set-meaning-language'),profile=languageProfile(e.target.value);
+      if(target)target.innerHTML=(profile?.supportedMeaningLanguages||['vi']).map(value=>`<option value="${value}">${labels[value]||value.toUpperCase()}</option>`).join('');
     }
     if(e.target.id==='setup-game'){app.game=e.target.value;setup();}
     if(e.target.id==='setup-face'){app.face=e.target.value;setup();}

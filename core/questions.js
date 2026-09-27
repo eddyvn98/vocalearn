@@ -1,6 +1,7 @@
 import {normalize} from './grading.js';
 import {isDue, dayAt} from './time.js';
 import {toneQuestion,classifierQuestion} from './chinese-games.js';
+import {twoStepFor} from './script-typing.js';
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
 // Only expose implemented, valid pairs. Typing always answers the target word.
 export const GAME_FACES = Object.freeze({
@@ -39,10 +40,12 @@ function ambiguous(w, game, face, pool) {
     return otherAnswer!==answer;
   });
 }
-export function reasons(w, game, face = 'meaning', pool = []) {
+export function reasons(w, game, face = 'meaning', pool = [], profileId = 'en') {
   face = promptFace(game, face);
   if (!GAME_FACES[game]?.includes(face)) return ['invalidFace'];
   if (!w.word || w.deleted || !w.ready && game !== 'flash') return ['missingPrompt'];
+  const twoStep=twoStepFor(w,pool,game,face,profileId);
+  if(twoStep?.blocked)return [twoStep.blocked];
   if(game==='tone'&&!toneQuestion(w.pinyinSyllables||[]))return ['missingToneData'];
   if(game==='classifier'&&!classifierQuestion(w))return ['missingClassifierData'];
   if (!w[face] && !['match','cloze','clozeChoice'].includes(game)) return [face === 'audio' ? 'missingAudio' : face === 'image' ? 'missingImage' : 'missingPrompt'];
@@ -71,31 +74,35 @@ export function learningAllowed(model, scoped, now) {
   const used = Object.values(model.words).filter(w => w.review.startedDay === day).length;
   return used >= model.settings.newLimit ? 'dailyLimit' : null;
 }
-export function question(w, pool, game, face = 'meaning', mode = 'review', config = {}, uuid = () => crypto.randomUUID()) {
+export function question(w, pool, game, face = 'meaning', mode = 'review', config = {}, uuid = () => crypto.randomUUID(), profileId = 'en') {
   const learning = mode === 'new' || mode === 'review' && w.review.phase !== 'review';
   let fallback = null, familiarize = false;
   if (learning) {
     if (!w.ready) return {blocked:['missingPrompt'],wordId:w.id};
-    face = w.meaning ? 'meaning' : w.ipa ? 'ipa' : 'image';
+    const readingFace=profileId==='zh'?'pinyin':profileId==='ja'?'kana':'ipa';
+    face = w.meaning ? 'meaning' : w[readingFace] ? readingFace : w.ipa ? 'ipa' : 'image';
     game = requiredGame(w);
-    if (game === 'quiz' && reasons(w,game,face,pool).length) {
+    if (game === 'quiz' && reasons(w,game,face,pool,profileId).length) {
       game = 'flash'; fallback = 'missingChoices'; familiarize = true;
     }
     if (game === 'spell' && !w.audio) {game = 'typing'; fallback = 'missingAudio';}
     if (w.review.phase === 'new') familiarize = true;
   }
   face = promptFace(game,face);
-  const why = reasons(w,game,face,pool);
+  const why = reasons(w,game,face,pool,profileId);
   if (why.length) return {blocked:why,wordId:w.id};
+  const twoStep=twoStepFor(w,pool,game,face,profileId);
   const reverse = game === 'quiz' && face === 'word';
   const answers = game.startsWith('cloze') ? [...w.answers] : game==='tone' ? (w.pinyinSyllables||[]).map(s=>String(s.tone)) : game==='classifier' ? [...(w.classifiers||[])] : reverse ? [w.meaning] : [w.word];
-  const prompt = game.startsWith('cloze') ? w.sentence : game === 'match' ? w.word : game==='classifier' ? classifierQuestion(w).prompt : w[face];
+  const tone=game==='tone'?toneQuestion(w.pinyinSyllables||[],w.audio):null;
+  const prompt = game.startsWith('cloze') ? w.sentence : game === 'match' ? w.word : game==='tone' ? tone.syllables.map(s=>s.base).join(' ') : game==='classifier' ? classifierQuestion(w).prompt : w[face];
   const choices = ['quiz','clozeChoice'].includes(game) ? [answers[0],...alternatives(w,pool,game,face)].slice(0,4)
     .map((label,index) => ({label,correct:index === 0})) : [];
   const rotation = w.word.length % Math.max(1,choices.length); choices.push(...choices.splice(0,rotation));
   return {id:uuid(),eventId:uuid(),wordId:w.id,baseRev:w.review.rev,mode,game,face,
     config:{...config},snapshot:structuredClone(w),prompt,answers,choices,fallback,familiarize,
     input:'',hadError:false,hint:false,retry:false,flipped:false,result:null,
-    tone:game==='tone'?toneQuestion(w.pinyinSyllables||[],w.audio):null,classifier:game==='classifier'?classifierQuestion(w):null,
+    twoStep:twoStep&&!twoStep.blocked?{...twoStep,readingPassed:!twoStep.readingRequired,readingInput:'',selected:''}:null,
+    tone,classifier:game==='classifier'?classifierQuestion(w):null,
     activeMs:0,interrupted:false,audioPlayed:false};
 }

@@ -43,12 +43,17 @@ jobs:
         id: browser_accessibility
         continue-on-error: true
         run: python tests/browser_accessibility.py
+      - name: Browser Chinese phase 2
+        id: browser_chinese
+        continue-on-error: true
+        run: python tests/browser_chinese.py
       - name: Fail if any browser regression failed
         if: always()
         run: |
           test "${{ steps.browser_e2e.outcome }}" = "success"
           test "${{ steps.browser_audio.outcome }}" = "success"
           test "${{ steps.browser_accessibility.outcome }}" = "success"
+          test "${{ steps.browser_chinese.outcome }}" = "success"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

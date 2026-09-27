@@ -96,3 +96,11 @@ CI is intentionally treated as a parallel feedback loop; failures are fixed as e
 ### 2026-09-27 hardening checkpoint
 
 Batch includes browser audio/IME/responsive acceptance plus media quota, deduplication, validation and missing-file repair tests. Run the full CI checkpoint before production integration; do not mark Railway production verified until the merged main SHA reaches a terminal SUCCESS deployment and the production smoke/browser checks pass.
+
+## 2026-09-27 Phase-2 Chinese batch
+
+- Release-gated study-set creation now advertises only profiles implemented for the current phase (English and Chinese); Japanese remains Phase 3.
+- Added Chinese whole-word two-step typing: enter Pinyin, then choose the complete written form; insufficient homophone distractors fall back to confirmation with a Hard grade cap.
+- Wired Chinese tone/classifier actions through the browser dispatcher and server-side answer validation.
+- Added focused unit coverage plus a real Chromium Phase-2 Chinese journey that verifies release gating, mixed-game availability, numeric Pinyin input, whole-word choices and sync acceptance.
+- This batch is not evidence that AI autofill, Japanese, handwriting, speech or Phase-3 statistics are complete.

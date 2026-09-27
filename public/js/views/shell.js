@@ -1,7 +1,7 @@
 import {app} from '../state.js';
 import {brand,button,icon,t,esc,badge} from '../ui.js';
 import {pendingCount} from '../storage.js';
-import {languageProfile} from '/core/language-profiles.js';
+import {languageProfile,releasedProfiles} from '/core/language-profiles.js';
 export function shell(content) {
   const set=app.model.sets[app.setId],profile=languageProfile(set?.language);
   return `<a class="skip" href="#main">Skip to content</a><div class="layout">
@@ -17,6 +17,7 @@ export function authView() {
   <p class="error-text" id="auth-error" role="alert"></p><button class="btn primary" type="submit">${t(app.register?'register':'login')}</button></form>${button(t(app.register?'haveAccount':'newAccount'),'toggleAuth','quiet')}<p class="muted small">${t('onlyLocal')}</p></section></main>`;
 }
 export function setView() {
+  const profiles=releasedProfiles();
   return shell(`<header class="page-heading"><span class="eyebrow">${t('sets')}</span><h1 tabindex="-1">${t('emptySets')}</h1></header><div class="columns">${Object.values(app.model.sets).map(s=>`<button class="panel set-card" data-action="selectSet" data-id="${s.id}"><h2>${esc(s.name)}</h2><p>${esc(languageProfile(s.language)?.label||s.language.toUpperCase())} → ${s.meaningLanguage.toUpperCase()}</p>${icon('arrow')}</button>`).join('')}
-  <section class="panel"><h2>${t('createSet')}</h2><form id="set-form" class="stack"><label>${t('setName')}<input name="name" required maxlength="100" placeholder="English for work"></label><label>Ngôn ngữ học<select name="language" id="set-language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select></label><label>${t('meaningLanguage')}<select name="meaningLanguage" id="set-meaning-language"><option value="vi">Tiếng Việt</option><option value="en">English</option></select></label><button class="btn primary" type="submit">${t('createSet')}</button></form></section></div>`);
+  <section class="panel"><h2>${t('createSet')}</h2><form id="set-form" class="stack"><label>${t('setName')}<input name="name" required maxlength="100" placeholder="English for work"></label><label>${t('studyLanguage')}<select name="language" id="set-language">${profiles.map(p=>`<option value="${p.id}">${esc(p.label)}</option>`).join('')}</select></label><label>${t('meaningLanguage')}<select name="meaningLanguage" id="set-meaning-language"><option value="vi">Tiếng Việt</option><option value="en">English</option></select></label><p class="muted small">${t('releasedProfilesOnly')}</p><button class="btn primary" type="submit">${t('createSet')}</button></form></section></div>`);
 }

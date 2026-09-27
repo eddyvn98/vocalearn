@@ -1,5 +1,8 @@
-const escapeRegExp=value=>String(value||'').replace(/[.*+?^(){}|[\]\\$]/g,'\\$&');
+const escapeRegExp=value=>String(value||'').replace(/[.*+?^(){}|[\]\\$]/g,'\\const escapeRegExp=value=>String(value||'').replace(/[.*+?^(){}|[\]\\$]/g,'\\$&');
 
+');
+
+export const RELEASED_PHASE=2;
 export const LANGUAGE_PROFILES=Object.freeze({
   en:Object.freeze({
     id:'en',
@@ -24,6 +27,9 @@ export const LANGUAGE_PROFILES=Object.freeze({
 
 export function languageProfile(code){
   return LANGUAGE_PROFILES[code]||null;
+}
+export function releasedProfiles(phase=RELEASED_PHASE){
+  return Object.values(LANGUAGE_PROFILES).filter(profile=>profile.releasedPhase<=phase);
 }
 
 export function studySetProfile(set){

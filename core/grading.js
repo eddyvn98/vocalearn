@@ -29,11 +29,11 @@ export function checkAnswer(input, answers, retried = false) {
   }
   return {kind: 'wrong'};
 }
-export function gradeAnswer({correct, game, hint = false, hadError = false,
+export function gradeAnswer({correct, game, hint = false, hadError = false, gradeCap = null,
   activeMs = Infinity, interrupted = false, answer = '', easyMs = 5000}) {
   if (!correct) return {grade: 'forget', assisted: false};
   const assisted = hint || hadError;
-  if (assisted || RECOGNITION.has(game)) return {grade: 'hard', assisted};
+  if (assisted || RECOGNITION.has(game) || gradeCap === 'hard') return {grade: 'hard', assisted};
   const units = normalize(answer).split(' ').filter(Boolean).length;
   const threshold = (game === 'cloze' ? Math.max(10000, easyMs) : easyMs) + Math.max(0, units - 1) * 2000;
   return {grade: !interrupted && activeMs < threshold ? 'easy' : 'good', assisted: false};

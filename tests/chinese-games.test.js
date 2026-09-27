@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parsePinyin,toneQuestion,gradeTones,classifierQuestion,gradeClassifier} from '../core/chinese-games.js';
+import {question} from '../core/questions.js';
 test('G-09 tone game labels the neutral tone and grades each explicit syllable',()=>{
  const q=toneQuestion([{base:'xue',tone:2},{base:'sheng',tone:1},{base:'ma',tone:0}]);
  assert.equal(q.syllables[2].label,'nhẹ');assert.equal(gradeTones(q,[2,1,0]),true);assert.equal(gradeTones(q,[2,1,5]),false);
@@ -17,4 +18,12 @@ test('Pinyin parser accepts tone marks and numeric tones',()=>{
   assert.deepEqual(parsePinyin('nǐ hǎo ma'),[{base:'ni',tone:3},{base:'hao',tone:3},{base:'ma',tone:0}]);
   assert.deepEqual(parsePinyin('zhong1 guo2 ren5'),[{base:'zhong',tone:1},{base:'guo',tone:2},{base:'ren',tone:0}]);
   assert.deepEqual(parsePinyin("Xi'an"),[{base:'xi',tone:0},{base:'an',tone:0}]);
+});
+
+test('G-09 tone question never exposes tone marks before submission',()=>{
+  const word={id:'tone-word',setId:'zh',word:'你好',meaning:'xin chao',pinyin:'nǐ hǎo',pinyinSyllables:parsePinyin('nǐ hǎo'),ready:true,deleted:false,review:{phase:'review',step:0,rev:'r1'}};
+  const q=question(word,[word],'tone','pinyin','free',{},()=> 'tone-id','zh');
+  assert.equal(q.prompt,'ni hao');
+  assert.equal(q.prompt.includes('ǐ'),false);
+  assert.deepEqual(q.answers,['3','3']);
 });

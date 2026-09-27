@@ -4,12 +4,16 @@ import {prepare,transact,model,setMeta,getMeta,uuid} from './storage.js';
 import {availablePool,learningAllowed,question,GAMES,GAME_FACES,usesAudio} from '/core/questions.js';
 import {inScope} from '/core/model.js';
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
-import {studySetProfile,chineseReadingMatches,japaneseReadingMatches} from '/core/language-profiles.js';
+import {studySetProfile} from '/core/language-profiles.js';
+import {readingMatches,twoStepSnapshot} from '/core/script-typing.js';
 import {gameAvailability} from '/core/capabilities.js';
 import {gradeTones,gradeClassifier} from '/core/chinese-games.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories,app.scopeChildren);
-const MIXABLE=['flash','quiz','typing','spell','dictation','cloze','clozeChoice'];
+const BASE_GAMES=['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'];
+const BASE_MIXABLE=['flash','quiz','typing','spell','dictation','cloze','clozeChoice'];
 const profile=()=>studySetProfile(app.model?.sets?.[app.setId]);
+const profileGames=()=>[...BASE_GAMES,...(profile()?.games||[]).filter(g=>GAMES.includes(g))];
+const mixableGames=()=>[...BASE_MIXABLE,...(profile()?.games||[]).filter(g=>['tone','classifier'].includes(g))];
 const profileFaces=()=>{
   const p=profile(),faces=['meaning','word'];
   if(p?.readingFace)faces.push(p.readingFace);
@@ -28,9 +32,9 @@ let started=0;
 export async function restoreSetup() {
   const saved=await getMeta(`setup:${app.setId}`);
   if(!saved)return;
-  if(saved.game&&['mix',...GAMES].includes(saved.game))app.game=saved.game;
+  if(saved.game&&['mix',...profileGames()].includes(saved.game))app.game=saved.game;
   if(saved.face&&profileFaces().includes(saved.face))app.face=saved.face;
-  if(Array.isArray(saved.mixGames))app.mixGames=saved.mixGames.filter(g=>MIXABLE.includes(g));
+  if(Array.isArray(saved.mixGames))app.mixGames=saved.mixGames.filter(g=>mixableGames().includes(g));
 }
 function persistSetup() {
   setMeta(`setup:${app.setId}`,{game:app.game,face:app.face,mixGames:app.mixGames}).catch(()=>{});
@@ -58,14 +62,15 @@ export function previewQueue() {
     let game=app.game;
     if(['speak','dictation','handwriting'].includes(game)){const gate=gatedGame(game,w);if(!gate.available)return {blocked:[gate.reason],wordId:w.id};}
     if(game==='mix'){
-      const choices=app.mixGames.length?app.mixGames:['typing'];
+      const enabled=app.mixGames.filter(g=>mixableGames().includes(g));
+      const choices=enabled.length?enabled:['typing'];
       for(let n=0;n<choices.length;n++){
-        const candidate=question(w,all,choices[(i+n)%choices.length],app.face,app.mode,app.model.settings,uuid);
+        const candidate=question(w,all,choices[(i+n)%choices.length],app.face,app.mode,app.model.settings,uuid,profile()?.id||'en');
         if(!candidate.blocked)return candidate;
       }
       game='typing';
     }
-    return question(w,app.game==='match'?selected:all,game,app.face,app.mode,app.model.settings,uuid);
+    return question(w,app.game==='match'?selected:all,game,app.face,app.mode,app.model.settings,uuid,profile()?.id||'en');
   });
 }
 export function setup(mode=app.mode,game=app.game) {
@@ -83,9 +88,9 @@ export function setup(mode=app.mode,game=app.game) {
   const errors=[...new Set(queue.flatMap(q=>q.blocked||[]))];
   const limited=app.game==='match'&&good.length<2;
   modal(t('setup'),`<div class="stack"><p>${t(mode)} \u00b7 ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
-    ${mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...GAMES].map(g=>`<option value="${g}" ${g===app.game?'selected':''}>${t(g)}</option>`).join('')}</select></label>`}
+    ${mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...profileGames()].map(g=>`<option value="${g}" ${g===app.game?'selected':''}>${t(g)}</option>`).join('')}</select></label>`}
     <label ${facesFor(app.game).length>1?'':'hidden'}>${t('face')}<select id="setup-face">${facesFor(app.game).map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
-    ${app.game==='mix'?`<fieldset><legend>${t('mixGames')}</legend><div class="row wrap">${MIXABLE.map(g=>`<label class="check-label"><input type="checkbox" data-mix-game="${g}" ${app.mixGames.includes(g)?'checked':''}>${t(g)}</label>`).join('')}</div></fieldset>`:''}
+    ${app.game==='mix'?`<fieldset><legend>${t('mixGames')}</legend><div class="row wrap">${mixableGames().map(g=>`<label class="check-label"><input type="checkbox" data-mix-game="${g}" ${app.mixGames.includes(g)?'checked':''}>${t(g)}</label>`).join('')}</div></fieldset>`:''}
     <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>${errors.map(e=>`<p class="info">${t(e)}</p>`).join('')}
     ${blocked||limited?`<p class="error-text">${t(blocked||'missingChoices')}</p>`:''}
     ${button(t('start'),'startSession','primary full',!good.length||blocked||limited?'disabled':'')}</div>`);
@@ -111,16 +116,17 @@ async function writeAnswer(q,correct) {
   try {
     stopClock();
     if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
-    const result=gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,
+    const result=gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,gradeCap:q.twoStep?.gradeCap,
       activeMs:Math.round(q.activeMs),interrupted:q.interrupted,answer:q.answers[0],easyMs:q.config.easyMs});
     const next=structuredClone(app.session),target=next.queue.find(x=>x.id===q.id);
     target.result=result;if(!correct)target.hadError=true;
     next.error='';
     const data={schemaVersion:2,wordId:q.wordId,questionId:q.id,baseRev:q.baseRev,mode:q.mode,game:q.game,
       ...result,hadError:target.hadError,config:q.config,familiarize:q.familiarize,
-      activeMs:Math.round(q.activeMs),input:q.input,face:q.face,hint:q.hint,interrupted:q.interrupted,
-      unknown:!correct,selectedWordId:q.selectedWordId,question:{prompt:['image','audio'].includes(q.face)?`[${q.face}]`:q.prompt,answers:q.answers,
-        word:q.snapshot.word,meaning:q.snapshot.meaning,fields:q.snapshot.fields}};
+      activeMs:Math.round(q.activeMs),input:q.input,readingInput:q.twoStep?.readingInput||'',selectedForm:q.twoStep?.selected||'',
+      face:q.face,hint:q.hint,interrupted:q.interrupted,unknown:!correct,selectedWordId:q.selectedWordId,
+      question:{prompt:['image','audio'].includes(q.face)?`[${q.face}]`:q.prompt,answers:q.answers,
+        word:q.snapshot.word,meaning:q.snapshot.meaning,fields:q.snapshot.fields,twoStep:twoStepSnapshot(q.twoStep)}};
     const event=q.pendingAnswer || prepare('answer',data,q.eventId);
     q.pendingAnswer=event;target.hadError=event.data.hadError;target.result={grade:event.data.grade,assisted:event.data.assisted};
     delete target.pendingAnswer;
@@ -132,9 +138,23 @@ export async function submitInput(value) {
   const q=current();if(!q||q.result||submitting)return;
   if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
   q.input=value;
-  const p=profile(),reading=q.face===p?.readingFace;
-  const readingCorrect=reading&&(p.id==='zh'?chineseReadingMatches(value,q.prompt):p.id==='ja'?japaneseReadingMatches(value,q.prompt,q.snapshot.word):false);
-  const result=readingCorrect?{kind:'correct'}:checkAnswer(value,q.answers,q.retry);
+  if(q.twoStep&&q.twoStep.readingRequired&&!q.twoStep.readingPassed){
+    q.twoStep.readingInput=value;
+    if(readingMatches(q.twoStep.profileId,value,q.twoStep.reading,q.snapshot.word)){
+      q.twoStep.readingPassed=true;q.retry=false;q.input='';q.inputError='';
+      if(q.twoStep.mode==='skip'){q.twoStep.selected=q.snapshot.word;q.input=q.snapshot.word;return writeAnswer(q,true);}
+      await setMeta('session',app.session);app.render('#answer');return;
+    }
+    const retry=checkAnswer(value,[q.twoStep.reading],q.retry);
+    if(retry.kind==='empty'){q.inputError=t('inputFirst');app.render('#answer');return;}
+    if(retry.kind==='retry'){
+      q.hadError=true;q.retry=true;q.position=retry.position;
+      await transact([prepare('attempt',{wordId:q.wordId,questionId:q.id,wrong:true,input:value})],app.session);
+      app.model=model();app.render('#answer');return;
+    }
+    return writeAnswer(q,false);
+  }
+  const result=checkAnswer(value,q.answers,q.retry);
   if(result.kind==='empty'){q.inputError=t('inputFirst');app.render('#answer');return;}
   if(result.kind==='retry'&&q.game!=='spell'){
     q.hadError=true;q.retry=true;q.position=result.position;
@@ -179,6 +199,10 @@ export async function studyAction(action,element) {
   if(action==='classifierChoice'){
     q.input=element.dataset.value||'';
     await writeAnswer(q,gradeClassifier(q.classifier,q.input));
+  }
+  if(action==='formChoice'){
+    q.twoStep.selected=element.dataset.value||'';q.input=q.twoStep.selected;
+    await writeAnswer(q,q.twoStep.selected===q.snapshot.word);
   }
   if(action==='next'){
     if(!q.result)return;
