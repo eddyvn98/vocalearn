@@ -32,6 +32,8 @@ function browserLocalAdapter(Speech,language){
 export async function prepareSpeechCapability(language){
   const custom=injected();
   if(custom?.tested&&custom?.local===true&&Array.isArray(custom.languages)&&custom.languages.includes(language))return true;
+  const verified=globalThis.__VOCALearnVerifiedBrowserLocalASR;
+  if(!Array.isArray(verified)||!verified.includes(language))return false;
   const Speech=globalThis.SpeechRecognition;
   if(typeof Speech!=='function'||typeof Speech.available!=='function'||!('processLocally' in Speech.prototype))return false;
   try{
