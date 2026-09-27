@@ -258,6 +258,10 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     expect(page.locator('[data-action="library"]').first).to_be_visible()
     page.locator('[data-action="library"]').first.click()
     add_word(page, "banana", "quả chuối")
+    # A newly-created card may still be only local here. Sync before opening a
+    # setup whose eligibility depends on the complete two-card pool.
+    sync_from_ui(page)
+    page.reload(wait_until="networkidle")
     page.locator('[data-action="home"]').first.click()
     expect(page.locator('[data-action="setupFree"]')).to_be_visible()
     page.locator('[data-action="setupFree"]').click()
