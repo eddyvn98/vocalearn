@@ -1,13 +1,13 @@
 # Test report: VocaLearn 0.1.0
 
-Date: 2026-09-25. Scope: source in this archive. Environment: Linux, Node **22.16.0**, Chromium via Python Playwright for static layout inspection.
+Updated: 2026-09-27. Scope: branch `feature/core-hardening-mvp`. CI environment: GitHub Actions on Linux, Node 22, Python 3.11 and Playwright Chromium.
 
 ## Executed and passed
 
 `npm run verify`:
 
 - Syntax checks and below-300-line policy: **31 JavaScript source/test/tool modules**.
-- **45 automated tests passed; 0 failed; 0 skipped.**
+- Latest Node test phase: **57 automated tests passed; 0 failed; 0 skipped.**
 - **32 domain/model tests**, including formula examples, half-up rounding, overdue intervals, learning/relearning delays, assistance caps, typo handling, sentence-specific answers, error-book evidence, per-field merges, category membership and tombstones.
 - **13 actual HTTP API tests** on an ephemeral localhost server: authentication/cookies, unauthenticated access, wrong password, origin/media-type rejection, idempotent event append, transactional batch rollback, category cycles, account isolation, device mismatch, bounded timestamps, event ID/content mismatch, static-file boundaries and logout.
 
@@ -33,16 +33,18 @@ The actual view functions were rendered with fixture data and real project style
 
 Machine-readable results: `test-evidence/layout-results.json`. Screenshots were visually inspected, but these fixtures do not validate all screens/states or virtual keyboard behavior.
 
-## Not executed / not proven
+## Real-browser regression
 
-- Full browser end-to-end tests were blocked by the environment: navigating Chromium to the live local app returned `ERR_BLOCKED_BY_ADMINISTRATOR`. The restriction was not bypassed. Node's API tests are not a substitute for full browser tests.
-- Real IndexedDB persistence/reload transactions, first offline launch, installed PWA lifecycle, audio play/retry, browser Back, multi-tab contention and multi-device browser sync are therefore **not browser-verified** here.
+GitHub Actions now launches the actual app and drives Chromium with a disposable SQLite database and fresh browser profile. The current path covers registration, set creation, card creation, authenticated reload, IndexedDB-backed persistence, offline card creation, offline reload and reconnect sync. Browser evidence is uploaded from the workflow on every run.
+
+The suite is still partial: fake-clock learning waits, retry/reload, duplicate UI submission, audio, browser Back, multi-tab contention and two-profile/multi-device sync are not yet browser-verified.
+
+## Not executed / not proven
 - No accessibility certification; no full WCAG A/AA audit, screen-reader test, iPhone/iPad test or virtual-keyboard test.
-- No GitHub repository, push, workflow run or deployment took place. The publishing scripts require the owner's authenticated CLI. PowerShell script was not executed; shell script was syntax-checked only.
 - Dockerfile is an optional template; Docker was not available to build it.
 - No independent penetration test, large-dataset load test, backup restore drill or production environment test.
 
-## Manual/browser acceptance run to perform next
+## Remaining browser/acceptance work
 
 1. Start the server on a supported development machine. Register account A, create a set and add sample cards explicitly.
 2. Start free typing. Type a one-character wrong answer, submit, reload, resume and correct it. Verify the retained failed attempt, capped grade and one final result.
@@ -54,3 +56,12 @@ Machine-readable results: `test-evidence/layout-results.json`. Screenshots were 
 8. Test 320/390/768/1024/1440 CSS px, keyboard-only operation, IME composition, zoom, real mobile keyboard and a screen reader.
 
 Record outcomes against every applicable AT/UX code before promoting the version to MVP status.
+
+
+## 2026-09-27 hardening additions
+
+- Tombstoned cards reject new attempt/final-answer events at the server.
+- Clock reconciliation refreshes trusted device anchors and records whether an event timestamp was clamped.
+- Sync returns the refreshed anchor used by the browser for subsequent offset calculations.
+- Concurrent review ordering has a deterministic device-ID/event-ID tie-break.
+- The Node test phase reached 57/57 passing in CI. One Verify run then failed only because `public/sw.js` had not yet been regenerated after source changes; the generated cache hash was updated immediately afterward. Treat the following CI rerun, not that intermediate run, as the release gate.
