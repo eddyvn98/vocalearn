@@ -28,7 +28,7 @@ def main():
         browser=p.chromium.launch();page=browser.new_page(viewport={"width":1280,"height":900})
         page.add_init_script("""window.__VOCALearnLocalASR={
           tested:true,local:true,offline:true,permission:'granted',version:'acceptance-v1',languages:['en'],calls:0,
-          recognize:async function(){
+          recognize:async function(language,ctx){ctx.onState('recording');await new Promise(r=>setTimeout(r,20));ctx.onState('recognizing');await new Promise(r=>setTimeout(r,20));
             this.calls++;
             if(this.calls===1){const e=new Error('mic unavailable');e.code='mic';throw e;}
             if(this.calls===2)return {transcript:'orange',activeMs:600};
