@@ -19,8 +19,8 @@ function rubyWord(q,value=q.snapshot.word){
 }
 function feedback(q) {
   if(!q.result)return '';
-  const ok=q.result.grade!=='forget';
-  return `<section id="feedback" tabindex="-1" class="feedback ${ok?'':'bad'}" role="status"><div class="row between wrap"><h2>${t(ok?q.hadError?'afterFix':q.hint?'withHint':'correct':'wrong')}</h2>${q.familiarize?'':badge(t(q.result.grade),ok?'good':'warn')}</div><p class="result-word">${q.answerFace==='image'?faceValue('image',q.answers[0],q.snapshot.word):q.answerFace==='word'?rubyWord(q,q.answers[0]):esc(q.answers.join(' / '))} <span>${esc(q.snapshot.meaning)}</span></p>${q.game.startsWith('cloze')?`<p>${esc(q.prompt.replace('___',q.answers[0]))}</p>`:''}<p>${esc(q.snapshot.note||'')}</p>
+  const ok=q.result.grade!=='forget',title=q.game==='speak'&&ok?'speechRecognizedCorrect':ok?q.hadError?'afterFix':q.hint?'withHint':'correct':'wrong';
+  return `<section id="feedback" tabindex="-1" class="feedback ${ok?'':'bad'}" role="status"><div class="row between wrap"><h2>${t(title)}</h2>${q.familiarize?'':badge(t(q.result.grade),ok?'good':'warn')}</div><p class="result-word">${q.answerFace==='image'?faceValue('image',q.answers[0],q.snapshot.word):q.answerFace==='word'?rubyWord(q,q.answers[0]):esc(q.answers.join(' / '))} <span>${esc(q.snapshot.meaning)}</span></p>${q.game.startsWith('cloze')?`<p>${esc(q.prompt.replace('___',q.answers[0]))}</p>`:''}<p>${esc(q.snapshot.note||'')}</p>
   <p class="muted small">${q.result.assisted?t('helpCap'):q.result.grade==='hard'&&q.twoStep?.gradeCap?t('twoStepCap'):q.result.grade==='hard'&&!q.familiarize?t('recognitionCap'):''}</p><div class="row between wrap"><small>${t(q.mode==='free'||q.mode==='errors'?'noSchedule':'localSchedule')} \u00b7 ${t('saved')}</small>${button(t('next'),'next','primary')}</div></section>`;
 }
 function scriptTyping(q,disabled) {
@@ -52,7 +52,7 @@ function spelling(q) {
 function speechMarkup(q){
   const attempts=q.speechState?.validAttempts||0,transcript=q.input||'';
   return `<div class="stack speech-panel"><p class="muted">${t('speechAttempt')}: ${attempts}/2 · ${t('speech_'+(q.speechPhase||'ready'))}</p>
-    ${transcript?`<p><strong>${t('speechTranscript')}:</strong> ${esc(transcript)}</p>`:''}
+    ${transcript?`<p><strong>${t('speechTranscript')}:</strong> ${esc(transcript)}</p>`:''}${attempts===1&&!q.result&&!q.speechBusy?`<p class="muted">${t('speechTryAgain')}</p>`:''}
     ${q.speechMessage?`<p class="info" role="status">${t('speechTechnical')} · ${t(q.speechMessage)}</p>`:''}
     ${!q.result?button(t(q.speechBusy?'speechListening':attempts?'speechAgain':'speechStart'),'speechStart','primary full',q.speechBusy?'disabled':''):''}</div>`;
 }
