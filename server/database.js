@@ -37,17 +37,19 @@ export function synchronize(db, userId, input, now = Date.now()) {
         if(original.deviceId!==raw.deviceId||original.kind!==raw.kind||JSON.stringify(original.data)!==JSON.stringify(raw.data))throw new Error('Event ID already used with different content');
         received.push(raw.id); continue;
       }
-      const effectiveAt = anchor
-        ? Math.max(anchor.server_at, Math.min(now, anchor.server_at + raw.at - anchor.client_at)) : now;
+      const estimatedAt = anchor ? anchor.server_at + raw.at - anchor.client_at : now;
+      const effectiveAt = anchor ? Math.max(anchor.server_at, Math.min(now, estimatedAt)) : now;
       const event = {id: raw.id, kind: raw.kind, data: raw.data, at: raw.at,
-        deviceId: raw.deviceId, localOrder: raw.localOrder, effectiveAt, receivedAt: now};
+        deviceId: raw.deviceId, localOrder: raw.localOrder, effectiveAt, receivedAt: now,
+        clockAdjusted: !!anchor && effectiveAt !== estimatedAt};
       const model = replay(existing);
       assertReferences(model, event, existing);
       if(event.kind==='answer')validateReview(model,event,existing);
       const row = db.prepare('INSERT INTO events(user_id,event_id,payload) VALUES(?,?,?)').run(userId, event.id, JSON.stringify(event));
       event.seq = Number(row.lastInsertRowid); existing.push(event); received.push(event.id);
     }
-    db.prepare('INSERT INTO devices VALUES(?,?,?,?) ON CONFLICT(user_id,device_id) DO NOTHING')
+    db.prepare(`INSERT INTO devices VALUES(?,?,?,?)
+      ON CONFLICT(user_id,device_id) DO UPDATE SET server_at=excluded.server_at,client_at=excluded.client_at`)
       .run(userId, input.deviceId, now, input.clientNow);
     db.exec('COMMIT');
   } catch (error) {db.exec('ROLLBACK'); throw error;}
