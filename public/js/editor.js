@@ -4,6 +4,7 @@ import {prepare,transact,model,uuid,storeMediaUri,mediaSrc} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {WORD_FIELDS} from '/core/validation.js';
 import {studySetProfile} from '/core/language-profiles.js';
+import {parsePinyin} from '/core/chinese-games.js';
 let editing=null,media={};
 function editorDirty(){
   const form=document.querySelector('#word-form');
@@ -51,7 +52,7 @@ export async function saveWord(form) {
     answers:list('answers'),level:String(f.get('level')||'').trim(),variants:list('variants'),tags:list('tags'),
     custom,note:String(f.get('note')).trim(),...media};
   const profile=studySetProfile(app.model.sets[app.setId]);
-  if(profile?.id==='zh')Object.assign(patch,{pinyin:String(f.get('pinyin')||'').trim(),hanViet:String(f.get('hanViet')||'').trim(),radical:String(f.get('radical')||'').trim(),strokeCount:Number(f.get('strokeCount')||0),classifiers:list('classifier')});
+  if(profile?.id==='zh'){const pinyin=String(f.get('pinyin')||'').trim();Object.assign(patch,{pinyin,pinyinSyllables:parsePinyin(pinyin),hanViet:String(f.get('hanViet')||'').trim(),radical:String(f.get('radical')||'').trim(),strokeCount:Number(f.get('strokeCount')||0),classifiers:list('classifier')});}
   if(profile?.id==='ja')Object.assign(patch,{kana:String(f.get('kana')||'').trim(),onReading:String(f.get('onReading')||'').trim(),kunReading:String(f.get('kunReading')||'').trim()});
   if(!patch.word)throw new Error(t('word'));
   if(patch.sentence&&(patch.sentence.split('___').length!==2||!patch.answers.length))throw new Error(t('missingSentence'));
