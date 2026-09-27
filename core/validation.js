@@ -1,6 +1,6 @@
 import {DEFAULTS} from './srs.js';
 import {isMediaRef} from './media.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','kana','onReading','kunReading','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','lookupMeta','custom']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','kana','onReading','kunReading','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','lookupMeta','strokeData','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -57,6 +57,18 @@ export function validateEvent(e) {
               || typeof meta.confirmed !== 'boolean' || typeof meta.needsCheck !== 'boolean'
               || (meta.ambiguous!==undefined&&(!Array.isArray(meta.ambiguous)||meta.ambiguous.length>100||meta.ambiguous.some(x=>!text(x,20))))) fail('Invalid lookup metadata');
           }
+        } else if (key === 'strokeData') {
+          if (!v || typeof v !== 'object' || Array.isArray(v) || !['zh','ja'].includes(v.language)
+            || !text(v.source,200) || !text(v.version,100) || !text(v.license,100)
+            || !Array.isArray(v.characters) || v.characters.length > 16 || !Array.isArray(v.missing)) fail('Invalid stroke data');
+          for (const char of v.characters) {
+            if (!char || !text(char.char,8) || !['points','svg-path'].includes(char.format)
+              || !Array.isArray(char.strokes) || !char.strokes.length || char.strokes.length>64) fail('Invalid stroke character');
+            if (char.format==='points' && char.strokes.some(stroke=>!Array.isArray(stroke)||stroke.length<2||stroke.length>200
+              ||stroke.some(point=>!Array.isArray(point)||point.length!==2||point.some(n=>!Number.isFinite(n)||n<0||n>100)))) fail('Invalid stroke points');
+            if (char.format==='svg-path' && char.strokes.some(path=>!text(path,5000)||!path.startsWith('M'))) fail('Invalid stroke path');
+          }
+          if(v.missing.length>16||v.missing.some(char=>!text(char,8)))fail('Invalid missing stroke data');
         } else if (key === 'custom') {
           if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).length > 30) fail('Invalid custom data');
           for (const [customId,value] of Object.entries(v)) {
