@@ -9,8 +9,8 @@ import {ensureSentencePool} from './sentence-pool.js';
 
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 const profile=()=>studySetProfile(app.model.sets[app.setId])||{};
-const profileGames=()=>GAMES.filter(game=>!['tone','classifier'].includes(game)||profile().id==='zh');
-const profileMixGames=()=>MIX_GAMES.filter(game=>!['tone','classifier'].includes(game)||profile().id==='zh');
+const profileGames=()=>GAMES.filter(game=>game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
+const profileMixGames=()=>MIX_GAMES.filter(game=>game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
 const profileFaces=()=>FACES.filter(face=>{
   if(['pinyin','hanViet'].includes(face))return profile().id==='zh';
   if(face==='kana')return profile().id==='ja';
@@ -24,18 +24,21 @@ export function applyStudySetup(saved) {
   if(['mix',...profileGames()].includes(saved.game))app.game=saved.game;
   if(profileFaces().includes(saved.face))app.face=saved.face;
   if(['word','meaning','ipa','pinyin','kana','hanViet','image'].includes(saved.answerFace))app.answerFace=saved.answerFace;
+  if(['trace','guided','memory'].includes(saved.handwritingLevel))app.handwritingLevel=saved.handwritingLevel;
   if(Array.isArray(saved.mixGames)){
     const games=[...new Set(saved.mixGames.filter(game=>profileMixGames().includes(game)))];
     app.mixGames=games;
   }
 }
 export const saveStudySetup=()=>setMeta('studySetup',{
-  game:app.game,face:app.face,answerFace:app.answerFace,mixGames:[...app.mixGames]
+  game:app.game,face:app.face,answerFace:app.answerFace,handwritingLevel:app.handwritingLevel,mixGames:[...app.mixGames]
 });
 
 function makeQuestion(w,pool,game) {
   const profile=studySetProfile(app.model.sets[app.setId]);
-  return question(w,pool,game,app.face,app.mode,app.model.settings,uuid,answerFaceFor(game),profile||{});
+  const q=question(w,pool,game,app.face,app.mode,app.model.settings,uuid,answerFaceFor(game),profile||{});
+  if(q.handwriting)q.handwriting.level=app.handwritingLevel;
+  return q;
 }
 function matchQueue(pool) {
   const selected=pool.slice(0,6),seenPrompt=new Set(),seenAnswer=new Set();
@@ -87,11 +90,12 @@ function mixControls() {
 }
 function faceControls() {
   if(app.mode==='new')return `<p class="info">${t('requiredLearningSetup')}</p>`;
+  const level=app.game==='handwriting'?`<label>${t('handwritingLevel')}<select id="setup-handwriting-level">${['trace','guided','memory'].map(value=>`<option value="${value}" ${value===app.handwritingLevel?'selected':''}>${t('handwriting_'+value)}</option>`).join('')}</select></label>`:'';
   const face=`<label>${t('questionFace')}<select id="setup-face">${profileFaces().map(value=>
     `<option value="${value}" ${value===app.face?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
-  if(!['mix','quiz','match'].includes(app.game))return face;
+  if(!['mix','quiz','match'].includes(app.game))return face+level;
   const answerGame=app.game==='mix'?'quiz':app.game,answers=(GAME_ANSWER_FACES[answerGame]||[]).filter(value=>profileFaces().includes(value));
-  return face+`<label>${t(app.game==='mix'?'quizAnswerFace':'answerFace')}<select id="setup-answer-face">${answers.map(value=>
+  return face+level+`<label>${t(app.game==='mix'?'quizAnswerFace':'answerFace')}<select id="setup-answer-face">${answers.map(value=>
     `<option value="${value}" ${value===app.answerFace?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
 }
 export function setup(mode=app.mode,game=app.game) {
