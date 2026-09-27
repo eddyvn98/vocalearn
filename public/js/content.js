@@ -101,8 +101,3 @@ export async function confirmImport() {
   await transact(draft.events,undefined,{importDraft:null});
   draft=null;app.model=model();closeModal();app.render();notify(t('saved'));
 }
-  const source=selected.length?selected:visible;
-  if(!draft.events){
-    for(const row of draft.rows)for(const key of ['image','audio'])if(/^data:/.test(row.patch?.[key]||''))row.patch[key]=await storeMediaUri(row.patch[key]);
-    draft.events=createImportEvents(draft.rows,model(),draft.setId,prepare,uuid,draft.id);await setMeta('importDraft',draft);
-  }
