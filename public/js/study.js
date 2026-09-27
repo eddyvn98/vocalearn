@@ -4,14 +4,31 @@ import {prepare,transact,model,setMeta,getMeta,uuid} from './storage.js';
 import {availablePool,learningAllowed,question,GAMES,GAME_FACES,usesAudio} from '/core/questions.js';
 import {inScope} from '/core/model.js';
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
+import {studySetProfile,chineseReadingMatches,japaneseReadingMatches} from '/core/language-profiles.js';
+import {gameAvailability} from '/core/capabilities.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories,app.scopeChildren);
 const MIXABLE=['flash','quiz','typing','spell','dictation','cloze','clozeChoice'];
+const profile=()=>studySetProfile(app.model?.sets?.[app.setId]);
+const profileFaces=()=>{
+  const p=profile(),faces=['meaning','word'];
+  if(p?.readingFace)faces.push(p.readingFace);
+  if(p?.id==='en')faces.push('ipa');
+  if(p?.extraFaces)faces.push(...p.extraFaces);
+  faces.push('image','audio');
+  return [...new Set(faces)];
+};
+const facesFor=game=>(GAME_FACES[game]||[]).filter(face=>profileFaces().includes(face));
+const deviceCaps=()=>app.deviceCapabilities||{};
+const gatedGame=(game,w={})=>{
+  const p=profile(),language=p?.id||'en';
+  return gameAvailability(game,deviceCaps(),language,{offline:!navigator.onLine,hasAudio:!!w.audio,hasStrokes:!!w.strokes});
+};
 let started=0;
 export async function restoreSetup() {
   const saved=await getMeta(`setup:${app.setId}`);
   if(!saved)return;
   if(saved.game&&['mix',...GAMES].includes(saved.game))app.game=saved.game;
-  if(saved.face)app.face=saved.face;
+  if(saved.face&&profileFaces().includes(saved.face))app.face=saved.face;
   if(Array.isArray(saved.mixGames))app.mixGames=saved.mixGames.filter(g=>MIXABLE.includes(g));
 }
 function persistSetup() {
@@ -38,6 +55,8 @@ export function previewQueue() {
       seenWords.add(left);seenMeanings.add(right);
     }
     let game=app.game;
+    const gate=gatedGame(game,w);
+    if(!gate.available)return {blocked:[gate.reason],wordId:w.id};
     if(game==='mix'){
       const choices=app.mixGames.length?app.mixGames:['typing'];
       for(let n=0;n<choices.length;n++){
@@ -57,7 +76,7 @@ export function setup(mode=app.mode,game=app.game) {
     setMeta('session',app.session).catch(()=>{});
   }
   app.mode=mode;app.game=game;
-  if(!GAME_FACES[game]?.includes(app.face))app.face=GAME_FACES[game]?.[0]||'meaning';
+  if(!facesFor(game).includes(app.face))app.face=facesFor(game)[0]||'meaning';
   persistSetup();
   const blocked=mode==='new'?learningAllowed(app.model,words().filter(inCurrentScope),Date.now()):null;
   const queue=previewQueue(),good=queue.filter(q=>!q.blocked);
@@ -65,7 +84,7 @@ export function setup(mode=app.mode,game=app.game) {
   const limited=app.game==='match'&&good.length<2;
   modal(t('setup'),`<div class="stack"><p>${t(mode)} \u00b7 ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
     ${mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...GAMES].map(g=>`<option value="${g}" ${g===app.game?'selected':''}>${t(g)}</option>`).join('')}</select></label>`}
-    <label ${GAME_FACES[app.game]?.length>1?'':'hidden'}>${t('face')}<select id="setup-face">${(GAME_FACES[app.game]||[]).map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
+    <label ${facesFor(app.game).length>1?'':'hidden'}>${t('face')}<select id="setup-face">${facesFor(app.game).map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
     ${app.game==='mix'?`<fieldset><legend>${t('mixGames')}</legend><div class="row wrap">${MIXABLE.map(g=>`<label class="check-label"><input type="checkbox" data-mix-game="${g}" ${app.mixGames.includes(g)?'checked':''}>${t(g)}</label>`).join('')}</div></fieldset>`:''}
     <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>${errors.map(e=>`<p class="info">${t(e)}</p>`).join('')}
     ${blocked||limited?`<p class="error-text">${t(blocked||'missingChoices')}</p>`:''}
@@ -113,7 +132,9 @@ export async function submitInput(value) {
   const q=current();if(!q||q.result||submitting)return;
   if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
   q.input=value;
-  const result=checkAnswer(value,q.answers,q.retry);
+  const p=profile(),reading=q.face===p?.readingFace;
+  const readingCorrect=reading&&(p.id==='zh'?chineseReadingMatches(value,q.prompt):p.id==='ja'?japaneseReadingMatches(value,q.prompt,q.snapshot.word):false);
+  const result=readingCorrect?{kind:'correct'}:checkAnswer(value,q.answers,q.retry);
   if(result.kind==='empty'){q.inputError=t('inputFirst');app.render('#answer');return;}
   if(result.kind==='retry'&&q.game!=='spell'){
     q.hadError=true;q.retry=true;q.position=result.position;
