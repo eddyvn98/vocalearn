@@ -72,6 +72,7 @@ function assertReferences(state, event, existing = []) {
     }
   }
   if (['answer','attempt','link','unlink'].includes(kind) && !state.words[d.wordId]) throw new Error('Unknown word');
+  if (['answer','attempt'].includes(kind) && state.words[d.wordId].deleted) throw new Error('Deleted word is not learnable');
   if (['link','unlink'].includes(kind) && (!state.categories[d.categoryId]
     || state.categories[d.categoryId].setId !== state.words[d.wordId].setId)) throw new Error('Invalid word category');
   if (kind === 'answer') {
