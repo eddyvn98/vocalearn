@@ -43,8 +43,27 @@ export const mediaSrc = value => {
   const match=String(value||'').match(/^media:([a-f0-9]{64})$/);
   return match ? mediaCache.get(match[1])?.uri || '' : value || '';
 };
+export const mediaStatus = value => {
+  const match=String(value||'').match(/^media:([a-f0-9]{64})$/);
+  if(!match)return value?{available:true,pending:false,size:0}:null;
+  const item=mediaCache.get(match[1]);return item?{available:true,pending:!!item.pending,size:item.size||0}:{available:false,pending:false,size:0};
+};
+async function compressImage(uri,mime) {
+  if(!mime.startsWith('image/')||typeof createImageBitmap!=='function'||typeof document==='undefined')return uri;
+  try {
+    const source=await (await fetch(uri)).blob(),bitmap=await createImageBitmap(source);
+    const scale=Math.min(1,800/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',0.82));
+    if(!blob)return uri;
+    return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob);});
+  } catch {return uri;}
+}
 export async function storeMediaUri(uri) {
-  const match=String(uri||'').match(/^data:([^;]+);base64,([A-Za-z0-9+/=]+)$/);
+  let match=String(uri||'').match(/^data:([^;]+);base64,([A-Za-z0-9+/=]+)$/);
+  if(match?.[1]?.startsWith('image/')){uri=await compressImage(uri,match[1]);match=String(uri).match(/^data:([^;]+);base64,([A-Za-z0-9+/=]+)$/);}
   if(!match)throw new Error('Invalid media data');
   const bytes=Uint8Array.from(atob(match[2]),c=>c.charCodeAt(0));
   if(!bytes.length||bytes.length>1500000)throw new Error('Maximum upload: 1.5 MB');
