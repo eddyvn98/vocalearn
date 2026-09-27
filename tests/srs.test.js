@@ -49,3 +49,17 @@ test('Account timezone and due dates',()=>{
  assert.equal(dayAt(Date.parse('2026-09-24T18:00Z'),'Asia/Ho_Chi_Minh'),'2026-09-25');
  assert.equal(isDue(base,at,'Asia/Ho_Chi_Minh'),true);assert.equal(isDue(initialState('w'),at,'Asia/Ho_Chi_Minh'),false);
 });
+
+
+test('Concurrent review tie-break is stable by device ID then event ID', () => {
+  const base = initialState('stable');
+  const common = {
+    kind: 'answer',
+    effectiveAt: 1000,
+    data: {baseRev: base.rev, mode: 'new', grade: 'hard', assisted: false,
+      config: DEFAULTS, game: 'flash', familiarize: true}
+  };
+  const z = {...common, id: 'a-event', deviceId: 'z-device'};
+  const a = {...common, id: 'z-event', deviceId: 'a-device'};
+  assert.equal(conservative([z, a]).deviceId, 'a-device');
+});
