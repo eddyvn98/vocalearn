@@ -91,12 +91,13 @@ def run_journey(page, context, browser, origin, errors):
     pending_before = status.inner_text()
 
     page.reload(wait_until="domcontentloaded")
-    expect(page.locator('[data-action="add"]').first).to_be_visible(timeout=10000)
+    expect(page.locator('[data-action="library"]')).to_be_visible(timeout=10000)
     expect(page.locator("body")).to_contain_text("Đang offline")
     expect(page.locator('[data-action="syncInfo"]').first).to_contain_text(
         "thay đổi chờ đồng bộ"
     )
     page.locator('[data-action="library"]').click()
+    expect(page.locator('[data-action="add"]').first).to_be_visible()
     expect(page.locator("body")).to_contain_text("banana")
     print("PASS: offline edit survives a real page reload")
 
