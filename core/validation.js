@@ -1,6 +1,6 @@
 import {DEFAULTS} from './srs.js';
 import {isMediaRef} from './media.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','custom']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','radical','strokeCount','classifiers','sentence','answers','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -9,7 +9,7 @@ export function validateEvent(e) {
   const d = e.data;
   switch (e.kind) {
     case 'set':
-      if (!id(d.id) || !text(d.name, 100) || !d.name.trim() || d.language !== 'en' || !['en','vi'].includes(d.meaningLanguage)) fail('Invalid study set');
+      if (!id(d.id) || !text(d.name, 100) || !d.name.trim() || !['en','zh'].includes(d.language) || !['en','vi','zh'].includes(d.meaningLanguage)) fail('Invalid study set');
       if (d.customFields !== undefined) {
         if (!Array.isArray(d.customFields) || d.customFields.length > 30) fail('Invalid custom fields');
         const seen=new Set();
@@ -32,8 +32,12 @@ export function validateEvent(e) {
       if (!id(d.id) || !id(d.setId) || !d.patch || typeof d.patch !== 'object' || Array.isArray(d.patch)) fail('Invalid word');
       for (const [key, v] of Object.entries(d.patch)) {
         if (!WORD_FIELDS.has(key)) fail('Unexpected word field');
-        if (['answers','variants','tags','synonyms','antonyms','collocations','wordFamily'].includes(key)) {
+        if (['answers','variants','tags','synonyms','antonyms','collocations','wordFamily','classifiers'].includes(key)) {
           if (!Array.isArray(v) || v.length > 100 || v.some(x => !text(x, 500))) fail('Invalid list');
+        } else if (key === 'pinyinSyllables') {
+          if (!Array.isArray(v) || v.length > 50 || v.some(s=>!s||!text(s.base,50)||!Number.isInteger(s.tone)||s.tone<0||s.tone>4)) fail('Invalid pinyin syllables');
+        } else if (key === 'strokeCount') {
+          if (!Number.isInteger(v) || v < 0 || v > 1000) fail('Invalid stroke count');
         } else if (key === 'custom') {
           if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).length > 30) fail('Invalid custom data');
           for (const [customId,value] of Object.entries(v)) {
@@ -71,10 +75,12 @@ export function validateEvent(e) {
     case 'answer':
       if (!id(d.wordId) || !id(d.questionId) || !text(d.baseRev, 200)
         || !['review','new','free','errors'].includes(d.mode)
-        || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'].includes(d.game)
+        || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'].includes(d.game)
         || !['forget','hard','good','easy'].includes(d.grade)
         || typeof d.hadError !== 'boolean' || typeof d.assisted !== 'boolean') fail('Invalid answer');
       if (d.schemaVersion === 2 && (!text(d.opportunityId, 500) || !d.opportunityId)) fail('Invalid opportunity');
+      if ('readingInput' in d && !text(d.readingInput,500)) fail('Invalid reading input');
+      if ('selectedForm' in d && !text(d.selectedForm,500)) fail('Invalid selected form');
       if (d.config) validateEvent({...e, kind: 'settings', data: d.config});
       break;
     case 'attempt':
