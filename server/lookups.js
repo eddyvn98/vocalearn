@@ -8,7 +8,7 @@ const IPA_SOURCE={
 };
 const UNIHAN_SOURCE={
   id:'Unicode Unihan via @vearvip/hanzi-readings',
-  version:'Unicode-17.0.0 / 7981a16a19938a3e54ba293f362a8920b88a77e4',
+  version:'Unicode-17.0.0 readings / variants 7882d33e4e8d49fa53dfef70f5778c54edcd3a9f',
   license:'Unicode-3.0 (data), MIT (adapter snapshot)'
 };
 
@@ -21,6 +21,14 @@ for(const line of readFileSync(new URL('./data/en-us-ipa.txt',import.meta.url),'
   if(values.length)ipaMap.set(word,[...new Set(values)]);
 }
 const unihan=JSON.parse(readFileSync(new URL('./data/unihan-readings.json',import.meta.url),'utf8'));
+const traditional=new Map();
+for(const line of readFileSync(new URL('./data/unihan-traditional-variants.txt',import.meta.url),'utf8').split(/\r?\n/)){
+  if(!line||line.startsWith('#'))continue;
+  const [left,,right]=line.split('\t');if(!left||!right)continue;
+  const char=left.trim().split(/\s+/)[1],codes=right.trim().split(/\s+/);
+  if(!char||!codes.length)continue;
+  traditional.set(char,codes.map(code=>String.fromCodePoint(parseInt(code.replace('U+',''),16))).filter(Boolean));
+}
 
 const cleanWord=value=>String(value||'').normalize('NFC').trim();
 const isHan=ch=>/\p{Script=Han}/u.test(ch);
@@ -40,7 +48,14 @@ function chinese(word){
   const pinyin=[],hanViet=[],missingPinyin=[],missingHanViet=[],ambiguousPinyin=[],ambiguousHanViet=[];
   for(const ch of han){
     const row=unihan[ch];
-    const mandarin=splitReadings(row?.[0]),vietnamese=splitReadings(row?.[5]);
+    const mandarin=splitReadings(row?.[0]);
+    let vietnamese=splitReadings(row?.[5]);
+    if(!vietnamese.length){
+      for(const variant of traditional.get(ch)||[]){
+        vietnamese=splitReadings(unihan[variant]?.[5]);
+        if(vietnamese.length)break;
+      }
+    }
     if(mandarin.length){pinyin.push(mandarin[0]);if(mandarin.length>1)ambiguousPinyin.push(ch);}
     else missingPinyin.push(ch);
     if(vietnamese.length){hanViet.push(vietnamese[0]);if(vietnamese.length>1)ambiguousHanViet.push(ch);}
