@@ -1,5 +1,5 @@
 import {app,words} from './state.js';
-import {prepare,transact,model,uuid} from './storage.js';
+import {prepare,transact,model,uuid,mediaSrc,storeMediaUri} from './storage.js';
 import {esc,t,button,modal,closeModal,notify} from './ui.js';
 const ENTRIES=[
  ['deploy','tri\u1ec3n khai','verb','We will ___ the app tomorrow.','deploy'],
@@ -24,7 +24,8 @@ import {filtered} from './views/library.js';
 let draft=null,workbook=null;
 export function exportContent() {
   const visible=filtered(), selected=visible.filter(w=>app.selectedCards.has(w.id));
-  const content=selected.length?selected:visible;
+  const source=selected.length?selected:visible;
+  const content=source.map(w=>({...w,image:mediaSrc(w.image),audio:mediaSrc(w.audio)}));
   if(!content.length)throw new Error('Kh\u00f4ng c\u00f3 th\u1ebb \u0111\u1ec3 xu\u1ea5t.');
   if(!confirm(`Xu\u1ea5t n\u1ed9i dung ${content.length} th\u1ebb? Kh\u00f4ng bao g\u1ed3m l\u1ecbch \u00f4n v\u00e0 log.`))return;
   const blob=new Blob([cardsToXlsx(content,app.model.categories,app.model.sets[app.setId]?.customFields||[])],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
@@ -93,7 +94,10 @@ function renderPreview() {
 export async function confirmImport() {
   if(!draft||draft.setId!==app.setId)throw new Error('Reopen the import preview');
   if(draft.warnings.length&&!confirm('T\u1ec7p c\u00f3 c\u1ea3nh b\u00e1o \u1ea3nh/c\u00f4ng th\u1ee9c. Nh\u1eadp ph\u1ea7n \u0111\u1ecdc \u0111\u01b0\u1ee3c?'))return;
-  if(!draft.events){draft.events=createImportEvents(draft.rows,model(),draft.setId,prepare,uuid,draft.id);await setMeta('importDraft',draft);}
+  if(!draft.events){
+    for(const row of draft.rows)for(const key of ['image','audio'])if(/^data:/.test(row.patch?.[key]||''))row.patch[key]=await storeMediaUri(row.patch[key]);
+    draft.events=createImportEvents(draft.rows,model(),draft.setId,prepare,uuid,draft.id);await setMeta('importDraft',draft);
+  }
   await transact(draft.events,undefined,{importDraft:null});
   draft=null;app.model=model();closeModal();app.render();notify(t('saved'));
 }
