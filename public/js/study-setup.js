@@ -6,11 +6,15 @@ import {inScope} from '/core/model.js';
 import {normalize} from '/core/grading.js';
 import {studySetProfile} from '/core/language-profiles.js';
 import {ensureSentencePool} from './sentence-pool.js';
+import {speechAvailability} from './speech.js';
 
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 const profile=()=>studySetProfile(app.model.sets[app.setId])||{};
-const profileGames=()=>GAMES.filter(game=>game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
-const profileMixGames=()=>MIX_GAMES.filter(game=>game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
+const gameForProfile=game=>game==='speak'?speechAvailability(profile().id).available
+  :game==='handwriting'?['zh','ja'].includes(profile().id)
+  :!['tone','classifier'].includes(game)||profile().id==='zh';
+const profileGames=()=>GAMES.filter(gameForProfile);
+const profileMixGames=()=>MIX_GAMES.filter(gameForProfile);
 const profileFaces=()=>FACES.filter(face=>{
   if(['pinyin','hanViet'].includes(face))return profile().id==='zh';
   if(face==='kana')return profile().id==='ja';
