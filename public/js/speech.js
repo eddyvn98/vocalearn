@@ -35,7 +35,10 @@ export async function prepareSpeechCapability(language){
   const Speech=globalThis.SpeechRecognition;
   if(typeof Speech!=='function'||typeof Speech.available!=='function'||!('processLocally' in Speech.prototype))return false;
   try{
-    const status=await Speech.available({langs:[languageTag(language)],processLocally:true});
+    const status=await Promise.race([
+      Speech.available({langs:[languageTag(language)],processLocally:true}),
+      new Promise(resolve=>setTimeout(()=>resolve('timeout'),1200))
+    ]);
     if(status!=='available')return false;
     localAdapters.set(language,browserLocalAdapter(Speech,language));return true;
   }catch{return false;}
