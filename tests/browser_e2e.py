@@ -254,8 +254,9 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     print("PASS: game/face setup persists per study set")
 
     # Browser-level matching: complete both pairs using visible labels.
-    page.locator('[data-action="home"]').first.click()
-    page.locator('[data-action="library"]').click()
+    page.locator('[data-action="pause"]').click()
+    expect(page.locator('[data-action="library"]').first).to_be_visible()
+    page.locator('[data-action="library"]').first.click()
     add_word(page, "banana", "quả chuối")
     page.locator('[data-action="home"]').first.click()
     page.locator('[data-action="setupFree"]').click()
