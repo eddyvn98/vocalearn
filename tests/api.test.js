@@ -148,3 +148,18 @@ test('Media deduplication keeps quota stable',async()=>{
  assert.equal(afterSecond.bytes,afterFirst.bytes);
  assert.equal(afterSecond.count,afterFirst.count);
 });
+
+
+test('Missing media file can be repaired by idempotent upload',async()=>{
+ const login=await request('/api/login',{email:'test@example.com',password:'long-secure-password'},null);
+ const mediaCookie=login.headers.get('set-cookie').split(';')[0];
+ const bytes=Buffer.from('RIFFrepairWAVEfmt ');
+ const id=createHash('sha256').update(bytes).digest('hex'),uri='data:audio/wav;base64,'+bytes.toString('base64');
+ await request('/api/media',{id,uri},mediaCookie);
+ const userDir=readdirSync(mediaPath)[0],file=join(mediaPath,userDir,id);
+ rmSync(file);
+ assert.equal((await fetch(url+'/api/media/'+id,{headers:{Cookie:mediaCookie}})).status,404);
+ const repair=await request('/api/media',{id,uri},mediaCookie);
+ assert.equal(repair.status,200);
+ assert.equal((await fetch(url+'/api/media/'+id,{headers:{Cookie:mediaCookie}})).status,200);
+});
