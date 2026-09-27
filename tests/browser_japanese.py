@@ -43,10 +43,11 @@ def answer_current(page):
     expect(page.locator("#feedback")).to_have_count(0)
     field.dispatch_event("compositionend")
     page.locator('#answer-form [type="submit"]').click()
-    next_state=page.locator('[data-action="formChoice"], #feedback').first
+    next_state=page.locator('[data-action="formChoice"]:not([disabled]), #feedback').first
     expect(next_state).to_be_visible()
-    confirm=page.locator('[data-action="formChoice"]')
-    if confirm.count() and confirm.first.is_visible():
+    feedback=page.locator("#feedback")
+    if not (feedback.count() and feedback.first.is_visible()):
+        confirm=page.locator('[data-action="formChoice"]:not([disabled])')
         expect(confirm).to_have_count(1)
         confirm.first.click()
     try:
