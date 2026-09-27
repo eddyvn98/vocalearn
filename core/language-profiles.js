@@ -26,6 +26,10 @@ export function languageProfile(code){
   return LANGUAGE_PROFILES[code]||null;
 }
 
+export function releasedProfiles(phase=2){
+  return Object.values(LANGUAGE_PROFILES).filter(profile=>profile.releasedPhase<=phase);
+}
+
 export function studySetProfile(set){
   if(!set)return null;
   const language=languageProfile(set.language);
