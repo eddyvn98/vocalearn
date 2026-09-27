@@ -100,3 +100,18 @@ test('Media store verifies hash, deduplicates, serves bytes and isolates account
  const hidden=await fetch(url+'/api/media/'+id,{headers:{Cookie:otherCookie}});
  assert.equal(hidden.status,404);
 });
+
+
+test('Audio media round-trip uses the same content-addressed store',async()=>{
+ const login=await request('/api/login',{email:'test@example.com',password:'long-secure-password'},null);
+ const mediaCookie=login.headers.get('set-cookie').split(';')[0];
+ const bytes=Buffer.from('RIFF0000WAVEfmt ');
+ const id=createHash('sha256').update(bytes).digest('hex');
+ const uri='data:audio/wav;base64,'+bytes.toString('base64');
+ const put=await request('/api/media',{id,uri},mediaCookie);
+ assert.equal(put.status,200);
+ const audio=await fetch(url+'/api/media/'+id,{headers:{Cookie:mediaCookie}});
+ assert.equal(audio.status,200);
+ assert.equal(audio.headers.get('content-type'),'audio/wav');
+ assert.deepEqual(Buffer.from(await audio.arrayBuffer()),bytes);
+});
