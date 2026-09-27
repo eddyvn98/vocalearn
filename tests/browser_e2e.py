@@ -74,7 +74,16 @@ def run_journey(page, context, browser, origin, errors):
     expect(page.locator('[data-action="add"]').first).to_be_visible()
     add_word(page, "apple", "quả táo")
     expect(page.locator("body")).to_contain_text("1")
-    print("PASS: register -> create set -> add card")
+
+    page.locator('[data-action="settings"]').first.click()
+    expect(page.locator("#settings-form")).to_be_visible()
+    page.locator('#settings-form [name="maxInterval"]').fill("30")
+    page.locator('#settings-form [type="submit"]').click()
+    expect(page.locator("#settings-form")).not_to_be_visible()
+    page.locator('[data-action="settings"]').first.click()
+    expect(page.locator('#settings-form [name="maxInterval"]')).to_have_value("30")
+    page.locator('#modal [data-action="close"]').click()
+    print("PASS: register -> create set -> add card -> persist advanced settings")
 
     page.evaluate("() => navigator.serviceWorker.ready")
     page.reload(wait_until="networkidle")
