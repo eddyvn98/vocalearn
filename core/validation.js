@@ -1,5 +1,6 @@
 import {DEFAULTS} from './srs.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags','custom']);
+import {languageProfile} from './language-profiles.js';
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags','custom','pinyin','hanViet','radical','strokeCount','classifiers','kana','onReading','kunReading']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -8,7 +9,7 @@ export function validateEvent(e) {
   const d = e.data;
   switch (e.kind) {
     case 'set':
-      if (!id(d.id) || !text(d.name, 100) || !d.name.trim() || d.language !== 'en' || !['en','vi'].includes(d.meaningLanguage)) fail('Invalid study set');
+      { const profile=languageProfile(d.language); if (!id(d.id) || !text(d.name, 100) || !d.name.trim() || !profile || !profile.supportedMeaningLanguages.includes(d.meaningLanguage)) fail('Invalid study set'); }
       if (d.customFields !== undefined) {
         if (!Array.isArray(d.customFields) || d.customFields.length > 30) fail('Invalid custom fields');
         const seen = new Set();
@@ -29,11 +30,13 @@ export function validateEvent(e) {
       if (!id(d.id) || !id(d.setId) || !d.patch || typeof d.patch !== 'object' || Array.isArray(d.patch)) fail('Invalid word');
       for (const [key, v] of Object.entries(d.patch)) {
         if (!WORD_FIELDS.has(key)) fail('Unexpected word field');
-        if (['answers','variants','tags'].includes(key)) {
+        if (['answers','variants','tags','classifiers'].includes(key)) {
           if (!Array.isArray(v) || v.length > 100 || v.some(x => !text(x, 500))) fail('Invalid list');
         } else if (key === 'custom') {
           if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).some(k=>!id(k))
             || Object.values(v).some(x=>!(text(x,5000)||Number.isFinite(x)))) fail('Invalid custom values');
+        } else if (key === 'strokeCount') {
+          if (!Number.isInteger(v) || v < 0 || v > 1000) fail('Invalid stroke count');
         } else if (['image','audio'].includes(key)) {
           if (!text(v, 2200000) || (v && !/^media:[a-f0-9]{64}$/.test(v)
             && !/^data:(image\/(png|jpeg|webp)|audio\/(mpeg|wav|ogg|webm|mp4));base64,[A-Za-z0-9+/=]+$/.test(v))) fail('Invalid media');
