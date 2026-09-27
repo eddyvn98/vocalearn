@@ -83,3 +83,13 @@ export async function logoutAction() {
   if(pendingCount())throw new Error(t('logoutBlocked'));
   await api('logout',{});localStorage.removeItem('vocalearn-user');location.reload();
 }
+
+export function customFields() {
+  const set=app.model.sets[app.setId], fields=set?.customFields || [];
+  modal(t('customFields'),`<div class="stack"><p class="muted small">${t('customFieldsHelp')}</p>
+    ${fields.map(f=>`<div class="topic-row"><span><strong>${esc(f.name)}</strong> <small class="muted">${esc(f.type)}${f.options?.length?' · '+esc(f.options.join(', ')):''}</small></span>${button('&times;','deleteCustomField','icon-button',`data-id="${f.id}" aria-label="${t('delete')} ${esc(f.name)}"`)}</div>`).join('')||`<p class="muted">${t('noCustomFields')}</p>`}
+    <form id="custom-field-form" class="stack"><label>${t('fieldName')}<input name="name" required maxlength="80"></label>
+    <label>${t('fieldType')}<select name="type"><option value="text">${t('textField')}</option><option value="number">${t('numberField')}</option><option value="select">${t('selectField')}</option></select></label>
+    <label>${t('fieldOptions')}<input name="options" placeholder="A, B, C"></label>
+    <button type="submit" class="btn primary">${t('add')}</button></form></div>`);
+}
