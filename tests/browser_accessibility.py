@@ -34,10 +34,9 @@ def main():
         expect(word).to_be_focused()
         word.fill("nihongo")
         prevented=word.evaluate("""el => {
-          let prevented=false;
-          el.addEventListener('keydown',e=>{if(e.defaultPrevented)prevented=true},{once:true});
-          el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true,isComposing:true}));
-          return prevented;
+          const event=new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true,isComposing:true});
+          el.dispatchEvent(event);
+          return event.defaultPrevented;
         }""")
         assert prevented, "IME composing Enter must not submit"
         expect(page.locator("#word-form")).to_be_visible()

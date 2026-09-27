@@ -22,7 +22,7 @@ export async function syncNow() {
   await sync();app.model=model();
   const changed=Object.values(app.model.words).some(w=>prior[w.id]&&prior[w.id]!==w.review.rev);
   if(changed)notify(t('scheduleAdjusted'));
-  if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();return changed;
+  if(app.page!=='study')app.render();return changed;
 }
 export async function syncInfo() {
   const at=await getMeta('lastSync');
