@@ -69,8 +69,23 @@ def main():
                 page.get_by_role("button",name="Sửa thẻ",exact=True).click()
                 panel=page.locator("#ai-panel");expect(panel).to_be_visible()
                 expect(panel.locator('[data-action="aiStart"]')).to_be_enabled()
-                panel.locator('[data-action="aiStart"]').click()
-                expect(panel.get_by_text("triển khai",exact=True)).to_be_visible(timeout=10000)
+                start=panel.locator('[data-action="aiStart"]')
+                word_id=start.get_attribute("data-word-id")
+                start.click()
+                terminal=None
+                for _ in range(30):
+                    terminal=page.evaluate("""async (wordId)=>{
+                      const response=await fetch('/api/ai/jobs?wordId='+encodeURIComponent(wordId),{cache:'no-store'});
+                      return await response.json();
+                    }""",word_id)
+                    jobs=terminal.get("jobs",[])
+                    if jobs and jobs[0].get("status") not in ("queued","running"):
+                        break
+                    page.wait_for_timeout(400)
+                assert terminal and terminal.get("jobs"),terminal
+                print("AI JOB:",terminal["jobs"][0]["status"],terminal["jobs"][0].get("errorCode"))
+                assert terminal["jobs"][0]["status"] in ("ready","suggestion"),terminal["jobs"][0]
+                expect(panel.get_by_text("triển khai",exact=True)).to_be_visible(timeout=5000)
                 panel.locator('[data-action="aiMeaning"][data-index="0"]').click()
                 expect(page.locator('#word-form [name="meaning"]')).to_have_value("triển khai")
                 page.locator('[data-action="close"]').first.click()
