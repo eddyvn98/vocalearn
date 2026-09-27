@@ -53,7 +53,7 @@ function speechMarkup(q){
   const attempts=q.speechState?.validAttempts||0,transcript=q.input||'';
   return `<div class="stack speech-panel"><p class="muted">${t('speechAttempt')}: ${attempts}/2 · ${t('speech_'+(q.speechPhase||'ready'))}</p>
     ${transcript?`<p><strong>${t('speechTranscript')}:</strong> ${esc(transcript)}</p>`:''}
-    ${q.speechMessage?`<p class="info" role="status">${t(q.speechMessage)||t('speechTechnical')}</p>`:''}
+    ${q.speechMessage?`<p class="info" role="status">${t('speechTechnical')} · ${t(q.speechMessage)}</p>`:''}
     ${!q.result?button(t(q.speechBusy?'speechListening':attempts?'speechAgain':'speechStart'),'speechStart','primary full',q.speechBusy?'disabled':''):''}</div>`;
 }
 export function studyView() {
