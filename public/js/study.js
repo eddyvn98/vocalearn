@@ -4,7 +4,7 @@ import {prepare,transact,model,setMeta,uuid} from './storage.js';
 import {availablePool,learningAllowed,question,GAMES,GAME_FACES,usesAudio} from '/core/questions.js';
 import {inScope} from '/core/model.js';
 import {checkAnswer,gradeAnswer} from '/core/grading.js';
-const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
+const inCurrentScope=w=>inScope(w,app.scope,app.model.categories,app.scopeChildren);
 let started=0;
 export function startClock() {
   const q=current();
