@@ -43,6 +43,7 @@ export function requiredGame(w) {
 }
 const promptFace = (game, face) => GAME_FACES[game]?.length === 1 ? GAME_FACES[game][0] : face;
 const valueFor=(w,face)=>face==='pinyin'?(w?.pinyin||w?.ipa||''):w?.[face]||'';
+const readingConfirmed=(w,field)=>w?.lookupMeta?.[field]?.confirmed!==false;
 function answerValue(w,game,answerFace) {
   if(game.startsWith('cloze'))return w.word||'';
   return ['quiz','match'].includes(game)?valueFor(w,answerFace):w.word;
@@ -61,20 +62,23 @@ function alternatives(w,pool,game,face,answerFace,correctOverride='') {
     .filter(x=>{const key=normalize(x);if(!key||seen.has(key))return false;seen.add(key);return true;});
 }
 export function reasons(w,game,face='meaning',pool=[],answerFace,profile={}) {
-  if(game==='tone')return w?.pinyinSyllables?.length?[]:['missingToneData'];
+  if(game==='tone')return w?.pinyinSyllables?.length&&readingConfirmed(w,'pinyin')?[]:['missingToneData'];
   if(game==='classifier')return w?.classifiers?.length?[]:['missingClassifierData'];
   if(game==='typing'&&profile.id==='zh'){
+    if(!readingConfirmed(w,'pinyin'))return ['missingReading'];
     const flow=twoStepFor(w,pool,game,face,'zh');
     if(flow?.blocked)return [flow.blocked];
   }
   face=promptFace(game,face);
   if(!GAME_FACES[game]?.includes(face))return ['invalidFace'];
+  if(['ipa','pinyin','hanViet'].includes(face)&&!readingConfirmed(w,face))return ['missingReading'];
   if(!w.word||w.deleted||!w.ready&&game!=='flash')return ['missingPrompt'];
   if(!w[face]&&!['match','cloze','clozeChoice'].includes(game))
     return [face==='audio'?'missingAudio':face==='image'?'missingImage':'missingPrompt'];
   if(['quiz','match'].includes(game)) {
     const requested=answerFace===undefined?defaultAnswerFace(game,face):answerFace;
     if(!answerFaces(game,face).includes(requested))return ['invalidAnswerFace'];
+    if(['ipa','pinyin','hanViet'].includes(requested)&&!readingConfirmed(w,requested))return ['missingAnswerFace'];
     if(!valueFor(w,requested))return [requested==='image'?'missingImage':requested==='meaning'?'missingMeaning':'missingAnswerFace'];
     const promptKey=normalize(valueFor(w,face)),answerKey=normalize(valueFor(w,requested));
     if(pool.some(x=>x.id!==w.id&&!x.deleted&&normalize(valueFor(x,face))===promptKey
