@@ -6,7 +6,7 @@ import {inScope} from '/core/model.js';
 import {normalize} from '/core/grading.js';
 import {studySetProfile} from '/core/language-profiles.js';
 import {ensureSentencePool} from './sentence-pool.js';
-import {speechAvailability} from './speech.js';
+import {speechAvailability,prepareSpeechCapability} from './speech.js';
 
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 const profile=()=>studySetProfile(app.model.sets[app.setId])||{};
@@ -102,9 +102,10 @@ function faceControls() {
   return face+level+`<label>${t(app.game==='mix'?'quizAnswerFace':'answerFace')}<select id="setup-answer-face">${answers.map(value=>
     `<option value="${value}" ${value===app.answerFace?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
 }
-export function setup(mode=app.mode,game=app.game) {
+export async function setup(mode=app.mode,game=app.game) {
   if(app.session&&!app.session.finished){notify(t('paused'));return;}
   app.mode=mode;app.game=game;
+  await prepareSpeechCapability(profile().id);
   const globalBlock=mode==='new'?learningAllowed(app.model,words().filter(inCurrentScope),Date.now()):null;
   const queue=previewQueue(),good=queue.filter(q=>!q.blocked),reasons=reasonCounts(queue);
   const limited=app.game==='match'&&good.length<2;
