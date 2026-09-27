@@ -43,3 +43,14 @@ test('Reject unsafe media, prototype fields, invalid clocks/settings',()=>{
  assert.throws(()=>validateEvent(event('bad','settings',{newLimit:1.5})));
  assert.throws(()=>validateEvent(event('bad','settings',JSON.parse('{"__proto__":{}}'))));
 });
+
+
+test('Topic scope can include or exclude descendants',()=>{
+ const es=[set,word,event('c1','category',{id:'parent',setId:'set',name:'Parent'},3),
+   event('c2','category',{id:'child',setId:'set',name:'Child',parentId:'parent'},4),
+   event('l1','link',{wordId:'word',categoryId:'child'},5)];
+ const state=replay(es);
+ assert.equal(inScope(state.words.word,['parent'],state.categories,true),true);
+ assert.equal(inScope(state.words.word,['parent'],state.categories,false),false);
+ assert.equal(inScope(state.words.word,['child'],state.categories,false),true);
+});
