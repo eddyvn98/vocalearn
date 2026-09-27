@@ -2,6 +2,7 @@ import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import {application} from '../server/main.js';
 import {DEFAULTS} from '../core/srs.js';
+import {openDatabase,synchronize} from '../server/database.js';
 
 let server, url, cookie;
 async function request(path, data, session = cookie) {
@@ -144,4 +145,41 @@ test('Server rejects attempts and answers for a tombstoned word', async () => {
     word: 'gone', meaning: 'da xoa', revision: 'w-deleted'
   }));
   assert.equal((await request('/api/sync', batch([answer]))).status, 400);
+});
+
+
+test('Clock anchors refresh and clamped event time is explicitly flagged', () => {
+  const db = openDatabase(':memory:');
+  db.prepare('INSERT INTO users(id,email,hash,salt) VALUES(?,?,?,?)')
+    .run('clock-user', 'clock@test.invalid', 'hash', 'salt');
+
+  const first = {
+    id: 'clock-set', kind: 'set', deviceId: 'clock-device', at: 1000,
+    data: {id: 'clock-set-id', name: 'Clock', language: 'en', meaningLanguage: 'vi'}
+  };
+  const one = synchronize(db, 'clock-user',
+    {events: [first], deviceId: 'clock-device', cursor: 0, clientNow: 1000}, 100000);
+  assert.equal(one.events[0].effectiveAt, 100000);
+  assert.equal(one.events[0].clockAdjusted, false);
+
+  const second = {
+    id: 'clock-settings', kind: 'settings', deviceId: 'clock-device', at: 500,
+    data: {newLimit: 10}
+  };
+  const two = synchronize(db, 'clock-user',
+    {events: [second], deviceId: 'clock-device', cursor: one.cursor, clientNow: 2000}, 101000);
+  const acceptedSecond = two.events.find(e => e.id === second.id);
+  assert.equal(acceptedSecond.effectiveAt, 100000);
+  assert.equal(acceptedSecond.clockAdjusted, true);
+
+  const third = {
+    id: 'clock-settings-2', kind: 'settings', deviceId: 'clock-device', at: 2050,
+    data: {newLimit: 11}
+  };
+  const three = synchronize(db, 'clock-user',
+    {events: [third], deviceId: 'clock-device', cursor: two.cursor, clientNow: 2100}, 101100);
+  const acceptedThird = three.events.find(e => e.id === third.id);
+  assert.equal(acceptedThird.effectiveAt, 101050);
+  assert.equal(acceptedThird.clockAdjusted, false);
+  db.close();
 });
