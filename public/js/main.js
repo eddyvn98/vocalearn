@@ -188,6 +188,7 @@ document.addEventListener('visibilitychange',()=>{
 window.addEventListener('voca-external',async()=>{
   await refresh();app.model=model();if(app.page!=='study'&&!document.querySelector('#modal').open)app.render();
 });
+window.addEventListener('beforeunload',e=>{if(app.dirty){e.preventDefault();e.returnValue='';}});
 window.addEventListener('popstate',async e=>{
   if(!app.user||!e.state?.voca)return;
   if(app.page==='study'&&app.session){stopClock(true);await setMeta('session',app.session);}
