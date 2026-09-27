@@ -20,7 +20,7 @@ Status meanings:
 | UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio plus level, variants and tags; delete/restore; identity-change copy or reset; bulk selection, bulk delete, bulk assign topic and bulk reset. Per-set custom field definitions (text, number, select) and card values are implemented. |
 | UI-10 | Parent/child topic data, parent selection, multi-membership, recursive/exact scope toggle, hierarchical tree, subtopic creation, card counts, and drag reparent/reorder with cycle protection. |
 | UI-11 | **Excel import/export implemented** in pure JS (.xlsx with OpenXML/ZIP), embedded images, column mapping, row-level validation, sense-aware duplicate handling. |
-| UI-12 | Error-book filter, practice, episode counts/evidence display. Pure evidence rules tested; richer remaining-condition UI pending. |
+| UI-12 | Error-book filter, practice, episode counts/evidence display. Remaining recovery conditions are shown per card (clean evidence still needed, recall requirement, different-game requirement and minimum wait); pure recovery rules are tested. |
 | UI-13 | Daily limit, timezone, SRS hard/easy factors, easy threshold, maximum interval, and open-app reminder. No background notifications or primary-device scheduler. |
 | UI-14 | IndexedDB journal, authenticated sync, authoritative server snapshot & grade validation, opportunity deduplication, conservative multi-device merge, offline resource status modal. |
 | UI-15/16 | G2/G3 AI, advanced statistics, Chinese/Japanese profiles, recognition/handwriting are not implemented or shown as playable. |
