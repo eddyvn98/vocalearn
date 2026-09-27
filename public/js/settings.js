@@ -1,6 +1,6 @@
 import {app,words} from './state.js';
 import {t,esc,button,modal,closeModal,field,notify} from './ui.js';
-import {prepare,transact,model,api,sync,pendingCount,getMeta} from './storage.js';
+import {prepare,transact,model,api,sync,pendingCount,getMeta,mediaStatus} from './storage.js';
 import {descendants, inScope} from '/core/model.js';
 export function settings() {
   const s=app.model.settings;
@@ -69,13 +69,16 @@ export function topics(editId) {
 }
 
 export function offlineResources() {
-  const all = words(), withImg = all.filter(w => w.image).length, withAud = all.filter(w => w.audio).length;
+  const all=words(),withImg=all.filter(w=>w.image),withAud=all.filter(w=>w.audio);
+  const localImg=withImg.filter(w=>mediaStatus(w.image)?.available).length,localAud=withAud.filter(w=>mediaStatus(w.audio)?.available).length;
+  const pending=[...withImg.map(w=>w.image),...withAud.map(w=>w.audio)].filter(v=>mediaStatus(v)?.pending).length;
   modal('Tài nguyên ngoại tuyến', `<div class="stack">
     <p><strong>${all.length}</strong> tổng số thẻ trong bộ học</p>
-    <p>📷 <strong>${withImg}</strong> thẻ có hình ảnh</p>
-    <p>🔊 <strong>${withAud}</strong> thẻ có âm thanh</p>
+    <p>📷 <strong>${localImg}/${withImg.length}</strong> hình ảnh có sẵn trên thiết bị</p>
+    <p>🔊 <strong>${localAud}/${withAud.length}</strong> âm thanh có sẵn trên thiết bị</p>
+    <p><strong>${pending}</strong> tài nguyên đang chờ tải lên máy chủ</p>
     <div class="info"><p>✓ Dữ liệu văn bản, phiên âm và thẻ học đã được lưu cục bộ trong IndexedDB để học offline.</p>
-    <p>Thiếu hoặc lỗi audio không tính là trả lời sai. Chỉ bước học mới có phương án thay thế tự động; khi luyện riêng, hãy chọn game khác.</p><p>Các số trên là thẻ có dữ liệu đã lưu, chưa xác nhận file phát/hiển thị được trên thiết bị.</p></div>
+    <p>Thiếu hoặc lỗi audio không tính là trả lời sai. Chỉ bước học mới có phương án thay thế tự động; khi luyện riêng, hãy chọn game khác.</p><p>Tài nguyên được lưu theo mã nội dung, tách khỏi event journal và tự tải lại khi đồng bộ trên thiết bị mới.</p></div>
     ${button('Đóng','close','primary')}</div>`);
 }
 
