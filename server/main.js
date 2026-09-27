@@ -1,7 +1,7 @@
 import {createServer} from 'node:http';
 import {fileURLToPath} from 'node:url';
 import {resolve, dirname} from 'node:path';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {openDatabase, synchronize} from './database.js';
 import {authenticate, sessionUser, logout, cookie} from './auth.js';
@@ -9,7 +9,7 @@ import {body, json, staticFile, securityHeaders} from './http.js';
 import {putMedia,getMedia} from './media.js';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), mediaPath,
-  secure = false, origin = '', allowSignup = true} = {}) {
+  secure = false, origin = '', allowSignup = true, now = Date.now} = {}) {
   const temporaryMedia=!mediaPath&&dbPath===':memory:';
   const mediaRoot=mediaPath || (temporaryMedia?mkdtempSync(resolve(tmpdir(),'vocalearn-media-')):resolve(dirname(dbPath),'media'));
   const db = openDatabase(dbPath), attempts = new Map();
@@ -29,11 +29,11 @@ export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), med
       }
       if (url.pathname === '/api/health') return json(res,200,{ok:true,version:'0.1.0',allowSignup});
       if (['/api/register','/api/login'].includes(url.pathname) && req.method === 'POST') {
-        const ip = req.socket.remoteAddress, now = Date.now();
-        for (const [key, values] of attempts) if (now - values[0] >= 600000) attempts.delete(key);
-        const recent = (attempts.get(ip) || []).filter(t => now - t < 600000);
+        const ip = req.socket.remoteAddress, current = now();
+        for (const [key, values] of attempts) if (current - values[0] >= 600000) attempts.delete(key);
+        const recent = (attempts.get(ip) || []).filter(t => current - t < 600000);
         if (recent.length >= 20) return json(res,429,{error:'Too many attempts. Try again in 10 minutes.'});
-        attempts.set(ip,[...recent,now]);
+        attempts.set(ip,[...recent,current]);
         const auth = await authenticate(db, await body(req), url.pathname === '/api/register', allowSignup);
         return json(res,200,{user:auth.user},{'Set-Cookie':cookie(auth.token,secure)});
       }
@@ -50,7 +50,7 @@ export function application({dbPath = resolve(root,'data/vocalearn.sqlite'), med
         res.writeHead(200,{'Content-Type':media.mime,'Content-Length':media.size,'Cache-Control':'private, max-age=31536000, immutable'});
         return res.end(media.data);
       }
-      if (url.pathname === '/api/sync' && req.method === 'POST') return json(res,200,synchronize(db,user.id,await body(req)));
+      if (url.pathname === '/api/sync' && req.method === 'POST') return json(res,200,synchronize(db,user.id,await body(req),now()));
       return json(res,404,{error:'Not found'});
     } catch (error) {
       if (!res.headersSent) json(res,400,{error:error.message});
@@ -64,8 +64,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try { process.loadEnvFile?.(); } catch {}
   const production = process.env.NODE_ENV === 'production';
   if (production && !process.env.APP_ORIGIN?.startsWith('https://')) throw new Error('Production requires HTTPS APP_ORIGIN');
+  const testClock=process.env.NODE_ENV==='test'&&process.env.TEST_CLOCK_PATH
+    ?()=>Number(readFileSync(process.env.TEST_CLOCK_PATH,'utf8')):Date.now;
   const server = application({dbPath:process.env.DB_PATH,mediaPath:process.env.MEDIA_PATH,secure:production,
-    origin:process.env.APP_ORIGIN, allowSignup:process.env.ALLOW_SIGNUP !== 'false'});
+    origin:process.env.APP_ORIGIN, allowSignup:process.env.ALLOW_SIGNUP !== 'false',now:testClock});
   const port = Number(process.env.PORT || 3000), host = process.env.HOST || '127.0.0.1';
   server.listen(port,host,()=>console.log(`VocaLearn: http://${host}:${port}`));
   process.on('SIGTERM',()=>server.close());
