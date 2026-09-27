@@ -6,8 +6,8 @@ import {twoStepFor} from './script-typing.js';
 import {toneQuestion,classifierQuestion} from './chinese-games.js';
 import {selectWordSentence,clozeFromSentence} from './sentences.js';
 
-export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting'];
-export const MIX_GAMES = ['flash','quiz','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting'];
+export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting','speak'];
+export const MIX_GAMES = ['flash','quiz','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting','speak'];
 export const GAME_FACES = Object.freeze({
   flash:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'],
   quiz:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'],
@@ -15,13 +15,13 @@ export const GAME_FACES = Object.freeze({
   typing:['meaning','ipa','pinyin','kana','hanViet','image'],
   spell:['audio'], dictation:['audio'],
   cloze:['sentence'], clozeChoice:['sentence'],
-  tone:['pinyin'], classifier:['word','meaning'], handwriting:['meaning','image'],
+  tone:['pinyin'], classifier:['word','meaning'], handwriting:['meaning','image'], speak:['meaning','image','ipa','pinyin','kana','hanViet'],
   mix:['meaning','word','ipa','pinyin','kana','hanViet','image','audio','sentence'],
 });
 export const GAME_ANSWER_FACES = Object.freeze({
   flash:['word'], quiz:['word','meaning','ipa','pinyin','kana','hanViet','image'],
   match:['word','meaning','ipa','pinyin','kana','hanViet','image'], typing:['word'],
-  spell:['word'], dictation:['word'], cloze:['word'], clozeChoice:['word'], tone:['word'], classifier:['word'], handwriting:['word'],
+  spell:['word'], dictation:['word'], cloze:['word'], clozeChoice:['word'], tone:['word'], classifier:['word'], handwriting:['word'], speak:['word'],
 });
 export const FACES = ['word','meaning','ipa','pinyin','kana','hanViet','image','audio','sentence'];
 export const usesAudio = q => ['spell','dictation'].includes(q.game) || q.face === 'audio';
