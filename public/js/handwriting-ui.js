@@ -1,6 +1,7 @@
 import {app,current} from './state.js';
 import {setMeta} from './storage.js';
 import {t,esc,button} from './ui.js';
+import {handwritingState,recordStroke,completeCharacter,strokeErrors} from '/core/handwriting.js';
 
 let resultHandler=async()=>{};
 export const setHandwritingResultHandler=handler=>{resultHandler=handler;};
@@ -26,7 +27,8 @@ function resample(points,count=9){
 }
 function stateFor(q){
   const count=q.handwriting.strokeData.characters.length;
-  q.handwritingState??={charIndex:0,strokeIndex:0,wrong:0,completed:Array(count).fill(0),lastError:''};
+  q.handwritingState??={charIndex:0,strokeIndex:0,wrong:0,completed:Array(count).fill(0),lastError:'',grading:handwritingState(q.handwriting.strokeData.characters.map(item=>item.char))};
+  q.handwritingState.grading??=handwritingState(q.handwriting.strokeData.characters.map(item=>item.char));
   return q.handwritingState;
 }
 function expectedPoints(q){
@@ -84,13 +86,13 @@ document.addEventListener('pointerup',async event=>{
   if(!drawing)return;const {canvas,points}=drawing;drawing=null;
   const q=current();if(!q?.handwriting||q.result)return;
   const s=stateFor(q),score=strokeScore(q,points);
-  if(score.technical){s.lastError='technical';await setMeta('session',app.session);app.render();return;}
-  if(!score.correct){s.wrong++;s.lastError=score.reason;q.hadError=true;if(s.wrong>=2)q.hint=true;await setMeta('session',app.session);app.render();return;}
+  if(score.technical){s.grading=recordStroke(s.grading,{correct:false,strokeIndex:s.strokeIndex,technical:true});s.lastError='technical';await setMeta('session',app.session);app.render();return;}
+  if(!score.correct){s.grading=recordStroke(s.grading,{correct:false,strokeIndex:s.strokeIndex});s.wrong++;s.lastError=score.reason;q.hadError=s.grading.hadError;if(s.wrong>=2)q.hint=true;await setMeta('session',app.session);app.render();return;}
   s.lastError='';s.wrong=0;s.strokeIndex++;const record=q.handwriting.strokeData.characters[s.charIndex];
-  if(s.strokeIndex>=record.strokes.length){s.completed[s.charIndex]=record.strokes.length;s.charIndex++;s.strokeIndex=0;}
+  if(s.strokeIndex>=record.strokes.length){s.completed[s.charIndex]=record.strokes.length;s.grading=completeCharacter(s.grading,true);s.charIndex++;s.strokeIndex=0;}
   if(s.charIndex>=q.handwriting.strokeData.characters.length){
-    if(q.handwriting.level!=='memory')q.hint=true;
-    await setMeta('session',app.session);await resultHandler(true);return;
+    q.handwritingErrors=strokeErrors(s.grading);
+    await setMeta('session',app.session);await resultHandler();return;
   }
   await setMeta('session',app.session);app.render();
 });
@@ -100,7 +102,7 @@ export async function handwritingAction(action,q){
   if(action==='handwritingClear'){s.strokeIndex=0;s.wrong=0;s.lastError='';}
   if(action==='handwritingUndo'){
     if(s.strokeIndex>0)s.strokeIndex--;
-    else if(s.charIndex>0){s.charIndex--;s.strokeIndex=Math.max(0,q.handwriting.strokeData.characters[s.charIndex].strokes.length-1);}
+    else if(s.charIndex>0){s.charIndex--;s.strokeIndex=Math.max(0,q.handwriting.strokeData.characters[s.charIndex].strokes.length-1);s.grading.characters[s.charIndex].completed=false;s.grading.index=s.charIndex;}
     s.lastError='';
   }
   await setMeta('session',app.session);app.render();
