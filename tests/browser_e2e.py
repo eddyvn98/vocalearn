@@ -85,6 +85,58 @@ def run_journey(page, context, browser, origin, errors):
     page.locator('#modal [data-action="close"]').click()
     print("PASS: register -> create set -> add card -> persist advanced settings")
 
+    page.locator('[data-action="home"]').click()
+    page.locator('[data-action="setupNew"]').click()
+    expect(page.locator("#modal")).to_be_visible()
+    page.locator('#modal [data-action="startSession"]').click()
+    expect(page.locator('[data-action="flip"]')).to_be_visible()
+    page.locator('[data-action="flip"]').click()
+    remember = page.locator('[data-action="remember"]')
+    expect(remember).to_be_visible()
+    remember.evaluate("(el) => { el.click(); el.click(); }")
+    expect(page.locator("#feedback")).to_be_visible()
+
+    answer_count = page.evaluate("""async () => {
+      const user = JSON.parse(localStorage.getItem('vocalearn-user'));
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('vocalearn-' + user.id, 1);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const events = await new Promise((resolve, reject) => {
+        const req = db.transaction('events').objectStore('events').getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      db.close();
+      return events.filter(e => e.kind === 'answer').length;
+    }""")
+    assert answer_count == 1, "Double UI submit created duplicate final answers"
+    page.locator('[data-action="next"]').click()
+    expect(page.locator('[data-action="home"]').first).to_be_visible()
+    page.locator('[data-action="home"]').first.click()
+    print("PASS: duplicate UI action still records one final answer")
+
+    page.locator('[data-action="setupFree"]').click()
+    expect(page.locator("#modal")).to_be_visible()
+    page.locator('#modal [data-action="startSession"]').click()
+    answer = page.locator("#answer")
+    expect(answer).to_be_visible()
+    answer.fill("applf")
+    page.locator('#answer-form [type="submit"]').click()
+    expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
+    page.reload(wait_until="networkidle")
+    expect(page.locator('[data-action="resume"]')).to_be_visible(timeout=10000)
+    page.locator('[data-action="resume"]').click()
+    expect(page.locator("#answer")).to_have_value("applf")
+    expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
+    page.locator("#answer").fill("apple")
+    page.locator('#answer-form [type="submit"]').click()
+    expect(page.locator("#feedback")).to_contain_text("Đúng sau khi sửa")
+    page.locator('[data-action="next"]').click()
+    page.locator('[data-action="home"]').first.click()
+    print("PASS: retry state survives reload and finishes once")
+
     page.evaluate("() => navigator.serviceWorker.ready")
     page.reload(wait_until="networkidle")
     expect(page.locator('[data-action="library"]')).to_be_visible()
