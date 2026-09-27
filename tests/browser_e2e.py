@@ -482,6 +482,11 @@ def run_journey(page, context, browser, origin, errors, clock_path):
         second_page.reload(wait_until="domcontentloaded")
         expect(second_page.locator("body")).to_contain_text("cherry")
         second.set_offline(False)
+        second_page.evaluate("window.dispatchEvent(new Event('online'))")
+        second_page.locator('[data-action="syncInfo"]').first.click()
+        second_sync = second_page.locator('[data-action="sync"]')
+        if second_sync.count():
+            second_sync.click()
         expect(second_page.locator('[data-action="syncInfo"]').first).not_to_contain_text(
             "thay đổi chờ đồng bộ", timeout=10000
         )
