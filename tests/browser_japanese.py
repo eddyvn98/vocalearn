@@ -90,6 +90,7 @@ def main():
                 page.locator("#setup-face").dispatch_event("change")
                 expect(page.locator('[data-action="startSession"]')).to_be_enabled()
                 page.locator('[data-action="startSession"]').click()
+                expect(page.locator(".study-shell")).to_be_visible()
                 queued=page.evaluate("() => import('/js/state.js').then(m => m.app.session.queue.map(q => q.snapshot.word))")
                 assert set(queued)=={"食べる","ありがとう","コーヒー"},queued
                 prompt=answer_current(page)
