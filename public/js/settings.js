@@ -68,15 +68,18 @@ export function topics(editId) {
   <form id="topic-form" data-id="${c?.id||''}" class="stack">${field('topicName','name',c?.name||'','required maxlength="100"')}<label>${t('parent')}<select name="parentId"><option value="">${t('root')}</option>${cs.filter(cat=>!c||!descendants(app.model.categories,c.id).has(cat.id)).map(cat=>`<option value="${cat.id}" ${cat.id===c?.parentId?'selected':''}>${esc(cat.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">${t(c?'save':'addTopic')}</button></form></div>`);
 }
 
-export function offlineResources() {
+export async function offlineResources() {
   const all=words(),withImg=all.filter(w=>w.image),withAud=all.filter(w=>w.audio);
   const localImg=withImg.filter(w=>mediaStatus(w.image)?.available).length,localAud=withAud.filter(w=>mediaStatus(w.audio)?.available).length;
   const pending=[...withImg.map(w=>w.image),...withAud.map(w=>w.audio)].filter(v=>mediaStatus(v)?.pending).length;
+  let usage=null;try{usage=await api('media-usage');}catch{}
+  const mb=n=>Math.round((Number(n)||0)/104857.6)/10;
   modal('Tài nguyên ngoại tuyến', `<div class="stack">
     <p><strong>${all.length}</strong> tổng số thẻ trong bộ học</p>
     <p>📷 <strong>${localImg}/${withImg.length}</strong> hình ảnh có sẵn trên thiết bị</p>
     <p>🔊 <strong>${localAud}/${withAud.length}</strong> âm thanh có sẵn trên thiết bị</p>
     <p><strong>${pending}</strong> tài nguyên đang chờ tải lên máy chủ</p>
+    ${usage?`<p>Máy chủ: <strong>${usage.count}</strong> file · <strong>${mb(usage.bytes)} MB</strong> / ${mb(usage.limit)} MB · còn ${mb(usage.remaining)} MB</p>`:''}
     <div class="info"><p>✓ Dữ liệu văn bản, phiên âm và thẻ học đã được lưu cục bộ trong IndexedDB để học offline.</p>
     <p>Thiếu hoặc lỗi audio không tính là trả lời sai. Chỉ bước học mới có phương án thay thế tự động; khi luyện riêng, hãy chọn game khác.</p><p>Tài nguyên được lưu theo mã nội dung, tách khỏi event journal và tự tải lại khi đồng bộ trên thiết bị mới.</p></div>
     ${button('Đóng','close','primary')}</div>`);
