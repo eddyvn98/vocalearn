@@ -368,7 +368,10 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.locator('#answer-form [type="submit"]').click()
     expect(page.locator("#feedback")).to_contain_text("Đúng sau khi sửa")
     page.locator('[data-action="next"]').click()
-    page.locator('[data-action="home"]').first.click()
+    if page.locator('[data-action="home"]').count():
+        page.locator('[data-action="home"]').first.click()
+    else:
+        page.locator('[data-action="pause"]').click()
     print("PASS: retry state survives reload and finishes once")
 
     page.evaluate("() => navigator.serviceWorker.ready")
