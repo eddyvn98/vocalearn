@@ -17,7 +17,7 @@ export async function samples() {
     id:uuid(),setId:app.setId,patch:{word,meaning:app.model.sets[app.setId].meaningLanguage==='en'?meanings[ENTRIES.findIndex(e=>e[0]===word)]:meaning,pos,sentence,answers:[answer],note:''}}));
   await transact(events);app.model=model();app.render();notify(t('samplesHelp'));
 }
-import {cardsToXlsx,readWorkbook,workbookToCards,detectMapping,COLUMNS} from '/core/excel.js';
+import {cardsToXlsx,readWorkbook,workbookToCards,detectMapping,columnsFor} from '/core/excel.js';
 import {inspectCards,createImportEvents} from '/core/import-plan.js';
 import {getMeta,setMeta} from './storage.js';
 import {filtered} from './views/library.js';
@@ -27,7 +27,7 @@ export function exportContent() {
   const content=selected.length?selected:visible;
   if(!content.length)throw new Error('Kh\u00f4ng c\u00f3 th\u1ebb \u0111\u1ec3 xu\u1ea5t.');
   if(!confirm(`Xu\u1ea5t n\u1ed9i dung ${content.length} th\u1ebb? Kh\u00f4ng bao g\u1ed3m l\u1ecbch \u00f4n v\u00e0 log.`))return;
-  const blob=new Blob([cardsToXlsx(content,app.model.categories)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const blob=new Blob([cardsToXlsx(content,app.model.categories,app.model.sets[app.setId]?.customFields||[])],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;
   link.download=`${app.model.sets[app.setId]?.name || 'vocalearn'}.xlsx`;
   link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -51,8 +51,8 @@ export async function readImport(file) {
   document.querySelector('#preview-import').hidden=true;
   if(/\.xlsx$/i.test(file.name)) {
     workbook=await readWorkbook(await file.arrayBuffer());
-    const headers=workbook.rows[0]?.cells||{},mapping=detectMapping(headers);
-    document.querySelector('#import-mapping').innerHTML=`<p>Sheet: ${esc(workbook.sheets[0])}</p>${COLUMNS.map(c=>
+    const headers=workbook.rows[0]?.cells||{},customFields=app.model.sets[app.setId]?.customFields||[],mapping=detectMapping(headers,customFields);
+    document.querySelector('#import-mapping').innerHTML=`<p>Sheet: ${esc(workbook.sheets[0])}</p>${columnsFor(customFields).map(c=>
       `<label>${esc(c.headers[0])}<select data-map="${c.key}"><option value="">B\u1ecf qua</option>${Object.entries(headers).map(([col,label])=>
       `<option value="${col}" ${mapping[c.key]===col?'selected':''}>${col}: ${esc(label)}</option>`).join('')}</select></label>`).join('')}`;
     document.querySelector('#preview-import').hidden=false;
@@ -66,7 +66,7 @@ export async function previewImport() {
   if(!workbook)return;
   const mapping=Object.fromEntries([...document.querySelectorAll('[data-map]')].filter(e=>e.value).map(e=>[e.dataset.map,e.value]));
   if(new Set(Object.values(mapping)).size!==Object.keys(mapping).length)throw new Error('One column cannot map to two fields');
-  await setDraft(workbookToCards(workbook,mapping));
+  await setDraft(workbookToCards(workbook,mapping,app.model.sets[app.setId]?.customFields||[]));
 }
 async function setDraft(result) {
   draft={id:uuid(),setId:app.setId,rows:inspectCards(result.cards,model(),app.setId),errors:result.errors,warnings:result.warnings,events:null};
