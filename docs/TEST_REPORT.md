@@ -85,3 +85,23 @@ The verification suite now includes AT-31 reminder planning cases: primary devic
 ## AT-32 daily-new overflow update (2026-09-26)
 
 The verification suite now has 114 tests. AT-32 has a deterministic account-zone case showing an 18/15 merged total, preserving all 18 learning states, blocking additional new-card starts for that account day, and unlocking on the next account day. The live browser regression checks that Today exposes the account-wide daily-new counter. A final real two-device offline/reconnect drill remains separate physical acceptance evidence.
+
+
+## Phase-2 release gate (2026-09-27)
+
+The Phase-2 release candidate was evaluated from merged feature commit `17dd49e0839e5f5a19b49919e538fa9c4f0f5148`.
+
+Verified evidence:
+
+- **Verify** — GitHub Actions run `36315084208`: **SUCCESS**. This ran `npm run verify` and the generated service-worker manifest check on the merged main SHA.
+- **Browser regression** — run `36315084206`: **SUCCESS** across Ubuntu Chromium, Windows Chromium, macOS WebKit and Ubuntu WebKit/mobile viewport. The Ubuntu Chromium acceptance slice includes:
+  - Phase-2 Chinese profile/two-step typing;
+  - AI editor protected-suggestion flow;
+  - sentence-pool/Cloze acceptance;
+  - deterministic IPA/Pinyin/Hán-Việt lookup editor acceptance.
+- **Railway** — deployment `31340611-c8eb-400c-bf19-877c76779cbf` reached terminal **SUCCESS** after the main checks cleared.
+- **Production smoke** — run `36315084159`, attempt 2: **SUCCESS**. The rerun first verified the deployed `/api/health.commit` exactly matched `17dd49e0839e5f5a19b49919e538fa9c4f0f5148`, then passed the real production browser smoke against Railway.
+- Lookup acceptance found and fixed a provenance-schema integration defect before release: lookup adapters originally exposed an `id` while persisted card validation required `source`. The adapters now persist explicit `source`, `version`, `license`, `confirmed` and `needsCheck` metadata.
+- Phase-3-only full Japanese UI, handwriting and speech remain gated and are not counted as Phase-2 release evidence.
+
+This evidence closes the software/web release gate for the implemented Phase-2 scope. Physical-device-only evidence (real iPhone/iPad Safari, virtual keyboard, screen reader, installed-PWA/background notification behavior and real two-device drills) remains separate and is not inferred from desktop/browser automation.
