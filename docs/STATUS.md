@@ -27,23 +27,22 @@ Status meanings:
 
 ## High-priority work before calling this MVP complete
 
-1. Run real-browser end-to-end tests of account creation, set creation, new-card steps with fake clock, reload during retry, offline reload, reconnection, duplicate submissions, two devices, multiple tabs, image/audio loading and browser Back.
-2. Make the server validate question/opportunity snapshots, allowed state transitions and eligibility independently. Harden initial clock reconciliation and late-parent replay with adversarial/out-of-order histories. Add deterministic per-question uniqueness beyond client event ID.
-3. Implement the required Excel import/export: embedded images, column mapping, row-level errors, sense-aware duplicate handling, stable import IDs and resumable retries. Do not rename the JSON utility to Excel.
-4. Complete the user-configurable face matrix and game mix, card custom fields, valid question disambiguation, advanced settings/time rules, topic tree interactions and scoped bulk operations.
-5. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
-6. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Complete keyboard focus, IME, screen-reader, zoom/contrast and mobile virtual-keyboard checks on declared devices.
-7. Establish production migrations, secret handling, backup/restore, account recovery, throttling/observability and tested scale limits before public hosting.
+1. Extend the real-browser suite beyond the current register/create-set/card/reload/offline/reconnect path: fake-clock learning steps, retry reload, duplicate submissions, two browser profiles, multiple tabs, image/audio loading and browser Back.
+2. Continue authoritative sync hardening. Snapshot/grade validation, duplicate-final-answer rejection, tombstone protection, refreshed trusted clock anchors and deterministic device/event tie-breaking are implemented. Remaining focus: adversarial late-parent replay, descendant invalidation/reclassification and two-device browser acceptance.
+3. Finish the remaining UI/spec gaps: full face/game configuration, custom fields, ambiguity/disambiguation handling, advanced settings/time rules and remaining topic/bulk interaction details.
+4. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
+5. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Complete keyboard focus, IME, screen-reader, zoom/contrast and mobile virtual-keyboard checks on declared devices.
+6. Establish production migrations, secret handling, backup/restore, account recovery, throttling/observability and tested scale limits before public hosting.
 
 ## Important known behavior differences
 
-- The JSON transfer is whole-set basic content, not a full filtered/selected export; no images-in-Excel support.
+- JSON transfer remains a separate basic utility. Excel import/export is implemented, including embedded-image handling; filtered/selected export and full journal backup remain separate concerns.
 - The core SRS formula is implemented, but not every configurable per-language/game threshold is exposed. Full late clock correction can reclassify dependent local attempts.
 - A new learning step is resumed through a new due session rather than an always-updating in-session scheduler. The waiting indicator shows a timestamp, not a per-second timer.
 - English alternatives are constructed from local cards. Semantic synonym ambiguity is not comprehensively detected; the author should verify candidate meanings. Exact duplicate checks are not semantic validation.
 - A new card is identified as ready by word + meaning/IPA/image. Missing meaning prevents some games; unsupported combinations stay unavailable. Full semantic disambiguation/readiness per language is pending.
 - Browser edits retain hidden fields in the journal, but the UI exposes only a subset of all spec fields.
-- On this environment actual app navigation in Chromium was blocked by policy. Static view screenshots are not proof of functioning IndexedDB, reload persistence, audio, accessibility or full flows.
+- GitHub Actions now runs a real Chromium regression against the live app. The current suite covers registration, set/card creation, reload persistence, offline edit persistence and reconnect sync. Audio, accessibility, multi-tab and full multi-device browser flows remain unproven.
 
 ## Suggested issue titles for the repository
 
@@ -56,3 +55,17 @@ Status meanings:
 - [P2] Production auth, migrations, recovery and operations
 
 These are backlog suggestions in a file, not issues already created on GitHub.
+
+
+## Recent hardening progress
+
+Tracked implementation branch: `feature/core-hardening-mvp`.
+
+- Real Chromium E2E added for register -> set -> card -> reload -> offline edit -> offline reload -> reconnect sync.
+- Server rejects attempts/answers against tombstoned cards.
+- Device clock anchors refresh after successful sync; clamped timestamps are marked with `clockAdjusted`.
+- Sync responses return the refreshed server/client anchor pair for the next offset calculation.
+- Concurrent review ties are deterministic by result severity, assistance, effective time, device ID, then event ID.
+- Focused regression tests were added for tombstones, clock reconciliation and deterministic review ordering.
+
+See `docs/PROGRESS.md` for the rolling change log and CI state.
