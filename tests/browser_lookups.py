@@ -144,8 +144,8 @@ def chinese_acceptance(page, origin):
     form.locator('[data-action="lookupReading"]').click()
     expect(form.locator('[name="pinyin"]')).to_have_value("zhōng guó")
     expect(form.locator('[name="hanViet"]')).to_have_value("trung quốc")
-    expect(form.locator("#lookup-status")).to_contain_text("pinyin: đã tra từ nguồn dữ liệu")
-    expect(form.locator("#lookup-status")).to_contain_text("hanViet: đã tra từ nguồn dữ liệu")
+    expect(form.locator("#lookup-status")).to_contain_text("Pinyin: đã tra từ nguồn dữ liệu")
+    expect(form.locator("#lookup-status")).to_contain_text("Âm Hán Việt: đã tra từ nguồn dữ liệu")
     form.locator('[type="submit"]').click()
     expect(form).not_to_be_visible()
 
