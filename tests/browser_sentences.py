@@ -95,7 +95,7 @@ def main():
                 expect(page.locator("#feedback")).to_be_visible(timeout=5000)
                 assert "Chưa đúng" in page.locator("#feedback").inner_text()
                 page.locator('[data-action="next"]').click()
-                expect(page.get_by_text("Kết quả buổi học",exact=True)).to_be_visible()
+                expect(page.locator(".summary")).to_be_visible()
 
                 second=choose_cloze(page)
                 assert second!=first,(first,second)
