@@ -15,7 +15,7 @@ export async function lookupEditorReading(language){
   const result=data.result||{},status=document.querySelector('#lookup-status');
   for(const [field,value] of Object.entries(result.fields||{})){
     const input=form.elements[field];if(!input||!value)continue;
-    input.value=value;draft[field]={...result.meta?.[field],value};
+    input.value=value;draft[field]={...result.meta?.[field],value,word};
   }
   const messages=[];
   for(const field of language==='zh'?['pinyin','hanViet']:['ipa']){
@@ -29,12 +29,13 @@ export async function lookupEditorReading(language){
 
 export function lookupMetaForSave(form,editing,language){
   const fields=language==='zh'?['pinyin','hanViet']:['ipa'],base=structuredClone(editing?.lookupMeta||{}),next={...base};
+  const currentWord=String(form.elements.word?.value||'').trim();
   for(const field of fields){
     const value=String(form.elements[field]?.value||'').trim();
     if(!value){delete next[field];continue;}
     const pending=draft[field];
-    if(pending?.value===value){
-      const {value:ignored,...meta}=pending;next[field]={...meta,confirmed:true};continue;
+    if(pending?.value===value&&pending.word===currentWord){
+      const {value:ignored,word:ignoredWord,...meta}=pending;next[field]={...meta,confirmed:true};continue;
     }
     if(editing&&String(editing[field]||'').trim()===value&&base[field])continue;
     next[field]=userMeta();
