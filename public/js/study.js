@@ -140,7 +140,7 @@ async function runSpeech(q){
     q.speechPhase='ready';q.speechMessage=recognized.code||'speechTechnical';
     await setMeta('session',app.session);app.render();startClock();return;
   }
-  q.speechPhase='ready';q.input=recognized.transcript;q.activeMs+=(recognized.activeMs||0);
+  q.speechPhase='ready';q.input=recognized.transcript;q.activeMs+=(recognized.activeMs||0);if(recognized.timingUnknown)q.interrupted=true;
   const correct=checkAnswer(recognized.transcript,q.answers,true).kind==='correct';
   q.speechState=speechAttempt(q.speechState,{kind:'recognition',correct});
   if(!correct)q.hadError=true;
