@@ -237,13 +237,6 @@ test('Two devices competing on the same due review produce one conservative tran
     events: [answer('learn-4', 'dev-a', state.rev, 'typing', 'good', 1261100, {mode: 'review'})],
     deviceId: 'dev-a', cursor: 0, clientNow: 1261100
   }, 1360100);
-
-  state = replay(allEvents(db, userId)).words['multi-word'].review;
-  synchronize(db, userId, {
-    events: [answer('learn-5', 'dev-a', state.rev, 'typing', 'good', 1861100, {mode: 'review'})],
-    deviceId: 'dev-a', cursor: 0, clientNow: 1861100
-  }, 1960100);
-
   const dueState = replay(allEvents(db, userId)).words['multi-word'].review;
   assert.equal(dueState.phase, 'review');
   const dueNow = 200000000;
