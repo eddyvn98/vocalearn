@@ -111,8 +111,9 @@ export function setup(mode=app.mode,game=app.game) {
   const pool=availablePool(app.model,app.setId,inCurrentScope,app.mode,Date.now());
   const gamePicker=mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...profileGames()].map(value=>
     `<option value="${value}" ${value===app.game?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
+  const speech=speechAvailability(profile().id),speechNote=!speech.available?`<p class="muted small">${t('speechUnavailable')} · ${t(speech.reason)}</p>`:'';
   modal(t('setup'),`<div class="stack"><p>${t(mode)} · ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
-    ${gamePicker}${mixControls()}${faceControls()}
+    ${gamePicker}${speechNote}${mixControls()}${faceControls()}
     <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>
     ${gameStats(pool)}
     ${reasons.map(([reason,count])=>`<p class="info"><strong>${count}</strong> · ${t(reason)}</p>`).join('')}
