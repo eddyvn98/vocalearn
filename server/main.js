@@ -15,6 +15,7 @@ import {schemaVersion} from './migrations.js';
 import {replay} from '../core/model.js';
 import {createAiProvider} from './ai-provider.js';
 import {createJob,listJobs,retryJob,runDueJobs} from './ai-jobs.js';
+import {lookupWord,LOOKUP_SOURCES} from './lookups.js';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const resetDefaults={mode:'disabled',appOrigin:'http://localhost',providerUrl:'',providerToken:'',resendApiKey:'',resendFrom:'',ttlMs:30*60000};
 const ipOf=req=>String(req.socket.remoteAddress||'unknown');
@@ -113,6 +114,11 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
       if(path==='/api/me'&&req.method==='GET')return json(res,200,{user});
       if(path==='/api/logout'&&req.method==='POST'){
         logout(db,req);return json(res,200,{ok:true},{'Set-Cookie':cookie('',secure,true)});
+      }
+      if(path==='/api/lookups'&&req.method==='GET'){
+        const language=String(url.searchParams.get('language')||''),word=String(url.searchParams.get('word')||'');
+        if(!['en','zh'].includes(language)||!word||word.length>100)return json(res,400,{error:'language and word required'});
+        return json(res,200,{result:lookupWord(language,word),sources:LOOKUP_SOURCES});
       }
       if(path==='/api/media'&&req.method==='POST')return json(res,200,putMedia(db,user.id,await body(req,configuredLimits.maxRequestBytes)));
       if(path==='/api/media-info'&&req.method==='GET')return json(res,200,mediaStats(db,user.id));
