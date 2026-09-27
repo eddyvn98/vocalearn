@@ -50,7 +50,7 @@ async function click(action,el){
   if(action==='selectSet'){app.setId=el.dataset.id;app.scope=[];return navigate('home');}
   if(action==='setupReview'){await restoreSetup();return setup('review',app.game||'mix');}
   if(action==='setupNew'){await restoreSetup();return setup('new','mix');}
-  if(action==='setupFree'){await restoreSetup();return setup('free',app.game==='mix'?'typing':app.game);}
+  if(action==='setupFree'){await restoreSetup();return setup('free',app.game||'typing');}
   if(action==='setupErrors'){await restoreSetup();return setup('errors',app.game||'mix');}
   if(action==='practice'){await restoreSetup();return setup('free',el.dataset.game);}
   if(action==='add'||action==='edit')return openEditor(el.dataset.id);
