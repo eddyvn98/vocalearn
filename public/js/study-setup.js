@@ -6,11 +6,12 @@ import {inScope} from '/core/model.js';
 import {normalize} from '/core/grading.js';
 import {studySetProfile} from '/core/language-profiles.js';
 import {ensureSentencePool} from './sentence-pool.js';
+import {speechStatus,speechCapabilityMarkup} from './speech-local.js';
 
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 const profile=()=>studySetProfile(app.model.sets[app.setId])||{};
-const profileGames=()=>GAMES.filter(game=>game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
-const profileMixGames=()=>MIX_GAMES.filter(game=>game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
+const profileGames=()=>GAMES.filter(game=>game==='speak'?speechStatus(profile().id).available:game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
+const profileMixGames=()=>MIX_GAMES.filter(game=>game==='speak'?speechStatus(profile().id).available:game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
 const profileFaces=()=>FACES.filter(face=>{
   if(['pinyin','hanViet'].includes(face))return profile().id==='zh';
   if(face==='kana')return profile().id==='ja';
@@ -108,7 +109,7 @@ export function setup(mode=app.mode,game=app.game) {
   const gamePicker=mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...profileGames()].map(value=>
     `<option value="${value}" ${value===app.game?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
   modal(t('setup'),`<div class="stack"><p>${t(mode)} · ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
-    ${gamePicker}${mixControls()}${faceControls()}
+    ${gamePicker}${speechCapabilityMarkup(profile().id)}${mixControls()}${faceControls()}
     <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>
     ${gameStats(pool)}
     ${reasons.map(([reason,count])=>`<p class="info"><strong>${count}</strong> · ${t(reason)}</p>`).join('')}
@@ -122,3 +123,5 @@ export function setup(mode=app.mode,game=app.game) {
     });
   }
 }
+
+document.addEventListener('voca-speech-capability',()=>{if(document.querySelector('#modal')?.open&&!app.session)setup(app.mode,app.game);});
