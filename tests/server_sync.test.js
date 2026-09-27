@@ -125,3 +125,23 @@ test('Two devices preserve competing deferred reviews for conservative replay', 
   const word2Events = syncState.data.events.filter(e => e.data.wordId === 'word2');
   assert.equal(word2Events.filter(e => e.kind === 'answer').length, 2);
 });
+
+
+test('Server rejects attempts and answers for a tombstoned word', async () => {
+  const doomed = event('w-deleted', 'word', {
+    id: 'word-deleted', setId: 'set1', patch: {word: 'gone', meaning: 'da xoa'}
+  });
+  const removed = event('w-deleted-rm', 'deleteWord', {id: 'word-deleted'});
+  assert.equal((await request('/api/sync', batch([doomed, removed]))).status, 200);
+
+  const attempt = event('deleted-attempt', 'attempt', {
+    wordId: 'word-deleted', questionId: 'q-deleted', wrong: true
+  });
+  assert.equal((await request('/api/sync', batch([attempt]))).status, 400);
+
+  const answer = event('deleted-answer', 'answer', typingAnswer({
+    wordId: 'word-deleted', questionId: 'q-deleted-answer',
+    word: 'gone', meaning: 'da xoa', revision: 'w-deleted'
+  }));
+  assert.equal((await request('/api/sync', batch([answer]))).status, 400);
+});
