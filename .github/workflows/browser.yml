@@ -30,11 +30,24 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install playwright==1.57.0
       - run: python -m playwright install --with-deps chromium
-      - name: Run actual browser regression
+      - name: Browser E2E
+        id: browser_e2e
+        continue-on-error: true
+        run: python tests/browser_e2e.py
+      - name: Browser audio
+        id: browser_audio
+        continue-on-error: true
+        run: python tests/browser_audio.py
+      - name: Browser accessibility
+        id: browser_accessibility
+        continue-on-error: true
+        run: python tests/browser_accessibility.py
+      - name: Fail if any browser regression failed
+        if: always()
         run: |
-          python tests/browser_e2e.py
-          python tests/browser_audio.py
-          python tests/browser_accessibility.py
+          test "${{ steps.browser_e2e.outcome }}" = "success"
+          test "${{ steps.browser_audio.outcome }}" = "success"
+          test "${{ steps.browser_accessibility.outcome }}" = "success"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
