@@ -85,3 +85,13 @@ test('Custom field definitions and values are validated',()=>{
    id:'custom-word',setId:'set',patch:{word:'x',custom:{'bad key':'x'}}
  })));
 });
+
+
+test('Chinese and Japanese study sets and language fields are validated',()=>{
+ assert.doesNotThrow(()=>validateEvent(event('set-zh','set',{id:'zh-set',name:'Chinese',language:'zh',meaningLanguage:'vi'})));
+ assert.doesNotThrow(()=>validateEvent(event('set-ja','set',{id:'ja-set',name:'Japanese',language:'ja',meaningLanguage:'vi'})));
+ assert.throws(()=>validateEvent(event('set-zh-bad','set',{id:'zh-set',name:'Chinese',language:'zh',meaningLanguage:'ja'})));
+ assert.doesNotThrow(()=>validateEvent(event('word-zh','word',{id:'zh-word',setId:'zh-set',patch:{word:'学生',pinyin:'xué shēng',hanViet:'học sinh',radical:'子',strokeCount:13,classifiers:['名']}})));
+ assert.doesNotThrow(()=>validateEvent(event('word-ja','word',{id:'ja-word',setId:'ja-set',patch:{word:'食べる',kana:'たべる',onReading:'ショク',kunReading:'たべる'}})));
+ assert.throws(()=>validateEvent(event('word-bad-strokes','word',{id:'zh-word',setId:'zh-set',patch:{word:'学',strokeCount:-1}})));
+});
