@@ -5,6 +5,7 @@ Run: python -m pip install playwright==1.57.0
      python tests/browser_e2e.py
 Uses a disposable database and a fresh browser profile; never real user data.
 """
+import base64
 import json
 import os
 from pathlib import Path
@@ -74,6 +75,18 @@ def run_journey(page, context, browser, origin, errors):
     expect(page.locator('[data-action="add"]').first).to_be_visible()
     add_word(page, "apple", "quả táo")
     expect(page.locator("body")).to_contain_text("1")
+    apple_row = page.locator(".word-row", has_text="apple")
+    apple_row.locator('[data-action="edit"]').click()
+    expect(page.locator("#word-form")).to_be_visible()
+    png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+    page.locator("#image-upload").set_input_files(
+        {"name": "apple.png", "mimeType": "image/png", "buffer": png}
+    )
+    expect(page.locator("#media-image img")).to_be_visible()
+    page.locator('#word-form [type="submit"]').click()
+    expect(page.locator("#word-form")).not_to_be_visible()
 
     page.locator('[data-action="settings"]').first.click()
     expect(page.locator("#settings-form")).to_be_visible()
@@ -99,7 +112,7 @@ def run_journey(page, context, browser, origin, errors):
     answer_count = page.evaluate("""async () => {
       const user = JSON.parse(localStorage.getItem('vocalearn-user'));
       const db = await new Promise((resolve, reject) => {
-        const req = indexedDB.open('vocalearn-' + user.id, 1);
+        const req = indexedDB.open('vocalearn-' + user.id);
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
       });
@@ -119,6 +132,9 @@ def run_journey(page, context, browser, origin, errors):
 
     page.locator('[data-action="setupFree"]').click()
     expect(page.locator("#modal")).to_be_visible()
+    game_select = page.locator("#setup-game")
+    if game_select.count():
+        game_select.select_option("typing")
     page.locator('#modal [data-action="startSession"]').click()
     answer = page.locator("#answer")
     expect(answer).to_be_visible()
@@ -183,6 +199,11 @@ def run_journey(page, context, browser, origin, errors):
         second_page.locator('[data-action="library"]').click()
         expect(second_page.locator("body")).to_contain_text("apple")
         expect(second_page.locator("body")).to_contain_text("banana")
+        apple_second = second_page.locator(".word-row", has_text="apple")
+        apple_second.locator('[data-action="edit"]').click()
+        expect(second_page.locator("#media-image img")).to_be_visible(timeout=10000)
+        second_page.locator('#modal [data-action="close"]').click()
+        print("PASS: content-addressed image syncs into a second browser profile")
 
         second.set_offline(True)
         add_word(second_page, "cherry", "quả anh đào")
