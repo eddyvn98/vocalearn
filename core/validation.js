@@ -1,6 +1,6 @@
 import {DEFAULTS} from './srs.js';
 import {languageProfile} from './language-profiles.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags','custom','pinyin','hanViet','radical','strokeCount','classifiers','kana','onReading','kunReading']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','sentence','answers','image','audio','note','level','variants','tags','custom','pinyin','pinyinSyllables','hanViet','radical','strokeCount','classifiers','kana','onReading','kunReading']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -32,6 +32,8 @@ export function validateEvent(e) {
         if (!WORD_FIELDS.has(key)) fail('Unexpected word field');
         if (['answers','variants','tags','classifiers'].includes(key)) {
           if (!Array.isArray(v) || v.length > 100 || v.some(x => !text(x, 500))) fail('Invalid list');
+        } else if (key === 'pinyinSyllables') {
+          if (!Array.isArray(v) || v.length > 50 || v.some(s=>!s||!text(s.base,50)||!Number.isInteger(s.tone)||s.tone<0||s.tone>4)) fail('Invalid pinyin syllables');
         } else if (key === 'custom') {
           if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).some(k=>!id(k))
             || Object.values(v).some(x=>!(text(x,5000)||Number.isFinite(x)))) fail('Invalid custom values');
@@ -64,7 +66,7 @@ export function validateEvent(e) {
     case 'answer':
       if (!id(d.wordId) || !id(d.questionId) || !text(d.baseRev, 200)
         || !['review','new','free','errors'].includes(d.mode)
-        || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'].includes(d.game)
+        || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'].includes(d.game)
         || !['forget','hard','good','easy'].includes(d.grade)
         || typeof d.hadError !== 'boolean' || typeof d.assisted !== 'boolean') fail('Invalid answer');
       if (d.config) validateEvent({...e, kind: 'settings', data: d.config});
