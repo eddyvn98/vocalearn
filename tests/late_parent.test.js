@@ -53,7 +53,7 @@ test('late parent activates an already-received due descendant once',()=>{
   db.close();
 });
 
-test('late conservative parent reclassifies and invalidates its former descendant',()=>{
+test('late competing parent preserves a valid descendant when the conservative transition is unchanged',()=>{
   const {db,userId,revision,deviceId}=fixture();
   const root=initialState('late-word'),parentAt=200000;
   const goodParentData=answer({id:'shape',deviceId,at:101004,baseRev:root.rev,
@@ -74,8 +74,8 @@ test('late conservative parent reclassifies and invalidates its former descendan
   const final=replay(allEvents(db,userId)).words['late-word'];
   assert.equal(final.accepted.has(parentA.id),true);
   assert.equal(final.accepted.has(parentB.id),true);
-  assert.equal(final.accepted.has(child.id),false);
+  assert.equal(final.accepted.has(child.id),true);
   assert.equal(final.review.phase,'learning');
-  assert.equal(final.review.step,1);
+  assert.equal(final.review.step,2);
   db.close();
 });
