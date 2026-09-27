@@ -27,8 +27,11 @@ def main():
         focused=page.evaluate("document.activeElement?.tagName")
         assert focused in ("A","BUTTON","INPUT","SELECT","TEXTAREA"), focused
         page.locator('[data-action="library"]').click()
-        page.locator('[data-action="add"]').first.click()
+        add_button=page.locator('[data-action="add"]').first
+        add_button.focus()
+        add_button.click()
         word=page.locator('[name="word"]')
+        expect(word).to_be_focused()
         word.fill("nihongo")
         prevented=word.evaluate("""el => {
           let prevented=false;
@@ -39,6 +42,7 @@ def main():
         assert prevented, "IME composing Enter must not submit"
         expect(page.locator("#word-form")).to_be_visible()
         page.locator('#modal [data-action="close"]').click()
+        expect(add_button).to_be_focused()
         page.keyboard.press("Tab")
         assert page.evaluate("getComputedStyle(document.activeElement).outlineStyle") != "none"
         context.close(); browser.close()
