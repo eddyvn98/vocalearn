@@ -1,7 +1,7 @@
 import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import {application} from '../server/main.js';
-import {DEFAULTS} from '../core/srs.js';
+import {DEFAULTS, initialState, advance} from '../core/srs.js';
 import {openDatabase,synchronize,allEvents} from '../server/database.js';
 import {replay} from '../core/model.js';
 
@@ -254,5 +254,74 @@ test('Two devices competing on the same due review produce one conservative tran
   assert.equal(final.review.phase, 'relearn');
   assert.equal(final.accepted.has('review-good'), true);
   assert.equal(final.accepted.has('review-forget'), true);
+  db.close();
+});
+
+
+test('Late parent replay activates an already-received due descendant without double transition', () => {
+  const db = openDatabase(':memory:');
+  db.prepare('INSERT INTO users(id,email,hash,salt) VALUES(?,?,?,?)')
+    .run('late-user', 'late@test.invalid', 'hash', 'salt');
+  const userId = 'late-user';
+  const deviceParent = 'late-parent-device';
+  const deviceChild = 'late-child-device';
+  const setId = 'late-set';
+  const wordId = 'late-word';
+  const wordRevision = 'late-word-event';
+
+  const setEvent = event('late-set-event', 'set', {
+    id: setId, name: 'Late parent', language: 'en', meaningLanguage: 'vi'
+  }, deviceParent, 1000);
+  const words = [
+    event(wordRevision, 'word', {id: wordId, setId, patch: {word: 'apple', meaning: 'qua tao'}}, deviceParent, 1001),
+    event('late-d2', 'word', {id: 'late-d2-word', setId, patch: {word: 'pear', meaning: 'qua le'}}, deviceParent, 1002),
+    event('late-d3', 'word', {id: 'late-d3-word', setId, patch: {word: 'plum', meaning: 'qua man'}}, deviceParent, 1003),
+    event('late-d4', 'word', {id: 'late-d4-word', setId, patch: {word: 'peach', meaning: 'qua dao'}}, deviceParent, 1004)
+  ];
+  synchronize(db, userId, {
+    events: [setEvent, ...words], deviceId: deviceParent, cursor: 0, clientNow: 1004
+  }, 100000);
+
+  const snapshot = {
+    prompt: 'qua tao', answers: ['apple'], word: 'apple', meaning: 'qua tao',
+    fields: {word: wordRevision, meaning: wordRevision}
+  };
+  const parentAt = 200000;
+  const parentData = {
+    schemaVersion: 2, wordId, questionId: 'late-parent-q', baseRev: 'root-' + wordId,
+    mode: 'new', game: 'flash', grade: 'hard', hadError: false, assisted: false,
+    activeMs: 1000, config: DEFAULTS, face: 'meaning', input: 'apple',
+    unknown: false, familiarize: true, question: snapshot
+  };
+  const predicted = advance(initialState(wordId), parentData, parentAt, DEFAULTS);
+  assert.equal(predicted.phase, 'learning');
+  assert.equal(predicted.step, 1);
+
+  const child = event('late-child-answer', 'answer', {
+    schemaVersion: 2, wordId, questionId: 'late-child-q', baseRev: predicted.rev,
+    mode: 'review', game: 'quiz', grade: 'hard', hadError: false, assisted: false,
+    activeMs: 1000, config: DEFAULTS, face: 'meaning', input: 'apple',
+    unknown: false, familiarize: false, question: snapshot
+  }, deviceChild, 300000);
+  synchronize(db, userId, {
+    events: [child], deviceId: deviceChild, cursor: 0, clientNow: 300000
+  }, 300000);
+
+  let beforeParent = replay(allEvents(db, userId)).words[wordId];
+  assert.equal(beforeParent.review.rev, 'root-' + wordId);
+  assert.equal(beforeParent.accepted.has(child.id), false);
+
+  const parent = event('late-parent-answer', 'answer', parentData, deviceParent, 101004);
+  synchronize(db, userId, {
+    events: [parent], deviceId: deviceParent, cursor: 0, clientNow: 101004
+  }, 300000);
+
+  const afterParent = replay(allEvents(db, userId)).words[wordId];
+  assert.equal(afterParent.accepted.has(parent.id), true);
+  assert.equal(afterParent.accepted.has(child.id), true);
+  assert.equal(afterParent.review.phase, 'learning');
+  assert.equal(afterParent.review.step, 2);
+  const answerEvents = allEvents(db, userId).filter(e => e.kind === 'answer' && e.data.wordId === wordId);
+  assert.equal(answerEvents.length, 2);
   db.close();
 });
