@@ -8,7 +8,7 @@ import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';
 import {setup,restoreSetup,studyAction,submitInput,startClock,stopClock} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
-import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
+import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,customFields,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
@@ -57,6 +57,13 @@ async function click(action,el){
   if(action==='deleteWord')return deleteWord(el.dataset.id);
   if(action==='clearImage'||action==='clearAudio')return clearMedia(action==='clearImage'?'image':'audio');
   if(action==='settings')return settings();
+  if(action==='customFields')return customFields();
+  if(action==='deleteCustomField'){
+    const set=app.model.sets[app.setId],field=(set.customFields||[]).find(f=>f.id===el.dataset.id);
+    if(!field||!confirm(`Xóa trường "${field.name}" khỏi biểu mẫu? Giá trị cũ trong thẻ được giữ ẩn.`))return;
+    await commit([prepare('set',{id:set.id,name:set.name,language:set.language,meaningLanguage:set.meaningLanguage,
+      customFields:(set.customFields||[]).filter(f=>f.id!==field.id)})]);customFields();return app.render();
+  }
   if(action==='syncInfo')return syncInfo();
   if(action==='sync'){await syncNow();return syncInfo();}
   if(action==='logout')return logoutAction();
@@ -127,6 +134,14 @@ document.addEventListener('submit',async e=>{
     if(form.id==='word-form')await saveWord(form);
     if(form.id==='answer-form')await submitInput(new FormData(form).get('answer'));
     if(form.id==='settings-form')await saveSettings(form);
+    if(form.id==='custom-field-form'){
+      const f=new FormData(form),set=app.model.sets[app.setId],type=f.get('type');
+      const options=String(f.get('options')||'').split(',').map(x=>x.trim()).filter(Boolean);
+      if(type==='select'&&!options.length)throw new Error('Trường danh sách cần ít nhất một lựa chọn.');
+      const custom=[...(set.customFields||[]),{id:uuid(),name:String(f.get('name')).trim(),type,options:type==='select'?options:[]}];
+      await commit([prepare('set',{id:set.id,name:set.name,language:set.language,meaningLanguage:set.meaningLanguage,customFields:custom})]);
+      customFields();app.render();return;
+    }
     if(form.id==='scope-form'){const f=new FormData(form);app.selectedCards.clear();app.scope=f.getAll('scope');app.scopeChildren=f.has('includeChildren');closeModal();app.render();await persistView();}
     if(form.id==='topic-form'){
       const f=new FormData(form),id=form.dataset.id||uuid(),parentId=f.get('parentId')||null;
