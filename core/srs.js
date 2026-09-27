@@ -39,6 +39,7 @@ export function conservative(events) {
   return [...events].sort((a, b) => rank[a.data.grade] - rank[b.data.grade]
     || Number(b.data.assisted) - Number(a.data.assisted)
     || (a.effectiveAt ?? a.at) - (b.effectiveAt ?? b.at)
+    || String(a.deviceId ?? '').localeCompare(String(b.deviceId ?? ''))
     || a.id.localeCompare(b.id))[0];
 }
 /** Server-derived facts permit deferred children only after their real parent exists. */
