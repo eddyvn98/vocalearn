@@ -8,12 +8,14 @@ export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};app.dirty=false;
   const w=editing||{};
   const categories=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
+  const customFields=app.model.sets[app.setId]?.customFields||[];
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
   ${field('word','word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(c.name)}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I ___ to school."')}${field('answers','answers',w.answers?.join(', '))}
   ${field('level','level',w.level||'','placeholder="A1, HSK 2, JLPT N4..."')}${field('variants','variants',w.variants?.join(', ')||'','placeholder="went, gone"')}${field('tags','tags',w.tags?.join(', ')||'','placeholder="hay-nhầm, công-việc"')}
+  ${customFields.map(cf=>cf.type==='select'?`<label>${esc(cf.name)}<select name="custom:${cf.id}"><option value="">—</option>${(cf.options||[]).map(o=>`<option value="${esc(o)}" ${String(w.custom?.[cf.id]??'')===o?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`:`<label>${esc(cf.name)}<input name="custom:${cf.id}" type="${cf.type==='number'?'number':'text'}" value="${esc(w.custom?.[cf.id]??'')}"></label>`).join('')}
   <label>${t('note')}<textarea name="note" rows="3">${esc(w.note||'')}</textarea></label>
   <label>${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label><div id="media-image">${w.image?`<img class="editor-image" src="${esc(w.image)}" alt="${t('image')}">`:''}</div>${button(t('clear'),'clearImage','quiet')}
   <label>${t('audioFile')}<input type="file" id="audio-upload" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"></label><small id="audio-status">${w.audio?t('saved'):t('missingAudio')}</small>${button(t('clear'),'clearAudio','quiet')}
@@ -24,10 +26,15 @@ export function openEditor(id) {
 }
 export async function saveWord(form) {
   const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean),
-    patch={word:String(f.get('word')).trim(),meaning:String(f.get('meaning')).trim(),
+    defs=app.model.sets[app.setId]?.customFields||[],custom={...(editing?.custom||{})};
+  for(const cf of defs){
+    const raw=String(f.get(`custom:${cf.id}`)??'').trim();
+    if(!raw)delete custom[cf.id];else custom[cf.id]=cf.type==='number'?Number(raw):raw;
+  }
+  const patch={word:String(f.get('word')).trim(),meaning:String(f.get('meaning')).trim(),
     pos:String(f.get('pos')).trim(),ipa:String(f.get('ipa')).trim(),sentence:String(f.get('sentence')).trim(),
     answers:list('answers'),level:String(f.get('level')||'').trim(),variants:list('variants'),tags:list('tags'),
-    note:String(f.get('note')).trim(),...media};
+    custom,note:String(f.get('note')).trim(),...media};
   if(!patch.word)throw new Error(t('word'));
   if(patch.sentence&&(patch.sentence.split('___').length!==2||!patch.answers.length))throw new Error(t('missingSentence'));
   const identity=editing&&(normalize(editing.word)!==normalize(patch.word)||normalize(editing.meaning)!==normalize(patch.meaning));
