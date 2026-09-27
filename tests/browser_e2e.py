@@ -480,6 +480,8 @@ def run_journey(page, context, browser, origin, errors, clock_path):
             "thay đổi chờ đồng bộ"
         )
         second_page.reload(wait_until="domcontentloaded")
+        expect(second_page.locator('[data-action="library"]')).to_be_visible(timeout=10000)
+        second_page.locator('[data-action="library"]').click()
         expect(second_page.locator("body")).to_contain_text("cherry")
         second.set_offline(False)
         second_page.evaluate("window.dispatchEvent(new Event('online'))")
