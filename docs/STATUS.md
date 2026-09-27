@@ -69,3 +69,10 @@ Tracked implementation branch: `feature/core-hardening-mvp`.
 - Focused regression tests were added for tombstones, clock reconciliation and deterministic review ordering.
 
 See `docs/PROGRESS.md` for the rolling change log and CI state.
+
+
+## Hardening batch — 2026-09-27
+
+- Browser acceptance now covers trusted-clock 1/10/10 learning progression, matching, cloze, audio lifecycle, IME/keyboard focus, and 320/390/768/1024/1440 viewport checks.
+- Media storage exposes authenticated quota usage (200 MB/user), verifies content hashes/MIME, keeps duplicate uploads quota-neutral, and can self-heal a missing content-addressed file when the same bytes are uploaded again.
+- Intermediate hardening commits intentionally use `[skip ci]`; the next checkpoint runs the full Verify + Browser regression + Deployed smoke gates together.
