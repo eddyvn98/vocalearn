@@ -15,6 +15,7 @@ import {installAccessibility,isComposing} from './a11y.js';
 import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './navigation.js';
 import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
 import {reminderPlan} from '/core/reminders.js';
+import {startAi,applyAi,applyAiField,applyAiMeaning,retryAi} from './ai-client.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -66,6 +67,11 @@ async function click(action,el){
   if(action==='practice')return setup('free',el.dataset.game);
   if(action==='add'||action==='edit')return openEditor(el.dataset.id);
   if(action==='makeSentenceBlank')return makeSentenceBlank();
+  if(action==='aiStart')return startAi(el.dataset.wordId);
+  if(action==='aiApply'){const id=await applyAi(el.dataset.wordId,el.dataset.jobId);return openEditor(id);}
+  if(action==='aiApplyField'){const id=await applyAiField(el.dataset.wordId,el.dataset.jobId,el.dataset.field);return openEditor(id);}
+  if(action==='aiMeaning'){const id=await applyAiMeaning(el.dataset.wordId,el.dataset.jobId,el.dataset.index);return openEditor(id);}
+  if(action==='aiRetry')return retryAi(el.dataset.wordId,el.dataset.jobId);
   if(action==='deleteWord')return deleteWord(el.dataset.id);
   if(action==='clearImage'||action==='clearAudio')return clearMedia(action==='clearImage'?'image':'audio');
   if(action==='settings')return settings();
