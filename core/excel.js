@@ -18,21 +18,37 @@ export const COLUMNS = [
   {key:'image',headers:['H\u00ecnh','\u1ea2nh','image','picture','anh']},
   {key:'audio',headers:['\u00c2m thanh','audio','sound','am thanh']},
 ];
-export const cardsToXlsx = (cards,categories={}) => writeWorkbook(cards,categories,COLUMNS);
-export function detectMapping(header) {
-  const map = {};
+export const columnsFor = (customFields=[]) => [...COLUMNS,...customFields.map(f=>({key:`custom:${f.id}`,headers:[f.name]}))];
+export const cardsToXlsx = (cards,categories={},customFields=[]) => {
+  const expanded=cards.map(card=>({...card,...Object.fromEntries(customFields.map(f=>[`custom:${f.id}`,card.custom?.[f.id]??'']))}));
+  return writeWorkbook(expanded,categories,columnsFor(customFields));
+};
+export function detectMapping(header, customFields=[]) {
+  const map = {}, columns=columnsFor(customFields);
   for(const [col,label] of Object.entries(header)) {
-    const field = COLUMNS.find(c=>c.headers.some(h=>normalize(h)===normalize(label)));
+    const field = columns.find(c=>c.headers.some(h=>normalize(h)===normalize(label)));
     if(field)map[field.key]=col;
   }
   return map;
 }
-export function workbookToCards(book, mapping = detectMapping(book.rows[0]?.cells || {})) {
+export function workbookToCards(book, mapping, customFields=[]) {
+  mapping ||= detectMapping(book.rows[0]?.cells || {},customFields);
   if(!mapping.word)throw new Error('Map a column to Word before importing');
-  const cards = [], errors = [];
+  const cards = [], errors = [], columns=columnsFor(customFields);
   for(const {row,cells} of book.rows.slice(1)) {
     if(!Object.values(cells).some(v=>v.trim())&&!book.imageRows.has(row))continue;
-    const card = Object.fromEntries(COLUMNS.filter(c=>mapping[c.key]).map(c=>[c.key,(cells[mapping[c.key]] || '').trim()]));
+    const raw = Object.fromEntries(columns.filter(c=>mapping[c.key]).map(c=>[c.key,(cells[mapping[c.key]] || '').trim()]));
+    const custom={};let customError='';
+    for(const field of customFields){
+      const value=raw[`custom:${field.id}`];delete raw[`custom:${field.id}`];
+      if(value===undefined||value==='')continue;
+      if(field.type==='number'){
+        const number=Number(value);if(!Number.isFinite(number)){customError=`Invalid number for ${field.name}`;break;}custom[field.id]=number;
+      }else if(field.type==='select'&&!field.options.includes(value)){customError=`Invalid option for ${field.name}`;break;}
+      else custom[field.id]=value;
+    }
+    if(customError){errors.push({row,message:customError});continue;}
+    const card = {...raw,custom};
     if(!card.word){errors.push({row,message:'Missing Word'});continue;}
     const parseList = (value, label) => {
       if(!value)return [];
@@ -53,8 +69,8 @@ export function workbookToCards(book, mapping = detectMapping(book.rows[0]?.cell
   return {cards,errors,warnings:book.warnings,skipped:0,mapping};
 }
 /** Async because browser ZIP inflation is a stream. Callers must await this. */
-export async function xlsxToCards(input, existingWords = [], mapping) {
-  const result = workbookToCards(await readWorkbook(input),mapping);
+export async function xlsxToCards(input, existingWords = [], mapping, customFields=[]) {
+  const result = workbookToCards(await readWorkbook(input),mapping,customFields);
   const seen = new Set(existingWords.map(identity));
   result.cards=result.cards.filter(card=>{const key=identity(card);if(seen.has(key)){result.skipped++;return false;}seen.add(key);return true;});
   return result;
