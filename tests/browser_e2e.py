@@ -138,6 +138,29 @@ def run_journey(page, context, browser, origin, errors):
     page.locator('#modal [data-action="startSession"]').click()
     answer = page.locator("#answer")
     expect(answer).to_be_visible()
+    answer.fill("draft answer")
+    page.go_back()
+    expect(page.locator('[data-action="resume"]')).to_be_visible(timeout=10000)
+    page.go_forward()
+    expect(page.locator("#answer")).to_have_value("draft answer")
+    answer_count_after_back = page.evaluate("""async () => {
+      const user = JSON.parse(localStorage.getItem('vocalearn-user'));
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('vocalearn-' + user.id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const events = await new Promise((resolve, reject) => {
+        const req = db.transaction('events').objectStore('events').getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      db.close();
+      return events.filter(e => e.kind === 'answer').length;
+    }""")
+    assert answer_count_after_back == 1, "Browser Back submitted an unfinished answer"
+    print("PASS: browser Back preserves draft answer without submitting it")
+    answer = page.locator("#answer")
     answer.fill("applf")
     page.locator('#answer-form [type="submit"]').click()
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
