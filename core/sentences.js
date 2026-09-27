@@ -10,7 +10,7 @@ export function sentenceContentVersion(word){
   const f=word?.fields||{};
   return [
     f.word||word?.word||'',f.meaning||word?.meaning||'',f.pos||word?.pos||'',
-    f.pinyin||word?.pinyin||'',word?.language||'',word?.meaningLanguage||''
+    f.pinyin||word?.pinyin||''
   ].join('|');
 }
 
