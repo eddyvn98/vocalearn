@@ -1,5 +1,5 @@
 import {app} from './state.js';
-import {api,prepare,transact,model} from './storage.js';
+import {api,prepare,transact,model,sync} from './storage.js';
 import {t,esc,button,notify} from './ui.js';
 import {WORD_FIELDS} from '/core/validation.js';
 
@@ -39,6 +39,9 @@ function assertClean(wordId){
 }
 export async function startAi(wordId){
   const word=app.model.words[wordId];if(!word||word.deleted)throw new Error(t('aiWordMissing'));
+  // AI jobs are server-owned. Flush the locally-created/edited card first so
+  // the worker snapshots the same revision the user currently sees.
+  await sync();app.model=model();
   await api('ai/jobs',{wordId,type:'fill'});await refreshAiPanel(wordId);return wordId;
 }
 async function findJob(wordId,jobId){
