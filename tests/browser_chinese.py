@@ -62,7 +62,7 @@ def main():
                 expect(page.locator("#set-form")).to_be_visible()
                 language=page.locator("#set-language")
                 assert language.locator('option[value="zh"]').count()==1
-                assert language.locator('option[value="ja"]').count()==0
+                assert language.locator('option[value="ja"]').count()==1
                 page.locator('#set-form [name="name"]').fill("Chinese Phase 2")
                 language.select_option("zh")
                 page.locator('#set-meaning-language').select_option("vi")
