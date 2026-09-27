@@ -13,6 +13,7 @@ const profileGames=()=>GAMES.filter(game=>!['tone','classifier'].includes(game)|
 const profileMixGames=()=>MIX_GAMES.filter(game=>!['tone','classifier'].includes(game)||profile().id==='zh');
 const profileFaces=()=>FACES.filter(face=>{
   if(['pinyin','hanViet'].includes(face))return profile().id==='zh';
+  if(face==='kana')return profile().id==='ja';
   return face!=='ipa'||profile().id==='en';
 });
 const answerFaceFor=game=>['quiz','match'].includes(game)?app.answerFace:undefined;
@@ -22,7 +23,7 @@ export function applyStudySetup(saved) {
   if(!saved||typeof saved!=='object')return;
   if(['mix',...profileGames()].includes(saved.game))app.game=saved.game;
   if(profileFaces().includes(saved.face))app.face=saved.face;
-  if(['word','meaning','ipa','image'].includes(saved.answerFace))app.answerFace=saved.answerFace;
+  if(['word','meaning','ipa','pinyin','kana','hanViet','image'].includes(saved.answerFace))app.answerFace=saved.answerFace;
   if(Array.isArray(saved.mixGames)){
     const games=[...new Set(saved.mixGames.filter(game=>profileMixGames().includes(game)))];
     app.mixGames=games;

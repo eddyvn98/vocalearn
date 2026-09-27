@@ -2,7 +2,8 @@ import {viAi} from './vi-ai.js';
 import {viSentences} from './vi-sentences.js';
 import {viLookups} from './vi-lookups.js';
 import {viStatistics} from './vi-statistics.js';
-export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
+import {viJapanese} from './vi-japanese.js';
+export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,...viJapanese,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
   invalidAnswerFace:"Mặt đáp phải hợp lệ và khác mặt hỏi",
   missingAnswerFace:"Thiếu dữ liệu cho mặt đáp",
   noMixGames:"Hãy bật ít nhất một game trong Trộn",
@@ -36,7 +37,7 @@ export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,audio:"Â
   "setName": "Tên bộ học",
   "meaningLanguage": "Ngôn ngữ nghĩa",
   "studyLanguage": "Ngôn ngữ học",
-  "releasedProfilesOnly": "Giai đoạn 2 đã bật tiếng Anh và tiếng Trung; tiếng Nhật vẫn ẩn đến giai đoạn 3.",
+  "releasedProfilesOnly": "Giai đoạn 3 đã bật hồ sơ tiếng Anh, tiếng Trung và tiếng Nhật.",
   "bilingual": "song ngữ",
   "monolingual": "đơn ngữ",
   "meaningModeHelp": "Anh → Việt dùng bản dịch; Anh → Anh dùng định nghĩa tiếng Anh và tự che từ đích khi định nghĩa làm mặt hỏi.",

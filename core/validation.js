@@ -1,6 +1,6 @@
 import {DEFAULTS} from './srs.js';
 import {isMediaRef} from './media.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','lookupMeta','custom']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','kana','onReading','kunReading','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','lookupMeta','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -9,7 +9,7 @@ export function validateEvent(e) {
   const d = e.data;
   switch (e.kind) {
     case 'set':
-      if (!id(d.id) || !text(d.name, 100) || !d.name.trim() || !['en','zh'].includes(d.language) || !['en','vi','zh'].includes(d.meaningLanguage)) fail('Invalid study set');
+      if (!id(d.id) || !text(d.name, 100) || !d.name.trim() || !['en','zh','ja'].includes(d.language) || !['en','vi','zh','ja'].includes(d.meaningLanguage)) fail('Invalid study set');
       if (d.customFields !== undefined) {
         if (!Array.isArray(d.customFields) || d.customFields.length > 30) fail('Invalid custom fields');
         const seen=new Set();

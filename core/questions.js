@@ -9,21 +9,21 @@ import {selectWordSentence,clozeFromSentence} from './sentences.js';
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
 export const MIX_GAMES = ['flash','quiz','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
 export const GAME_FACES = Object.freeze({
-  flash:['meaning','word','ipa','pinyin','hanViet','image','audio'],
-  quiz:['meaning','word','ipa','pinyin','hanViet','image','audio'],
-  match:['word','meaning','ipa','pinyin','hanViet','image'],
-  typing:['meaning','ipa','pinyin','hanViet','image'],
+  flash:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'],
+  quiz:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'],
+  match:['word','meaning','ipa','pinyin','kana','hanViet','image'],
+  typing:['meaning','ipa','pinyin','kana','hanViet','image'],
   spell:['audio'], dictation:['audio'],
   cloze:['sentence'], clozeChoice:['sentence'],
   tone:['pinyin'], classifier:['word','meaning'],
-  mix:['meaning','word','ipa','pinyin','hanViet','image','audio','sentence'],
+  mix:['meaning','word','ipa','pinyin','kana','hanViet','image','audio','sentence'],
 });
 export const GAME_ANSWER_FACES = Object.freeze({
-  flash:['word'], quiz:['word','meaning','ipa','pinyin','hanViet','image'],
-  match:['word','meaning','ipa','pinyin','hanViet','image'], typing:['word'],
+  flash:['word'], quiz:['word','meaning','ipa','pinyin','kana','hanViet','image'],
+  match:['word','meaning','ipa','pinyin','kana','hanViet','image'], typing:['word'],
   spell:['word'], dictation:['word'], cloze:['word'], clozeChoice:['word'], tone:['word'], classifier:['word'],
 });
-export const FACES = ['word','meaning','ipa','pinyin','hanViet','image','audio','sentence'];
+export const FACES = ['word','meaning','ipa','pinyin','kana','hanViet','image','audio','sentence'];
 export const usesAudio = q => ['spell','dictation'].includes(q.game) || q.face === 'audio';
 
 export function defaultAnswerFace(game,face) {
@@ -42,7 +42,7 @@ export function requiredGame(w) {
   return ['flash','quiz','spell','typing'][w.review.step];
 }
 const promptFace = (game, face) => GAME_FACES[game]?.length === 1 ? GAME_FACES[game][0] : face;
-const valueFor=(w,face)=>face==='pinyin'?(w?.pinyin||w?.ipa||''):w?.[face]||'';
+const valueFor=(w,face)=>face==='pinyin'?(w?.pinyin||w?.ipa||''):face==='kana'?(w?.kana||w?.ipa||''):w?.[face]||'';
 const readingConfirmed=(w,field)=>w?.lookupMeta?.[field]?.confirmed!==false;
 function answerValue(w,game,answerFace) {
   if(game.startsWith('cloze'))return w.word||'';
@@ -64,21 +64,22 @@ function alternatives(w,pool,game,face,answerFace,correctOverride='') {
 export function reasons(w,game,face='meaning',pool=[],answerFace,profile={}) {
   if(game==='tone')return w?.pinyinSyllables?.length&&readingConfirmed(w,'pinyin')?[]:['missingToneData'];
   if(game==='classifier')return w?.classifiers?.length?[]:['missingClassifierData'];
-  if(game==='typing'&&profile.id==='zh'){
-    if(!readingConfirmed(w,'pinyin'))return ['missingReading'];
-    const flow=twoStepFor(w,pool,game,face,'zh');
+  if(game==='typing'&&['zh','ja'].includes(profile.id)){
+    const readingField=profile.id==='zh'?'pinyin':'kana';
+    if(!readingConfirmed(w,readingField))return ['missingReading'];
+    const flow=twoStepFor(w,pool,game,face,profile.id);
     if(flow?.blocked)return [flow.blocked];
   }
   face=promptFace(game,face);
   if(!GAME_FACES[game]?.includes(face))return ['invalidFace'];
-  if(['ipa','pinyin','hanViet'].includes(face)&&!readingConfirmed(w,face))return ['missingReading'];
+  if(['ipa','pinyin','kana','hanViet'].includes(face)&&!readingConfirmed(w,face))return ['missingReading'];
   if(!w.word||w.deleted||!w.ready&&game!=='flash')return ['missingPrompt'];
   if(!w[face]&&!['match','cloze','clozeChoice'].includes(game))
     return [face==='audio'?'missingAudio':face==='image'?'missingImage':'missingPrompt'];
   if(['quiz','match'].includes(game)) {
     const requested=answerFace===undefined?defaultAnswerFace(game,face):answerFace;
     if(!answerFaces(game,face).includes(requested))return ['invalidAnswerFace'];
-    if(['ipa','pinyin','hanViet'].includes(requested)&&!readingConfirmed(w,requested))return ['missingAnswerFace'];
+    if(['ipa','pinyin','kana','hanViet'].includes(requested)&&!readingConfirmed(w,requested))return ['missingAnswerFace'];
     if(!valueFor(w,requested))return [requested==='image'?'missingImage':requested==='meaning'?'missingMeaning':'missingAnswerFace'];
     const promptKey=normalize(valueFor(w,face)),answerKey=normalize(valueFor(w,requested));
     if(pool.some(x=>x.id!==w.id&&!x.deleted&&normalize(valueFor(x,face))===promptKey
@@ -136,7 +137,7 @@ export function question(w,pool,game,face='meaning',mode='review',config={},uuid
   if(why.length)return {blocked:why,wordId:w.id,game,face,answerFace};
   const tone=game==='tone'?toneQuestion(w.pinyinSyllables,w.audio||null):null;
   const classifier=game==='classifier'?classifierQuestion(w):null;
-  const twoStep=game==='typing'&&profile.id==='zh'?twoStepFor(w,pool,game,face,'zh'):null;
+  const twoStep=game==='typing'&&['zh','ja'].includes(profile.id)?twoStepFor(w,pool,game,face,profile.id):null;
   const cloze=game.startsWith('cloze')?clozeData(w):null;
   const answers=cloze?[...cloze.answers]:
     ['quiz','match'].includes(game)?[valueFor(w,answerFace)]:game==='classifier'?[...(classifier?.answers||[])]:[w.word];
