@@ -11,8 +11,10 @@ import {sessionBaseline} from '/core/session-summary.js';
 import {readingMatches,twoStepSnapshot} from '/core/script-typing.js';
 import {gradeTones,gradeClassifier} from '/core/chinese-games.js';
 import {ensureSentencePool} from './sentence-pool.js';
+import {handwritingAction,setHandwritingResultHandler} from './handwriting-ui.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
+setHandwritingResultHandler(async correct=>{const q=current();if(!q||q.result)return;q.input='[handwriting]';await writeAnswer(q,correct);});
 async function ensureQuestionMedia(q,allMatch=false) {
   const values=[];
   if(q?.face==='image'){
@@ -141,6 +143,7 @@ export async function studyAction(action,element) {
   if(action==='finish'){stopClock(true);app.session.finished=true;await setMeta('session',app.session);app.page='results';await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});app.render();pushHistory();return;}
   if(!q)return;
   if(action==='playAudio'||action==='slowAudio')return playAudio(action==='slowAudio');
+  if(action.startsWith('handwriting'))return handwritingAction(action,q);
   if(['flip','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','letter','checkLetters','matchLeft','matchRight'].includes(action))
     await ensureQuestionMedia(action.startsWith('match')?app.session.queue[app.session.selected??0]:q,app.session.match);
   if(action==='flip'){q.flipped=true;await setMeta('session',app.session);app.render();}
