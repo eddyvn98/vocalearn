@@ -115,3 +115,18 @@ test('Audio media round-trip uses the same content-addressed store',async()=>{
  assert.equal(audio.headers.get('content-type'),'audio/wav');
  assert.deepEqual(Buffer.from(await audio.arrayBuffer()),bytes);
 });
+
+
+test('Media usage endpoint is authenticated and reports quota',async()=>{
+ const anonymous=await fetch(url+'/api/media-usage');
+ assert.equal(anonymous.status,401);
+ const login=await request('/api/login',{email:'test@example.com',password:'long-secure-password'},null);
+ const mediaCookie=login.headers.get('set-cookie').split(';')[0];
+ const usage=await fetch(url+'/api/media-usage',{headers:{Cookie:mediaCookie}});
+ assert.equal(usage.status,200);
+ const body=await usage.json();
+ assert.ok(Number.isInteger(body.count)&&body.count>=1);
+ assert.ok(body.bytes>0);
+ assert.equal(body.limit,200*1024*1024);
+ assert.equal(body.remaining,body.limit-body.bytes);
+});
