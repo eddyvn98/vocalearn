@@ -253,7 +253,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.locator('#modal [data-action="startSession"]').click()
     print("PASS: game/face setup persists per study set")
 
-    # Browser-level matching: two cards, select the matching left/right pair and persist an answer.
+    # Browser-level matching: complete both pairs using visible labels.
     page.locator('[data-action="home"]').first.click()
     page.locator('[data-action="library"]').click()
     add_word(page, "banana", "quả chuối")
@@ -264,19 +264,66 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     expect(page.locator("#modal")).to_contain_text("2/2")
     page.locator('#modal [data-action="startSession"]').click()
     expect(page.locator('[data-action="matchLeft"]').first).to_be_visible()
-    left = page.locator('[data-action="matchLeft"]').first
-    word_id = page.evaluate("""() => {
-      const s = JSON.parse(localStorage.getItem('vocalearn-session') || 'null');
-      return s?.queue?.[0]?.wordId || null;
-    }""")
-    left.click()
-    page.locator(f'[data-action="matchRight"][data-id="{word_id}"]').click()
-    expect(page.locator('[data-action="matchLeft"]').first).to_be_disabled()
-    print("PASS: matching interaction records a correct pair")
+    for word, meaning in [("apple", "quả táo"), ("banana", "quả chuối")]:
+        left = page.locator('[data-action="matchLeft"]', has_text=word)
+        expect(left).to_be_visible()
+        left.click()
+        page.locator('[data-action="matchRight"]', has_text=meaning).click()
+        expect(left).to_be_disabled()
+    page.locator('[data-action="finish"]').click()
+    expect(page.locator('[data-action="home"]').first).to_be_visible()
+    page.locator('[data-action="home"]').first.click()
+    print("PASS: matching interaction records both correct pairs")
 
+    # Browser-level cloze: persist a sentence-specific answer, then answer it.
+    page.locator('[data-action="library"]').click()
+    apple_row = page.locator(".word-row", has_text="apple")
+    apple_row.locator('[data-action="edit"]').click()
+    details = page.locator("#word-form details")
+    if not details.get_attribute("open"):
+        details.locator("summary").click()
+    page.locator('#word-form [name="sentence"]').fill("I ate an ___ today.")
+    page.locator('#word-form [name="answers"]').fill("apple")
+    page.locator('#word-form [type="submit"]').click()
+    page.locator('[data-action="home"]').first.click()
+    page.locator('[data-action="setupFree"]').click()
+    page.locator("#setup-game").select_option("cloze")
+    page.locator("#setup-game").dispatch_event("change")
+    expect(page.locator("#modal")).to_contain_text("1/2")
+    page.locator('#modal [data-action="startSession"]').click()
+    expect(page.locator("#answer")).to_be_visible()
+    expect(page.locator(".prompt")).to_contain_text("I ate an ___ today.")
+    page.locator("#answer").fill("apple")
+    page.locator('#answer-form [type="submit"]').click()
+    expect(page.locator("#feedback")).to_be_visible()
+    page.locator('[data-action="next"]').click()
+    page.locator('[data-action="home"]').first.click()
+    print("PASS: cloze uses the sentence-specific answer")
+
+    # Start a normal typing session for browser Back + retry/reload persistence.
+    page.locator('[data-action="setupFree"]').click()
+    page.locator("#setup-game").select_option("typing")
+    page.locator("#setup-game").dispatch_event("change")
+    page.locator("#setup-face").select_option("meaning")
+    page.locator('#modal [data-action="startSession"]').click()
     answer = page.locator("#answer")
     expect(answer).to_be_visible()
     answer.fill("draft answer")
+    answer_count_before_back = page.evaluate("""async () => {
+      const user = JSON.parse(localStorage.getItem('vocalearn-user'));
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('vocalearn-' + user.id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const events = await new Promise((resolve, reject) => {
+        const req = db.transaction('events').objectStore('events').getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      db.close();
+      return events.filter(e => e.kind === 'answer').length;
+    }""")
     page.go_back()
     expect(page.locator('[data-action="resume"]').first).to_be_visible(timeout=10000)
     page.go_forward()
@@ -296,7 +343,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
       db.close();
       return events.filter(e => e.kind === 'answer').length;
     }""")
-    assert answer_count_after_back == 1, "Browser Back submitted an unfinished answer"
+    assert answer_count_after_back == answer_count_before_back, "Browser Back submitted an unfinished answer"
     print("PASS: browser Back preserves draft answer without submitting it")
     answer = page.locator("#answer")
     answer.fill("applf")
@@ -304,7 +351,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
     page.reload(wait_until="networkidle")
     expect(page.locator('[data-action="resume"]').first).to_be_visible(timeout=10000)
-    page.locator('[data-action="resume"]').click()
+    page.locator('[data-action="resume"]').first.click()
     expect(page.locator("#answer")).to_have_value("applf")
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
     page.locator("#answer").fill("apple")
@@ -323,7 +370,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     print("PASS: reload restores authenticated local state")
 
     context.set_offline(True)
-    add_word(page, "banana", "quả chuối")
+    add_word(page, "grape", "quả nho")
     status = page.locator('[data-action="syncInfo"]').first
     expect(status).to_contain_text("thay đổi chờ đồng bộ")
     pending_before = status.inner_text()
@@ -336,7 +383,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     )
     page.locator('[data-action="library"]').click()
     expect(page.locator('[data-action="add"]').first).to_be_visible()
-    expect(page.locator("body")).to_contain_text("banana")
+    expect(page.locator("body")).to_contain_text("grape")
     print("PASS: offline edit survives a real page reload")
 
     context.set_offline(False)
@@ -346,7 +393,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.reload(wait_until="networkidle")
     page.locator('[data-action="library"]').click()
     expect(page.locator("body")).to_contain_text("apple")
-    expect(page.locator("body")).to_contain_text("banana")
+    expect(page.locator("body")).to_contain_text("grape")
     assert pending_before, "Expected an offline pending-sync status"
     print("PASS: reconnect syncs pending events without losing cards")
 
