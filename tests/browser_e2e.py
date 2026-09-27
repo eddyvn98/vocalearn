@@ -252,6 +252,28 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.locator("#setup-face").select_option("meaning")
     page.locator('#modal [data-action="startSession"]').click()
     print("PASS: game/face setup persists per study set")
+
+    # Browser-level matching: two cards, select the matching left/right pair and persist an answer.
+    page.locator('[data-action="home"]').first.click()
+    page.locator('[data-action="library"]').click()
+    add_word(page, "banana", "quả chuối")
+    page.locator('[data-action="home"]').first.click()
+    page.locator('[data-action="setupFree"]').click()
+    page.locator("#setup-game").select_option("match")
+    page.locator("#setup-game").dispatch_event("change")
+    expect(page.locator("#modal")).to_contain_text("2/2")
+    page.locator('#modal [data-action="startSession"]').click()
+    expect(page.locator('[data-action="matchLeft"]').first).to_be_visible()
+    left = page.locator('[data-action="matchLeft"]').first
+    word_id = page.evaluate("""() => {
+      const s = JSON.parse(localStorage.getItem('vocalearn-session') || 'null');
+      return s?.queue?.[0]?.wordId || null;
+    }""")
+    left.click()
+    page.locator(f'[data-action="matchRight"][data-id="{word_id}"]').click()
+    expect(page.locator('[data-action="matchLeft"]').first).to_be_disabled()
+    print("PASS: matching interaction records a correct pair")
+
     answer = page.locator("#answer")
     expect(answer).to_be_visible()
     answer.fill("draft answer")
