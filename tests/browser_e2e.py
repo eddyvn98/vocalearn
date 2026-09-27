@@ -148,7 +148,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     expect(page.locator('[name="pinyin"]')).to_be_visible()
     expect(page.locator('[name="hanViet"]')).to_be_visible()
     expect(page.locator('[name="radical"]')).to_be_visible()
-    page.locator('#modal [data-action="close"]').click()
+    page.locator('#modal [data-action="close"]').first.click()
     page.locator('[data-action="sets"]').click()
     page.locator('[data-action="selectSet"]', has_text="English").click()
     print("PASS: Chinese study set exposes language-specific editor fields")
