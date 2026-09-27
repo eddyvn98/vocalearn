@@ -49,7 +49,12 @@ def answer_current(page):
     if confirm.count() and confirm.first.is_visible():
         expect(confirm).to_have_count(1)
         confirm.first.click()
-    expect(page.locator("#feedback")).to_be_visible()
+    try:
+        expect(page.locator("#feedback")).to_be_visible(timeout=10000)
+    except AssertionError:
+        print("JAPANESE_STUDY_ERROR:",page.locator("#study-error").inner_text())
+        print("JAPANESE_STATE:",page.evaluate("() => import('/js/state.js').then(m => ({error:m.app.session?.error,q:m.app.session?.queue?.[m.app.session?.index]}))"))
+        raise
     return prompt
 
 def main():
