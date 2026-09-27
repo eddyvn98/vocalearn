@@ -63,7 +63,10 @@ def run_journey(page, context, errors):
 
     page.evaluate("() => navigator.serviceWorker.ready")
     page.reload(wait_until="networkidle")
+    expect(page.locator('[data-action="library"]')).to_be_visible()
+    page.locator('[data-action="library"]').click()
     expect(page.locator('[data-action="add"]').first).to_be_visible()
+    expect(page.locator("body")).to_contain_text("apple")
     print("PASS: reload restores authenticated local state")
 
     context.set_offline(True)
