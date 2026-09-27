@@ -12,9 +12,11 @@ import {readingMatches,twoStepSnapshot} from '/core/script-typing.js';
 import {gradeTones,gradeClassifier} from '/core/chinese-games.js';
 import {ensureSentencePool} from './sentence-pool.js';
 import {handwritingAction,setHandwritingResultHandler} from './handwriting-ui.js';
+import {probeLocalSpeech,setSpeechResultHandler} from './speech-local.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
 setHandwritingResultHandler(async correct=>{const q=current();if(!q||q.result)return;q.input='[handwriting]';await writeAnswer(q,correct);});
+setSpeechResultHandler(async(correct)=>{const q=current();if(!q||q.result)return;await writeAnswer(q,correct);});
 async function ensureQuestionMedia(q,allMatch=false) {
   const values=[];
   if(q?.face==='image'){
@@ -40,7 +42,7 @@ export function stopClock(interrupt=false) {
   started=0;
 }
 export {applyStudySetup,saveStudySetup};
-export function setup(mode=app.mode,game=app.game){return setupDialog(mode,game);}
+export async function setup(mode=app.mode,game=app.game){const set=app.model?.sets?.[app.setId];if(set)await probeLocalSpeech(set.language);return setupDialog(mode,game);}
 export async function beginSession() {
   if(app.mode==='new'&&learningAllowed(app.model,words().filter(inCurrentScope),Date.now()))return;
   let queue=previewQueue().filter(q=>!q.blocked);
@@ -64,7 +66,7 @@ async function writeAnswer(q,correct) {
     stopClock();
     await ensureQuestionMedia(q);
     if(usesAudio(q)&&!q.audioPlayed)throw new Error(t('audioError'));
-    const result=gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,gradeCap:q.twoStep?.gradeCap,
+    const result=q.speechGrade?{...q.speechGrade}:gradeAnswer({correct,game:q.game,hint:q.hint,hadError:q.hadError,gradeCap:q.twoStep?.gradeCap,
       activeMs:Math.round(q.activeMs),interrupted:q.interrupted,answer:q.answers[0],easyMs:q.config.easyMs});
     const next=structuredClone(app.session),target=next.queue.find(x=>x.id===q.id);
     target.result=result;if(!correct)target.hadError=true;
