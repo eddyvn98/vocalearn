@@ -64,3 +64,16 @@ test('Learning daily cap does not block saving words',()=>{
  const a=card('a','apple','fruit');a.review.startedDay='2026-09-25';
  assert.equal(learningAllowed({words:{a},settings:{...DEFAULTS,newLimit:1}},[],at),'dailyLimit');
 });
+
+
+test('Typing blocks identical prompts that map to different answers',()=>{
+ const a=card('a','bank','tài chính'),b=card('b','finance','tài chính');
+ assert.deepEqual(reasons(a,'typing','meaning',[a,b]),['ambiguousPrompt']);
+ const clear=card('c','river bank','bờ sông');
+ assert.equal(reasons(a,'typing','meaning',[a,clear]).includes('ambiguousPrompt'),false);
+});
+
+test('Reverse quiz blocks one spelling with multiple meanings unless context differs',()=>{
+ const a=card('a','bank','ngân hàng'),b=card('b','bank','bờ sông');
+ assert.deepEqual(reasons(a,'quiz','word',[a,b]),['ambiguousPrompt']);
+});
