@@ -6,8 +6,8 @@ import {twoStepFor} from './script-typing.js';
 import {toneQuestion,classifierQuestion} from './chinese-games.js';
 import {selectWordSentence,clozeFromSentence} from './sentences.js';
 
-export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
-export const MIX_GAMES = ['flash','quiz','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
+export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting'];
+export const MIX_GAMES = ['flash','quiz','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting'];
 export const GAME_FACES = Object.freeze({
   flash:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'],
   quiz:['meaning','word','ipa','pinyin','kana','hanViet','image','audio'],
@@ -15,13 +15,13 @@ export const GAME_FACES = Object.freeze({
   typing:['meaning','ipa','pinyin','kana','hanViet','image'],
   spell:['audio'], dictation:['audio'],
   cloze:['sentence'], clozeChoice:['sentence'],
-  tone:['pinyin'], classifier:['word','meaning'],
+  tone:['pinyin'], classifier:['word','meaning'], handwriting:['meaning','image'],
   mix:['meaning','word','ipa','pinyin','kana','hanViet','image','audio','sentence'],
 });
 export const GAME_ANSWER_FACES = Object.freeze({
   flash:['word'], quiz:['word','meaning','ipa','pinyin','kana','hanViet','image'],
   match:['word','meaning','ipa','pinyin','kana','hanViet','image'], typing:['word'],
-  spell:['word'], dictation:['word'], cloze:['word'], clozeChoice:['word'], tone:['word'], classifier:['word'],
+  spell:['word'], dictation:['word'], cloze:['word'], clozeChoice:['word'], tone:['word'], classifier:['word'], handwriting:['word'],
 });
 export const FACES = ['word','meaning','ipa','pinyin','kana','hanViet','image','audio','sentence'];
 export const usesAudio = q => ['spell','dictation'].includes(q.game) || q.face === 'audio';
@@ -64,6 +64,12 @@ function alternatives(w,pool,game,face,answerFace,correctOverride='') {
 export function reasons(w,game,face='meaning',pool=[],answerFace,profile={}) {
   if(game==='tone')return w?.pinyinSyllables?.length&&readingConfirmed(w,'pinyin')?[]:['missingToneData'];
   if(game==='classifier')return w?.classifiers?.length?[]:['missingClassifierData'];
+  if(game==='handwriting'){
+    if(!['zh','ja'].includes(profile.id))return ['unsupportedGame'];
+    const data=w?.strokeData,chars=[...String(w?.word||'')];
+    if(!data?.complete||data.language!==profile.id||data.characters?.length!==chars.length
+      ||data.characters.some((item,index)=>item.char!==chars[index]))return ['missingStrokeData'];
+  }
   if(game==='typing'&&['zh','ja'].includes(profile.id)){
     const readingField=profile.id==='zh'?'pinyin':'kana';
     if(!readingConfirmed(w,readingField))return ['missingReading'];
@@ -138,6 +144,7 @@ export function question(w,pool,game,face='meaning',mode='review',config={},uuid
   const tone=game==='tone'?toneQuestion(w.pinyinSyllables,w.audio||null):null;
   const classifier=game==='classifier'?classifierQuestion(w):null;
   const twoStep=game==='typing'&&['zh','ja'].includes(profile.id)?twoStepFor(w,pool,game,face,profile.id):null;
+  const handwriting=game==='handwriting'?{language:profile.id,level:'guided',strokeData:structuredClone(w.strokeData)}:null;
   const cloze=game.startsWith('cloze')?clozeData(w):null;
   const answers=cloze?[...cloze.answers]:
     ['quiz','match'].includes(game)?[valueFor(w,answerFace)]:game==='classifier'?[...(classifier?.answers||[])]:[w.word];
@@ -152,7 +159,7 @@ export function question(w,pool,game,face='meaning',mode='review',config={},uuid
   const id=uuid(),eventId=uuid(),baseRev=w.review.rev;
   return {id,eventId,opportunityId:opportunityId({wordId:w.id,baseRev,mode,questionId:id}),
     wordId:w.id,baseRev,mode,game,face,answerFace,config:{...config},snapshot:structuredClone(w),
-    prompt,answers,choices,tone,classifier,twoStep,sentenceId:cloze?.sentenceId||'',sentenceNeedsRefill:cloze?.needsRefill||false,
+    prompt,answers,choices,tone,classifier,twoStep,handwriting,sentenceId:cloze?.sentenceId||'',sentenceNeedsRefill:cloze?.needsRefill||false,
     sentenceReused:cloze?.reused||false,fallback,familiarize,input:'',hadError:false,hint:false,retry:false,
     flipped:false,result:null,activeMs:0,interrupted:false,audioPlayed:false};
 }
