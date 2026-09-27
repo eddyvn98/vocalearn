@@ -1,6 +1,6 @@
 # VocaLearn progress
 
-Updated: 2026-09-26
+Updated: 2026-09-27
 
 This file is the rolling engineering progress note for VocaLearn. The product requirements remain in `docs/spec-v0.5.docx`; this Markdown file records implementation status, acceptance evidence, active work and next steps so progress does not get lost across chats or PRs.
 
@@ -10,7 +10,8 @@ This file is the rolling engineering progress note for VocaLearn. The product re
 |---|---:|---|
 | Phase 1 / MVP - functionality | ~88% | Core MVP is broadly implemented. AT-27 and richer sentence/cloze authoring are merged; explicit AT/UX traceability is now complete. Remaining work is focused acceptance evidence and smaller edge cases. |
 | Phase 1 / MVP - acceptance evidence | ~84% | Automated accessibility coverage now includes measured contrast, product 44px targets, keyboard/modal focus behavior and 320/390px reflow. Remaining gaps are predominantly physical-device, real screen-reader/virtual-keyboard, installed-PWA/background-notification and real two-device evidence. |
-| Full specification v0.5 - phases 1-3 | ~68% | Phase 2 AI/sentence semantics, Chinese/Japanese profile rules, device capability gates, handwriting grading semantics, Chinese tone/classifier rules and the defined advanced-statistics core are now implemented. UI/runtime exposure and physical-device validation for G2/G3 remain incomplete. |
+| Full specification v0.5 - phases 1-3 | ~85% | Phase 2 and Phase 3 software/web scope is now released: AI/Chinese, Japanese, handwriting, capability-gated Speak and advanced statistics. Remaining full-spec gaps are primarily physical-device/accessibility evidence plus explicitly deferred production-provider items. |
+| Phase 3 software/web release | 100% | Statistics, full Japanese, handwriting and Speak capability-gating are merged and browser-verified. Physical-device ASR/pen/palm-rejection certification remains a separate evidence task in issue #84. |
 
 These are planning estimates, not release certification.
 
@@ -174,22 +175,17 @@ Merged commit: `b4e3810664222ece6004e34db18d2f4d31c3f8d1`
 
 ## Phase 2 / Phase 3
 
-Implemented at domain/core level but not yet complete as released end-user flows:
-- AI content-fill job semantics and protected manual edits;
-- sentence-bank validation/selection/reuse/refill semantics;
-- Chinese and Japanese language-profile rules, including pinyin/kana whole-word behavior;
-- device capability gates for TTS/ASR/pen and speech-attempt semantics;
-- handwriting result aggregation and detailed stroke-error evidence;
-- Chinese tone and classifier game rules;
-- advanced-statistics metric definitions and activity aggregation.
+Released software/web scope:
+- Phase 2 AI content-fill, sentence pools, deterministic lookup provenance, Chinese profile, pinyin two-step typing, tone and classifier games;
+- Phase 3 full Japanese profile with kana/furigana/IME-safe two-step typing;
+- Phase 3 handwriting with versioned stroke resources, trace/guided/memory levels, whole-word grading and detailed stroke-error evidence;
+- Phase 3 Speak with explicit verified local/on-device ASR gating, two-valid-attempt semantics and no implicit cloud-audio upload;
+- Phase 3 advanced-statistics screen and browser acceptance.
 
-Still open before G2/G3 can be called complete:
-- wire the new G2/G3 domain modules into released UI/game flows with phase gates;
-- finish the user-facing statistics screen and accessible chart/table presentation;
-- provide the real stroke-data/geometry engine and license/coverage evidence for handwriting;
-- validate TTS/ASR/pen on real target devices and browsers before exposing those capabilities;
-- complete full Japanese UI/furigana/IME acceptance and Chinese tone/classifier UI acceptance;
-- perform the physical-device and installed-PWA acceptance that cannot be certified from desktop automation.
+Remaining evidence is deliberately separated from software completion:
+- issue #84 records physical-device/browser ASR, pen and palm-rejection certification;
+- real screen-reader, virtual-keyboard, installed-PWA/background reminder and real two-device drills remain physical acceptance work;
+- issue #29 remains the deferred production Resend-domain activation item.
 
 ## Rule for updating this file
 
@@ -227,3 +223,16 @@ Merged feature commit: `17dd49e0839e5f5a19b49919e538fa9c4f0f5148`
 
 ### Issue #65 - final Phase-2 release gate
 This release-gate documentation PR records only evidence already observed above. After it merges, the resulting documentation-only main SHA must also reach Railway terminal **SUCCESS** and pass the post-deploy exact-SHA production smoke before #65 is closed. Planning percentages are left unchanged because release evidence alone does not add product scope.
+
+
+## Phase 3 release implementation (2026-09-27)
+
+- PR #73 / `6a23145c43df2da293bcc7b7c0d02362a4647a18`: released advanced statistics UI.
+- PR #78 / `88cd32d872a19e115848823aa067ec6dcba88d47`: released the full Japanese profile/runtime and browser acceptance.
+- PR #81 / `ae9309aa8261f6e27a41c959e8aa92f6e08f75ca`: released handwriting G-08, versioned stroke sources/provenance, safe missing-resource behavior and whole-word grading.
+- PR #83 / `52be1fc6ce25c23347162e08039e7516b823d4bd`: released Speak G-07 behind explicitly verified local/on-device ASR capability.
+- Feature-merge Verify `36323372848` and Browser regression `36323372829` are green.
+- Railway deployment `686619d1-fada-4921-a981-eb5f415bc072` reached terminal **SUCCESS** for the feature merge.
+- Feature-merge production smoke `36323372832` passed.
+- Final Phase-3 release-gate documentation is followed by a fresh exact-main Verify/Browser/Railway/post-deploy smoke cycle before issue #77 and epic #71 are closed.
+- Physical-device certification is explicitly not claimed; issue #84 stays open for that evidence.

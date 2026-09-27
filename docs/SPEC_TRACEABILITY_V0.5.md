@@ -1,15 +1,15 @@
 # Specification v0.5 traceability and progress
 
-Date: 2026-09-26. Product source of truth: `docs/spec-v0.5.docx`.
+Date: 2026-09-27. Product source of truth: `docs/spec-v0.5.docx`.
 
 This document is an implementation/verification index. It does not amend the specification and does not turn source code alone into a passed acceptance case.
 
 ## Status rules
 
-- **Pass**: the applicable Phase-1 behavior exists and there is direct automated/domain/browser evidence for the acceptance result.
+- **Pass**: the behavior applicable to the currently released phase exists and has direct automated/domain/browser evidence for the acceptance result.
 - **Partial**: meaningful implementation/evidence exists, but part of the exact acceptance scenario is not yet demonstrated.
-- **Pending**: applicable to Phase 1 but there is not enough implementation/evidence to accept it.
-- **N/A (Phase 1)**: the case belongs to a later release phase that is intentionally not exposed as a Phase-1 capability.
+- **Pending**: applicable to the released scope but there is not enough implementation/evidence to accept it.
+- **N/A**: not applicable to the currently evaluated scope.
 
 Physical-device requirements are not upgraded to Pass from desktop emulation alone.
 
@@ -19,7 +19,8 @@ Physical-device requirements are not upgraded to Pass from desktop emulation alo
 |---|---:|---|
 | Phase 1 / MVP functional implementation | **~88%** | Core offline PWA, accounts/sync, card model, topics, Excel, six MVP game families, SRS, error book, session recovery, production hardening, AT-27 topic transfer and guided cloze authoring are implemented. |
 | Phase 1 / MVP acceptance evidence | **~82%** | AT-04, AT-10 and AT-30 now have exact automated acceptance scenarios. Real-device accessibility, installed-PWA/background behavior and a real two-device AT-32 drill remain. |
-| Full specification v0.5, phases 1-3 | **~60%** | Phase-2/3 AI, Chinese, speech/ASR, handwriting, Japanese and advanced statistics are intentionally not released yet. |
+| Full specification v0.5, phases 1-3 | **~85%** | Phase-2 and Phase-3 software/web scope is released. Remaining gaps are mainly physical-device/accessibility evidence and explicitly deferred production-provider work. |
+| Phase 3 software/web release | **100%** | Advanced statistics, full Japanese, handwriting and capability-gated Speak are merged and browser-verified; device certification remains separate in issue #84. |
 
 These percentages are planning estimates, not release certification.
 
@@ -41,8 +42,8 @@ These percentages are planning estimates, not release certification.
 | UI-12 Error book | Pass for Phase 1 | Episode/history counts, clean evidence, recall/spacing conditions and practice entry are implemented and tested. |
 | UI-13 Settings/reminders | Partial | Timezone, daily-new limit, SRS factors and synced primary reminder ownership work. Real background/PWA notification delivery still needs physical-device evidence. |
 | UI-14 Resources/sync | Partial | IndexedDB journal, authenticated sync, conflict history, schedule-adjustment evidence, bounded media store and offline resource status exist. Installed-PWA/storage-exhaustion and some physical-device evidence remain. |
-| UI-15 AI/Chinese G2 | N/A (Phase 1) | Phase 2, intentionally not released. |
-| UI-16 Advanced statistics G3 | N/A (Phase 1) | Phase 3, intentionally not released. |
+| UI-15 AI/Chinese G2 | Pass for Phase 2 | AI/sentence semantics, deterministic lookup provenance, Chinese profile/two-step typing, tone and classifier flows are released and browser-tested. |
+| UI-16 Advanced statistics G3 | Pass for Phase 3 | Advanced statistics UI is released and browser-tested; Phase-3 Japanese, handwriting and capability-gated Speak are also present in the released runtime. |
 
 ## AT-01..AT-32 acceptance trace
 
@@ -55,8 +56,8 @@ These percentages are planning estimates, not release certification.
 | AT-05 | **Pass** | Ambiguous prompt/answer pairs must not create a question with multiple reasonable correct answers. | `core/questions.js` blocks ambiguous prompt mappings; domain tests and study-setup browser acceptance verify invalid combinations are blocked with a reason. |
 | AT-06 | **Pass** | Cloze `Yesterday, I ___ to school.` accepts only its sentence answer `went`, not generic card variants. | Exact AT-06 domain test in `tests/grading.test.js`; cloze runtime and guided authoring are browser-tested. |
 | AT-07 | **Pass** | One-character typo gets one correction; corrected result is Hard and error evidence is retained without duplicate schedule transitions. | Exact grading/retry test in `tests/grading.test.js`; attempt/error-book behavior and one-final-answer contention are covered. |
-| AT-08 | **N/A (Phase 1)** | Speech retry behavior when microphone/ASR fails. | Speech/ASR is a later-phase capability and is not exposed in Phase 1. |
-| AT-09 | **N/A (Phase 1)** | Handwriting/stroke correction and whole-word grading. | Handwriting is Phase 3 and is not exposed in Phase 1. |
+| AT-08 | **Pass** | Speech retry behavior when microphone/ASR fails. | Phase-3 speech acceptance verifies a technical mic failure consumes zero valid attempts, then a valid miss + valid success produces Hard with retained error evidence. |
+| AT-09 | **Pass** | Handwriting/stroke correction and whole-word grading. | Core tests plus Phase-3 browser acceptance verify multi-character correction evidence and one whole-word final grade. |
 | AT-10 | **Pass** | Scheduled easy recognition affects schedule once; later wrong free practice affects the error book but not schedule/EF. | Exact scheduler acceptance proves a scheduled recognition transition owns the schedule and a later free-practice failure is excluded from scheduler replay; a paired error-book test proves that free failure is still recorded. |
 | AT-11 | **Pass** | Repeated free practice does not change EF/due date while logs/error-book rules remain active. | Exact AT-11 scheduler test plus runtime free-practice labeling/logging. |
 | AT-12 | **Pass** | Interval/EF calculation uses old EF before the Easy EF increase. | Exact AT-12 scheduler tests in `tests/srs.test.js`. |
@@ -69,14 +70,14 @@ These percentages are planning estimates, not release certification.
 | AT-19 | **Pass** | A late parent result causes deterministic replay; invalid descendants become practice and UI reports schedule adjustment. | Exact AT-19 scheduler/model tests plus late-parent browser acceptance and schedule-diff UI evidence. |
 | AT-20 | **Pass** | Concurrent per-field edits merge; same-field conflict retains conflict history rather than replacing the whole card. | Exact AT-20 model test; sync/conflict UI retains per-field conflict evidence. |
 | AT-21 | **Pass** | Tombstoned card is not resurrected by stale edits/logs; restore is explicit. | Exact AT-21 model test. |
-| AT-22 | **N/A (Phase 1)** | AI result must not overwrite a manual edit made after an AI job started. | AI content fill is Phase 2 and is not released. |
-| AT-23 | **N/A (Phase 1)** | Offline sentence-bank exhaustion falls back/reuses safely or disables cloze without creating a learning error. | Generated sentence bank is Phase 2. Phase-1 cloze uses author-confirmed card sentences only. |
-| AT-24 | **N/A (Phase 1)** | Missing offline TTS/ASR capability must not be presented as available or silently upload speech. | TTS/ASR-dependent games are not released. Phase-1 dictation already requires stored offline audio and falls back/blocks explicitly when audio is missing. |
-| AT-25 | **N/A (Phase 1)** | Chinese pinyin and Japanese whole-word/reading input behavior. | Chinese/Japanese profiles are later phases. |
-| AT-26 | **N/A (Phase 1)** | Phase-2 Chinese cards upgrade to Phase 3 without reset or handwriting dependency. | Cross-phase Chinese/handwriting migration is not applicable to Phase 1. |
+| AT-22 | **Pass** | AI result must not overwrite a manual edit made after an AI job started. | Phase-2 AI job/version semantics and editor browser acceptance preserve manual edits and keep stale results as suggestions. |
+| AT-23 | **Pass** | Offline sentence-bank exhaustion falls back/reuses safely or disables cloze without creating a learning error. | Released sentence-pool semantics and browser acceptance cover deterministic reuse/refill and safe disable behavior without creating a learning error. |
+| AT-24 | **Pass (software gate)** | Missing offline TTS/ASR capability must not be presented as available or silently upload speech. | Speak is hidden unless an explicitly verified local/on-device ASR adapter/device marker is present; technical capability failure has an explicit fallback and no implicit cloud-audio upload path exists. Physical combinations remain issue #84. |
+| AT-25 | **Pass** | Chinese pinyin and Japanese whole-word/reading input behavior. | Phase-2 Chinese and Phase-3 Japanese browser acceptance cover whole-word reading, kana-only skip, katakana normalization and IME-safe submission. |
+| AT-26 | **Partial** | Phase-2 Chinese cards upgrade to Phase 3 without reset or handwriting dependency. | Phase-3 handwriting is optional and missing stroke data disables handwriting only without blocking core games. An explicit historical Phase-2-to-Phase-3 migration drill is still useful evidence. |
 | AT-27 | **Pass** | Moving a multi-topic card replaces only the chosen source membership; other memberships and schedule stay intact. | PR #33; exact domain regression and live card/topic/bulk browser acceptance. |
 | AT-28 | **Pass** | Submit then close/reopen/resend preserves one result/log/schedule transition and the correct next position. | Idempotent event append, deterministic opportunity identity, reload/session persistence and same-opportunity contention are automated. |
-| AT-29 | **Partial** | Long TTS/ASR wait and pause time must not count as recall latency; interruption must not earn Easy or become Forget. | Phase-1 interruption timing is tested: interrupted correct recall cannot earn Easy; audio timing starts after playback. TTS/ASR wait path itself is later-phase. |
+| AT-29 | **Pass (software timing semantics)** | Long TTS/ASR wait and pause time must not count as recall latency; interruption must not earn Easy or become Forget. | Speech adapters may report active speaking time; unknown ASR timing is excluded and marks the attempt ineligible for Easy. Technical recognition latency/failure never becomes Forget. Physical timing measurements remain issue #84. |
 | AT-30 | **Pass** | Only ready/due cards in the current scope block new learning; blocked cards or another scope must not lock the current scope. | Exact domain acceptance proves a not-ready due card and a due card outside the supplied scope do not block new learning, while a ready due card in the current scope returns `reviewFirst`. |
 | AT-31 | **Partial** | One synced primary reminder device; at most one notification/day; denied permission falls back to in-app. | Reminder planning, primary/secondary/denied-permission behavior and day-marker dedup are automated. Background delivery with an installed/closed PWA still needs physical-device evidence. |
 | AT-32 | **Partial** | Two offline devices may exceed the account daily-new limit; sync keeps all results, shows exact total and blocks further starts until next day. | Deterministic merged-state test and Today counter browser check pass. A real two-device offline/reconnect drill is still pending. |
@@ -112,7 +113,7 @@ These percentages are planning estimates, not release certification.
 | UX-25 | **Partial** | Denying reminder permission uses in-app fallback, does not promise background delivery and does not repeatedly prompt. | Denied-permission fallback and primary-device planning are automated. Physical installed-PWA/background behavior remains pending. |
 | UX-26 | **Pass** | Unreleased features must not appear as selectable games or mandatory learning steps. | Phase-2/3 AI, speech, handwriting, Chinese/Japanese and advanced-statistics capabilities remain hidden/not selectable in Phase 1. |
 | UX-27 | **N/A (Phase 1)** | G2/G3 pinyin/kana/IME whole-word behavior. | Chinese/Japanese input is not released. Generic IME Enter protection is already present in browser regression but does not certify the later language flows. |
-| UX-28 | **N/A (Phase 1)** | G3 speech/handwriting feedback and non-leaking hints. | Speech/handwriting are not released. |
+| UX-28 | **Pass (software UI)** | G3 speech/handwriting feedback and non-leaking hints. | Speech shows recognition states/transcript without pronunciation scoring; handwriting levels control reference visibility and memory mode does not expose future strokes. Physical pen/palm behavior remains issue #84. |
 | UX-29 | **Pass** | Changing settings during a session must not mutate the current snapshot/past schedule; timezone impact must be warned. | Live browser acceptance changes Easy threshold and account timezone from another tab, captures and accepts the timezone-impact warning, verifies the model adopts the new timezone, and proves the active question keeps its original config snapshot. |
 | UX-30 | **Pass** | Production UI must use real persistence/schedule/sync rather than demo labels/mock state. | Live app browser and Railway production acceptance exercise real auth, persistence, schedule, sync, offline reload and import/export; demo-only data is not used as completion evidence. |
 
@@ -134,11 +135,8 @@ The remaining Phase-1 acceptance work is concentrated rather than broad:
 
 The following are explicitly not Phase-1 pass/fail blockers while their features remain unreleased:
 
-- AT-08, AT-09: speech/handwriting;
 - AT-22, AT-23: AI fill and generated sentence-bank behavior;
-- AT-24: TTS/ASR-dependent capability handling beyond the current stored-audio fallback;
-- AT-25, AT-26: Chinese/Japanese and cross-phase handwriting behavior;
-- UX-27, UX-28: later-language IME and speech/handwriting UI.
+- AT-26: explicit historical Phase-2 → Phase-3 migration drill remains useful evidence;
 
 When those phases are enabled, these rows must be changed from N/A to real evidence-backed states.
 
@@ -163,3 +161,8 @@ Primary evidence currently includes:
 1. Run the physical-device/accessibility/PWA matrix and the real two-device AT-32 drill.
 2. Keep Resend production activation in issue #29 until its domain prerequisite is available.
 3. Start Phase 2 only after the remaining Phase-1 acceptance gaps are closed.
+
+
+## Phase-3 release trace update (2026-09-27)
+
+Software/web Phase-3 scope is released and browser-verified. The release includes advanced statistics, full Japanese, handwriting and capability-gated Speak. Physical-device evidence is intentionally not inferred from desktop automation; issue #84 remains the explicit evidence tracker for real local-ASR, pen and palm-rejection combinations.

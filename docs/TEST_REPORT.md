@@ -1,6 +1,6 @@
 # Test report: VocaLearn 0.1.0
 
-Date: 2026-09-25. Scope: source in this archive. Environment: Linux, Node **22.16.0**, Chromium via Python Playwright for static layout inspection.
+Date: 2026-09-27. Scope: current `main` through Phase-3 software/web release. Environment includes Linux, Node **22.16.0** and Chromium via Python Playwright for live browser acceptance.
 
 ## Executed and passed
 
@@ -105,3 +105,22 @@ Verified evidence:
 - Phase-3-only full Japanese UI, handwriting and speech remain gated and are not counted as Phase-2 release evidence.
 
 This evidence closes the software/web release gate for the implemented Phase-2 scope. Physical-device-only evidence (real iPhone/iPad Safari, virtual keyboard, screen reader, installed-PWA/background notification behavior and real two-device drills) remains separate and is not inferred from desktop/browser automation.
+
+
+## Phase-3 software release evidence (2026-09-27)
+
+Feature merge commit: `52be1fc6ce25c23347162e08039e7516b823d4bd`.
+
+Observed evidence before the final documentation gate:
+- **Verify** — run `36323372848`: **SUCCESS**.
+- **Browser regression** — run `36323372829`: **SUCCESS**. The Ubuntu Chromium Phase-3 slice passes advanced statistics, Japanese, handwriting and speech acceptance.
+- **Railway** — deployment `686619d1-fada-4921-a981-eb5f415bc072`: terminal **SUCCESS** for the same feature commit.
+- **Production web smoke** — run `36323372832`: **SUCCESS** on the feature merge.
+
+Phase-3 acceptance covered by the browser/domain suites:
+- Japanese: 食べる / ありがとう / コーヒー, kana/katakana behavior, IME-safe Enter, persistence and furigana-backed UI behavior.
+- Handwriting: versioned stroke resources, multi-character progression, direction/position correction, one whole-word result and safe missing-resource fallback.
+- Speech: technical mic/model failure consumes zero valid attempts; a valid miss followed by a valid success grades Hard; transcript feedback is shown; no pronunciation-quality score or implicit cloud-audio upload is introduced.
+- Statistics: the released UI presents the already-defined Phase-3 metrics with browser acceptance.
+
+Physical-device-only claims remain outside automated certification. Issue #84 tracks real device/browser local-ASR, pen and palm-rejection evidence; unsupported combinations remain gated.

@@ -1,6 +1,6 @@
 # Implementation coverage: v0.1.0 against specification v0.5
 
-This is a runnable web implementation through the verified Phase-2 release gate, **not full specification completion**. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Planning percentages are tracked in `PROGRESS.md` and are not changed by release evidence alone. See `SPEC_TRACEABILITY_V0.5.md`.
+This is a runnable web implementation through the Phase-3 software/web release, **not full specification completion**. Physical-device-only certification remains separate and is tracked explicitly. Original requirements remain in `spec-v0.5.docx`; none of the shortcuts below replaces a requirement. Planning percentages are tracked in `PROGRESS.md` and are not changed by release evidence alone. See `SPEC_TRACEABILITY_V0.5.md`.
 
 Status meanings:
 - Implemented: source exists and is connected to the runtime. Not equivalent to browser acceptance.
@@ -14,7 +14,7 @@ Status meanings:
 | UI-01/02 | Local email/password account API and create/switch English-to-Vietnamese or English-to-English sets. Stage-1 language-profile behavior distinguishes bilingual/monolingual meaning mode and masks target forms in English-English meaning prompts. Password reset supports direct Resend delivery, but public signup/reset is intentionally disabled until issue #29 configures a verified sending domain. Email verification is not implemented. |
 | UI-03 | Today, scope selection, learning/due/new/waiting/error counts, resume entry and next-step time. Live-browser CI covers pause/resume reload plus the controlled-clock 1/10/10-minute new-learning chain, including reload while waiting. |
 | UI-04 | Mode/game selection, configurable face matrix (meaning, word, ipa, image, audio), valid-count checks. |
-| UI-05 | Six game families, final-answer feedback, retry, hints, pause. Dictation requires stored uploaded audio. No ASR or pronunciation scoring. |
+| UI-05 | Core game families plus Phase-3 capability-gated Speak, final-answer feedback, retry, hints and pause. Dictation still requires stored uploaded audio. Speak checks recognized text only; it does not score pronunciation quality and is hidden unless an explicitly verified local/on-device ASR capability is present. |
 | UI-06 | Pure scheduler has 1/10-minute learning steps, mandatory recall graduation and relearning; browser queue uses these states. Scheduler timing is covered by domain tests and the live-browser suite verifies the full 1/10/10-minute new-learning chain with a shared controlled browser/server clock. |
 | UI-07 | Session summary separates scheduled reviews, new started/graduated, free practice, entered/left error book, clean/error counts and pending learning steps. |
 | UI-08/09 | Search/filter, edit word/meaning/part of speech/IPA/sentence answers/note/image/audio; delete/restore; identity-change copy or reset; bulk selection, bulk delete, bulk assign topic and bulk reset. |
@@ -24,7 +24,7 @@ Status meanings:
 | UI-13 | Daily limit, timezone, basic SRS factors, open-app reminder. No background notifications or primary-device scheduler. |
 | UI-14 | IndexedDB journal, authenticated sync, authoritative server snapshot & grade validation, opportunity deduplication, conservative multi-device merge, offline resource status modal. |
 | UI-15 | Phase-2 content assistance is wired into the released editor/runtime: protected AI jobs/suggestions, sentence-pool semantics, deterministic English IPA lookup, Chinese Pinyin + Hán-Việt lookup with source/version/license provenance, and the released Chinese profile/game flow. Ambiguous or unsupported readings remain review/missing states instead of fabricated grading data. |
-| UI-16 | Advanced statistics remains Phase 3 UI scope. Japanese full-profile UI, handwriting and speech remain phase-gated and are not exposed as released Phase-2 capabilities. |
+| UI-16 | Phase-3 advanced statistics is released with browser acceptance. Full Japanese profile, handwriting and capability-gated Speak are also released in the runtime; unsupported device-dependent capability remains unavailable rather than being inferred. |
 
 ## High-priority work before calling this MVP complete
 
@@ -81,3 +81,21 @@ AT-32 merged-state behavior is now explicit: the account-wide count of cards sta
 - Railway deployment `31340611-c8eb-400c-bf19-877c76779cbf`: terminal **SUCCESS** for the feature merge after GitHub checks completed.
 - Production web smoke run `36315084159`, attempt 2: **SUCCESS** after deployment; the post-deploy gate verified `/api/health.commit` equals `17dd49e0839e5f5a19b49919e538fa9c4f0f5148` before browser smoke.
 - Phase-3-only Japanese full-profile, handwriting and speech UI stays gated; this Phase-2 gate does not promote those capabilities.
+
+
+## Phase-3 software release update (2026-09-27)
+
+Phase-3 feature delivery is merged on `main`:
+
+- Advanced statistics: PR #73, commit `6a23145c43df2da293bcc7b7c0d02362a4647a18`.
+- Full Japanese profile/UI/runtime: PR #78, commit `88cd32d872a19e115848823aa067ec6dcba88d47`.
+- Handwriting G-08 with versioned stroke provenance, multi-character whole-word grading and missing-resource fallback: PR #81, commit `ae9309aa8261f6e27a41c959e8aa92f6e08f75ca`.
+- Speak G-07 with explicit local/on-device ASR capability gating, technical-error semantics and no implicit cloud-audio upload: PR #83, commit `52be1fc6ce25c23347162e08039e7516b823d4bd`.
+
+Feature-merge evidence on `52be1fc6ce25c23347162e08039e7516b823d4bd`:
+- Verify run `36323372848`: **SUCCESS**.
+- Browser regression run `36323372829`: **SUCCESS**, including Phase-3 statistics, Japanese, handwriting and speech acceptance.
+- Railway deployment `686619d1-fada-4921-a981-eb5f415bc072`: terminal **SUCCESS** for the same commit.
+- Production web smoke run `36323372832`: **SUCCESS** on the feature merge. The final documentation/release-gate commit is re-verified separately before issue #77 closes.
+
+Physical-device evidence is not fabricated. Issue #84 remains open for real device/browser ASR, pen and palm-rejection certification. Until a combination is explicitly verified, Speak stays hidden for that combination and no palm-rejection claim is made.
