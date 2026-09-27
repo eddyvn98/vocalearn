@@ -1,4 +1,4 @@
-"""Real Chromium regression: launch the app, not a static HTML fixture.
+"""Real Chromium regression for the critical offline-first browser journey.
 
 Run: python -m pip install playwright==1.57.0
      python -m playwright install chromium
@@ -20,6 +20,81 @@ ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "tests" / "browser-evidence"
 
 
+def add_word(page, word, meaning):
+    page.locator('[data-action="add"]').first.click()
+    form = page.locator("#word-form")
+    expect(form).to_be_visible()
+    form.locator('[name="word"]').fill(word)
+    form.locator('[name="meaning"]').fill(meaning)
+    form.locator('[type="submit"]').click()
+    expect(form).not_to_be_visible()
+
+
+def wait_for_server(server, origin):
+    for _ in range(100):
+        if server.poll() is not None:
+            raise RuntimeError("Test server exited; see server.log")
+        try:
+            with urlopen(origin + "/api/health", timeout=1) as response:
+                if response.status == 200:
+                    return
+        except OSError:
+            time.sleep(0.1)
+    raise RuntimeError("Test server did not become ready")
+
+
+def run_journey(page, context, errors):
+    page.goto(page.url, wait_until="networkidle")
+    expect(page.locator("#auth-form")).to_be_visible(timeout=10000)
+    assert not errors, "Browser module/runtime errors: " + repr(errors)
+
+    page.locator('[data-action="toggleAuth"]').click()
+    page.locator('[name="email"]').fill("e2e@example.test")
+    page.locator('[name="password"]').fill("disposable-password-123")
+    page.locator('#auth-form [type="submit"]').click()
+    expect(page.locator("#set-form")).to_be_visible()
+
+    page.locator('#set-form [name="name"]').fill("English E2E")
+    page.locator('#set-form [type="submit"]').click()
+    expect(page.locator('[data-action="add"]').first).to_be_visible()
+    add_word(page, "apple", "quả táo")
+    expect(page.locator("body")).to_contain_text("1")
+    print("PASS: register -> create set -> add card")
+
+    page.evaluate("() => navigator.serviceWorker.ready")
+    page.reload(wait_until="networkidle")
+    expect(page.locator('[data-action="add"]').first).to_be_visible()
+    print("PASS: reload restores authenticated local state")
+
+    context.set_offline(True)
+    add_word(page, "banana", "quả chuối")
+    status = page.locator('[data-action="syncInfo"]').first
+    expect(status).to_contain_text("thay đổi chờ đồng bộ")
+    pending_before = status.inner_text()
+
+    page.reload(wait_until="domcontentloaded")
+    expect(page.locator('[data-action="add"]').first).to_be_visible(timeout=10000)
+    expect(page.locator("body")).to_contain_text("Đang offline")
+    expect(page.locator('[data-action="syncInfo"]').first).to_contain_text(
+        "thay đổi chờ đồng bộ"
+    )
+    page.locator('[data-action="library"]').click()
+    expect(page.locator("body")).to_contain_text("banana")
+    print("PASS: offline edit survives a real page reload")
+
+    context.set_offline(False)
+    expect(page.locator('[data-action="syncInfo"]').first).not_to_contain_text(
+        "thay đổi chờ đồng bộ", timeout=10000
+    )
+    page.reload(wait_until="networkidle")
+    page.locator('[data-action="library"]').click()
+    expect(page.locator("body")).to_contain_text("apple")
+    expect(page.locator("body")).to_contain_text("banana")
+    assert pending_before, "Expected an offline pending-sync status"
+    assert not errors, "Browser runtime errors: " + repr(errors)
+    print("PASS: reconnect syncs pending events without losing cards")
+
+
 def main():
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="voca-e2e-") as temp:
@@ -27,24 +102,25 @@ def main():
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         origin = f"http://127.0.0.1:{port}"
-        env = dict(os.environ, PORT=str(port), HOST="127.0.0.1",
-                   DB_PATH=str(Path(temp) / "test.sqlite"), ALLOW_SIGNUP="true",
-                   NODE_ENV="test", APP_ORIGIN=origin)
+        env = dict(
+            os.environ,
+            PORT=str(port),
+            HOST="127.0.0.1",
+            DB_PATH=str(Path(temp) / "test.sqlite"),
+            ALLOW_SIGNUP="true",
+            NODE_ENV="test",
+            APP_ORIGIN=origin,
+        )
         with (EVIDENCE / "server.log").open("w") as log:
-            server = subprocess.Popen(["node", "server/main.js"], cwd=ROOT,
-                                      env=env, stdout=log, stderr=subprocess.STDOUT)
+            server = subprocess.Popen(
+                ["node", "server/main.js"],
+                cwd=ROOT,
+                env=env,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+            )
             try:
-                for _ in range(100):
-                    if server.poll() is not None:
-                        raise RuntimeError("Test server exited; see server.log")
-                    try:
-                        with urlopen(origin + "/api/health", timeout=1) as response:
-                            if response.status == 200:
-                                break
-                    except OSError:
-                        time.sleep(0.1)
-                else:
-                    raise RuntimeError("Test server did not become ready")
+                wait_for_server(server, origin)
                 with sync_playwright() as p:
                     browser = p.chromium.launch()
                     context = browser.new_context(viewport={"width": 1280, "height": 900})
@@ -52,20 +128,15 @@ def main():
                     errors = []
                     page.on("pageerror", lambda error: errors.append(str(error)))
                     try:
-                        page.goto(origin, wait_until="networkidle")
-                        expect(page.locator("#auth-form")).to_be_visible(timeout=10000)
-                        assert not errors, "Browser module/runtime errors: " + repr(errors)
-                        print("PASS: live app modules load and login form is interactive")
-                        page.locator('[data-action="toggleAuth"]').click()
-                        page.locator('[name="email"]').fill("e2e@example.test")
-                        page.locator('[name="password"]').fill("disposable-password-123")
-                        page.locator('#auth-form [type="submit"]').click()
-                        expect(page.locator("#set-form")).to_be_visible()
-                        print("PASS: registration opens study-set creation")
-                        assert not errors, "Browser runtime errors: " + repr(errors)
+                        page.goto(origin, wait_until="domcontentloaded")
+                        run_journey(page, context, errors)
                     finally:
-                        page.screenshot(path=str(EVIDENCE / "last-page.png"), full_page=True)
-                        (EVIDENCE / "page-errors.json").write_text(json.dumps(errors, indent=2))
+                        page.screenshot(
+                            path=str(EVIDENCE / "last-page.png"), full_page=True
+                        )
+                        (EVIDENCE / "page-errors.json").write_text(
+                            json.dumps(errors, indent=2)
+                        )
                         context.close()
                         browser.close()
             finally:
