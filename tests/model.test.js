@@ -54,3 +54,16 @@ test('Topic scope can include or exclude descendants',()=>{
  assert.equal(inScope(state.words.word,['parent'],state.categories,false),false);
  assert.equal(inScope(state.words.word,['child'],state.categories,false),true);
 });
+
+
+test('Category order is retained while hierarchy replay stays stable',()=>{
+ const es=[set,
+  event('c1','category',{id:'a',setId:'set',name:'A',parentId:null,order:1},2),
+  event('c2','category',{id:'b',setId:'set',name:'B',parentId:null,order:0},3),
+  event('c3','category',{id:'a',setId:'set',name:'A',parentId:'b',order:0},4)];
+ const state=replay(es);
+ assert.equal(state.categories.a.parentId,'b');
+ assert.equal(state.categories.a.order,0);
+ assert.equal(state.categories.b.order,0);
+ assert.throws(()=>validateEvent(event('bad-order','category',{id:'x',setId:'set',name:'X',order:-1})));
+});
