@@ -65,11 +65,12 @@ export function openEditor(id) {
   const w=editing||{};
   const categories=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
   const profile=studySetProfile(app.model.sets[app.setId]);
-  const lookupButton=button(t(profile?.id==='zh'?'lookupChinese':'lookupIpa'),'lookupReading','quiet',`data-language="${profile?.id||'en'}"`);
+  const lookupButton=profile?.id==='ja'?'':button(t(profile?.id==='zh'?'lookupChinese':'lookupIpa'),'lookupReading','quiet',`data-language="${profile?.id||'en'}"`);
   const languageFields=profile?.id==='zh'
     ?`${field('pinyin','pinyin',w.pinyin||w.ipa||'')}${field('hanViet','hanViet',w.hanViet||'')}${lookupButton}<p id="lookup-status" class="muted small"></p>${field('radical','radical',w.radical||'')}${field('strokeCount','strokeCount',w.strokeCount||0,'type="number" min="0"')}${field('classifier','classifier',listValue(w.classifiers))}`
+    :profile?.id==='ja'?`${field('kana','kana',w.kana||w.ipa||'')}${field('onReading','onReading',w.onReading||'')}${field('kunReading','kunReading',w.kunReading||'')}<p class="muted small">${t('japaneseReadingHelp')}</p>`
     :`${field('ipa','ipa',w.ipa)}${lookupButton}<p id="lookup-status" class="muted small"></p>`;
-  const wordLabel=profile?.id==='zh'?'wordGeneric':'word';
+  const wordLabel=['zh','ja'].includes(profile?.id)?'wordGeneric':'word';
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
   ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
@@ -116,6 +117,11 @@ export async function saveWord(form) {
     Object.assign(patch,{ipa:pinyin,pinyin,pinyinSyllables:parsePinyin(pinyin),
       hanViet:String(f.get('hanViet')||'').trim(),radical:String(f.get('radical')||'').trim(),
       strokeCount:Number(f.get('strokeCount')||0),classifiers:list('classifier')});
+  }
+  if(profile?.id==='ja'){
+    const kana=String(f.get('kana')||'').trim();
+    Object.assign(patch,{ipa:kana,kana,onReading:String(f.get('onReading')||'').trim(),
+      kunReading:String(f.get('kunReading')||'').trim()});
   }
   if(!patch.word)throw new Error(t('word'));
   if(patch.sentence&&(patch.sentence.split('___').length!==2||!patch.answers.length))throw new Error(t('missingSentence'));
