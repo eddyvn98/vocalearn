@@ -1,7 +1,8 @@
 import {viAi} from './vi-ai.js';
 import {viSentences} from './vi-sentences.js';
 import {viLookups} from './vi-lookups.js';
-export const vi = {...viAi,...viSentences,...viLookups,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
+import {viStatistics} from './vi-statistics.js';
+export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
   invalidAnswerFace:"Mặt đáp phải hợp lệ và khác mặt hỏi",
   missingAnswerFace:"Thiếu dữ liệu cho mặt đáp",
   noMixGames:"Hãy bật ít nhất một game trong Trộn",
@@ -12,15 +13,6 @@ export const vi = {...viAi,...viSentences,...viLookups,audio:"Âm thanh",missing
   "library": "Kho từ",
   "errors": "Sổ từ sai",
   "settings": "Cài đặt",
-  "statistics": "Thống kê",
-  "mastered": "Đã thuộc",
-  "activeCards": "Thẻ đang hoạt động",
-  "masteredRate": "Tỷ lệ đã thuộc",
-  "activity30Days": "Hoạt động 30 ngày gần đây",
-  "practiceAnswers": "Câu luyện",
-  "errorAnswers": "Câu có lỗi",
-  "noActivity": "Chưa có hoạt động trong khoảng này.",
-  "statisticsHelp": "Đã thuộc = đang ôn theo ngày, khoảng ôn từ 21 ngày, chưa quá hạn và không ở Sổ từ sai.",
   "chooseSet": "Chọn bộ học",
   "switchSet": "Đổi bộ học",
   "openSync": "Mở trạng thái đồng bộ",
