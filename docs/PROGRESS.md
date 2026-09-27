@@ -83,3 +83,11 @@ Implemented without waiting for CI between commits:
 - Multi-device same-opportunity review test now exercises conservative merge.
 
 CI is intentionally treated as a parallel feedback loop; failures are fixed as evidence arrives rather than blocking the next independent implementation item.
+
+## 2026-09-27 timed-browser hardening
+
+- Added an injectable trusted server clock for deterministic browser acceptance without real 1/10-minute waits.
+- Extended Chromium E2E to exercise the complete 1/10/10-minute learning progression.
+- Fixed two test-harness visibility/modal issues found by CI: Advanced settings must be expanded before editing maximum interval, and sync-info must close before navigation.
+- Commit `5e19db9`: Verify and deployed smoke passed; browser regression exposed the modal-transition harness issue rather than an application runtime failure.
+- Latest browser rerun is gated on `ed8af1d`; do not mark timed browser acceptance passed until that run is green.
