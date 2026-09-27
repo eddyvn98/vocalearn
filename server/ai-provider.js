@@ -1,7 +1,17 @@
+import {normalizeGeneratedSentences} from '../core/sentences.js';
 const stripFence=value=>String(value||'').trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'');
 
 function instruction(word,type){
   const language=word.language||'unknown',meaningLanguage=word.meaningLanguage||'vi';
+  if(type==='sentence-bank')return [
+    'Return JSON only.',
+    'You generate cloze sentences for a vocabulary learning app.',
+    `Target language: ${language}. Meaning language: ${meaningLanguage}.`,
+    `Word: ${word.word}. Meaning: ${word.meaning||'(none)'}.`,
+    'Return {"sentences":[up to 5 objects]}. Each object must contain text, targetForm, gapStart, gapEnd, acceptedAnswers.',
+    'The targetForm must appear exactly at the supplied gap. acceptedAnswers must contain only forms that are correct for that exact sentence.',
+    'Do not include markdown.'
+  ].join('\n');
   if(type==='fill')return [
     'Return JSON only.',
     'You assist a vocabulary learning app.',
@@ -33,6 +43,11 @@ export function createAiProvider(config={}){
         if(!response.ok){const error=new Error('AI provider returned '+response.status);error.code=response.status>=500?'AI_PROVIDER_TEMPORARY':'AI_PROVIDER_REJECTED';throw error;}
         const data=await response.json(),raw=data?.choices?.[0]?.message?.content;
         let parsed;try{parsed=JSON.parse(stripFence(raw));}catch{const error=new Error('AI provider returned invalid JSON');error.code='AI_INVALID_JSON';throw error;}
+        if(type==='sentence-bank'){
+          const sentences=normalizeGeneratedSentences(parsed.sentences,word,5);
+          if(!sentences.length){const error=new Error('AI provider returned no usable sentences');error.code='AI_EMPTY_RESULT';throw error;}
+          return {sentences};
+        }
         const meanings=Array.isArray(parsed.meaningCandidates)?parsed.meaningCandidates.map(x=>String(x||'').trim()).filter(Boolean).slice(0,3):[];
         const mnemonic=String(parsed.mnemonic||'').trim();
         if(!meanings.length&&!mnemonic){const error=new Error('AI provider returned no usable fields');error.code='AI_EMPTY_RESULT';throw error;}
