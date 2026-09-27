@@ -108,7 +108,7 @@ def main():
                 expect(reports).to_have_count(5)
                 reports.first.click()
                 page.locator("#word-form details summary").click()
-                expect(page.get_by_text("đã báo cáo",exact=True)).to_be_visible()
+                expect(page.locator('[data-action="sentenceReport"]')).to_have_count(4)
 
                 assert not errors,repr(errors)
                 browser.close()
