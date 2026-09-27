@@ -17,9 +17,9 @@ export async function body(req) {
 const mime = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
   '.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'};
 export async function staticFile(path, res, root) {
-  const isCore = path.startsWith('/core/');
-  const base = resolve(root, isCore ? 'core' : 'public');
-  const relative = isCore ? path.slice(6) : path === '/' ? 'index.html' : path.slice(1);
+  const isCore = path.startsWith('/core/'), isVendor = path === '/vendor/fflate.js';
+  const base = resolve(root, isVendor ? 'node_modules/fflate/esm' : isCore ? 'core' : 'public');
+  const relative = isVendor ? 'browser.js' : isCore ? path.slice(6) : path === '/' ? 'index.html' : path.slice(1);
   const file = resolve(base, relative);
   if (!file.startsWith(base + sep) || !mime[extname(file)]) return json(res, 404, {error:'Not found'});
   try {
