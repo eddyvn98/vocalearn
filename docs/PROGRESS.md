@@ -4,14 +4,15 @@ Rolling implementation log for branch `feature/core-hardening-mvp`. Update this 
 
 ## Current focus
 
-**P0: sync/replay hardening + real-browser acceptance**
+**Goal before manual testing: finish every implementation and automated-verification item that can be completed in CI/local automation, leaving only real-device/human acceptance checks.**
 
 Current sequence:
-1. Expand real Chromium lifecycle coverage.
-2. Harden server validation and multi-device reconciliation.
-3. Prove late-parent/descendant replay behavior.
-4. Expand two-profile and multi-tab browser coverage.
-5. Move through remaining AT/UX acceptance items.
+1. Close remaining automated browser lifecycle gaps.
+2. Close remaining sync/replay and multi-device edge cases.
+3. Close remaining UI/spec implementation gaps.
+4. Complete automated AT/UX traceability where behavior can be machine-verified.
+5. Finish production-readiness code/config/docs that do not require external credentials or real-device exercises.
+6. Stop only when the remaining backlog consists of real-device, screen-reader, mobile-keyboard, operational drill, or other human/manual acceptance evidence.
 
 ## Latest completed work
 
@@ -27,6 +28,7 @@ Current sequence:
 | `73bb510` | Multi-device replay | Deterministic device/event tie-break. |
 | `c68711e` | Regression | Tie-break regression test. |
 | `fdefab2` | Offline build | Regenerated service-worker cache manifest after source changes. |
+| `7ed7293` | Browser E2E | Added second-profile offline/reconnect merge and multi-tab IndexedDB broadcast coverage. |
 
 ## CI tracking
 
@@ -39,12 +41,11 @@ As of 2026-09-27:
 
 ## Remaining P0 checks
 
-- Late parent arrives after dependent child review.
-- Contradictory parent changes the accepted branch and descendants stop advancing schedule.
+- Late-parent/descendant behavior already has AT-19 domain coverage; add adversarial server/browser coverage where useful.
 - Same opportunity answered on two devices with different grades.
 - Duplicate final answer through real UI/retry path.
 - Multi-tab local transaction contention.
-- Two browser profiles: offline edits, reconnect and merged state.
+- Two browser profiles: offline edits, reconnect and merged state (browser coverage added; CI evidence pending).
 - Fake-clock 1/10-minute learning progression and reload during wait/retry.
 
 ## Documentation rule
