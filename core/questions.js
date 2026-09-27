@@ -4,6 +4,7 @@ import {isDue, dayAt} from './time.js';
 import {maskMonolingualDefinition} from './language-profiles.js';
 import {twoStepFor} from './script-typing.js';
 import {toneQuestion,classifierQuestion} from './chinese-games.js';
+import {selectWordSentence,clozeFromSentence} from './sentences.js';
 
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
 export const MIX_GAMES = ['flash','quiz','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
@@ -43,12 +44,16 @@ export function requiredGame(w) {
 const promptFace = (game, face) => GAME_FACES[game]?.length === 1 ? GAME_FACES[game][0] : face;
 const valueFor=(w,face)=>face==='pinyin'?(w?.pinyin||w?.ipa||''):w?.[face]||'';
 function answerValue(w,game,answerFace) {
-  if(game.startsWith('cloze'))return w.answers?.[0]||'';
+  if(game.startsWith('cloze'))return w.word||'';
   return ['quiz','match'].includes(game)?valueFor(w,answerFace):w.word;
 }
-function alternatives(w,pool,game,face,answerFace) {
+function clozeData(w){
+  const picked=selectWordSentence(w),data=clozeFromSentence(picked.sentence);
+  return data?{...data,reused:picked.reused,needsRefill:picked.needsRefill}:null;
+}
+function alternatives(w,pool,game,face,answerFace,correctOverride='') {
   const cloze=game==='clozeChoice';
-  const correct=cloze?(w.answers?.[0]||''):answerValue(w,game,answerFace);
+  const correct=cloze?correctOverride:answerValue(w,game,answerFace);
   const seen=new Set([normalize(correct)]);
   return pool.filter(x=>!x.deleted&&x.setId===w.setId&&x.id!==w.id)
     .filter(x=>cloze||normalize(valueFor(x,face))!==normalize(valueFor(w,face)))
@@ -77,10 +82,10 @@ export function reasons(w,game,face='meaning',pool=[],answerFace,profile={}) {
     answerFace=requested;
   }
   if(['spell','dictation'].includes(game)&&!w.audio)return ['missingAudio'];
-  if(['cloze','clozeChoice'].includes(game)&&(!w.sentence||w.sentence.split('___').length!==2||!w.answers?.length))
-    return ['missingSentence'];
+  const cloze=['cloze','clozeChoice'].includes(game)?clozeData(w):null;
+  if(['cloze','clozeChoice'].includes(game)&&!cloze)return ['missingSentence'];
   if(game==='quiz'&&!alternatives(w,pool,game,face,answerFace).length)return ['missingChoices'];
-  if(game==='clozeChoice'&&!alternatives(w,pool,game,face,'word').length)return ['missingChoices'];
+  if(game==='clozeChoice'&&!alternatives(w,pool,game,face,'word',cloze.answers[0]).length)return ['missingChoices'];
   if(game==='match') {
     const prompt=normalize(valueFor(w,face)),answer=normalize(valueFor(w,answerFace));
     const other=pool.some(x=>x.id!==w.id&&!x.deleted&&normalize(valueFor(x,face))
@@ -128,19 +133,21 @@ export function question(w,pool,game,face='meaning',mode='review',config={},uuid
   const tone=game==='tone'?toneQuestion(w.pinyinSyllables,w.audio||null):null;
   const classifier=game==='classifier'?classifierQuestion(w):null;
   const twoStep=game==='typing'&&profile.id==='zh'?twoStepFor(w,pool,game,face,'zh'):null;
-  const answers=game.startsWith('cloze')?[...w.answers]:
+  const cloze=game.startsWith('cloze')?clozeData(w):null;
+  const answers=cloze?[...cloze.answers]:
     ['quiz','match'].includes(game)?[valueFor(w,answerFace)]:game==='classifier'?[...(classifier?.answers||[])]:[w.word];
-  let prompt=game.startsWith('cloze')?w.sentence:game==='tone'
+  let prompt=cloze?cloze.prompt:game==='tone'
     ?tone.syllables.map(s=>s.base).join(' '):game==='classifier'?classifier.prompt:valueFor(w,face);
   if(profile.meaningMode==='monolingual'&&face==='meaning')
     prompt=maskMonolingualDefinition(prompt,w.word,w.variants);
-  const choices=['quiz','clozeChoice'].includes(game)?[answers[0],...alternatives(w,pool,game,face,answerFace)].slice(0,4)
+  const choices=['quiz','clozeChoice'].includes(game)?[answers[0],...alternatives(w,pool,game,face,answerFace,cloze?.answers?.[0]||'')].slice(0,4)
     .map((label,index)=>({label,correct:index===0,wordId:game==='quiz'
       ?(index===0?w.id:pool.find(x=>x.id!==w.id&&answerValue(x,game,answerFace)===label)?.id):undefined})):[];
   const rotation=w.word.length%Math.max(1,choices.length);choices.push(...choices.splice(0,rotation));
   const id=uuid(),eventId=uuid(),baseRev=w.review.rev;
   return {id,eventId,opportunityId:opportunityId({wordId:w.id,baseRev,mode,questionId:id}),
     wordId:w.id,baseRev,mode,game,face,answerFace,config:{...config},snapshot:structuredClone(w),
-    prompt,answers,choices,tone,classifier,twoStep,fallback,familiarize,input:'',hadError:false,hint:false,retry:false,
+    prompt,answers,choices,tone,classifier,twoStep,sentenceId:cloze?.sentenceId||'',sentenceNeedsRefill:cloze?.needsRefill||false,
+    sentenceReused:cloze?.reused||false,fallback,familiarize,input:'',hadError:false,hint:false,retry:false,
     flipped:false,result:null,activeMs:0,interrupted:false,audioPlayed:false};
 }
