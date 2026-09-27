@@ -6,7 +6,7 @@ import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';
-import {setup,studyAction,submitInput,startClock,stopClock} from './study.js';
+import {setup,restoreSetup,studyAction,submitInput,startClock,stopClock} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
@@ -48,11 +48,11 @@ async function click(action,el){
   if(action==='filter'){app.filter=el.dataset.filter;return navigate(app.filter==='errors'?'errors':'library');}
   if(action==='clearFilter'){app.filter='all';app.query='';app.scope=[];return navigate('library');}
   if(action==='selectSet'){app.setId=el.dataset.id;app.scope=[];return navigate('home');}
-  if(action==='setupReview')return setup('review','mix');
-  if(action==='setupNew')return setup('new','mix');
-  if(action==='setupFree')return setup('free','typing');
-  if(action==='setupErrors')return setup('errors','mix');
-  if(action==='practice')return setup('free',el.dataset.game);
+  if(action==='setupReview'){await restoreSetup();return setup('review',app.game||'mix');}
+  if(action==='setupNew'){await restoreSetup();return setup('new','mix');}
+  if(action==='setupFree'){await restoreSetup();return setup('free',app.game==='mix'?'typing':app.game);}
+  if(action==='setupErrors'){await restoreSetup();return setup('errors',app.game||'mix');}
+  if(action==='practice'){await restoreSetup();return setup('free',el.dataset.game);}
   if(action==='add'||action==='edit')return openEditor(el.dataset.id);
   if(action==='deleteWord')return deleteWord(el.dataset.id);
   if(action==='clearImage'||action==='clearAudio')return clearMedia(action==='clearImage'?'image':'audio');
@@ -155,6 +155,7 @@ document.addEventListener('change',async e=>{
   try{
     if(e.target.id==='setup-game'){app.game=e.target.value;setup();}
     if(e.target.id==='setup-face'){app.face=e.target.value;setup();}
+    if(e.target.matches('[data-mix-game]')){app.mixGames=[...document.querySelectorAll('[data-mix-game]:checked')].map(x=>x.dataset.mixGame);setup();}
     if(e.target.id==='image-upload'||e.target.id==='audio-upload')await mediaFile(e.target.files[0],e.target.id==='image-upload'?'image':'audio');
     if(e.target.id==='json-file'||e.target.id==='import-file')await readImport(e.target.files[0]);
   }catch(error){showError(error);}
