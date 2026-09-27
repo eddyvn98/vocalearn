@@ -29,6 +29,14 @@ Current sequence:
 | `c68711e` | Regression | Tie-break regression test. |
 | `fdefab2` | Offline build | Regenerated service-worker cache manifest after source changes. |
 | `7ed7293` | Browser E2E | Added second-profile offline/reconnect merge and multi-tab IndexedDB broadcast coverage. |
+| `9b26301` | Browser E2E | Added duplicate-submit and retry-after-reload coverage. |
+| `6ec5a63` | Settings | Exposed maximum review interval. |
+| `13dbc45`…`f3b5cf1` | Topic scope | Added include/exclude descendant scope with regression coverage. |
+| `a817cd1`…`60dc4c6` | Topics | Added drag reparent/reorder, stable ordering and validation. |
+| `4b51b7c` | Results | Added session transition breakdown. |
+| `9dc0e85`…`45a280a` | Card content | Added level, variants and tags to editor and Excel round-trip. |
+| `c4611b8`…`81dff8d` | Question safety | Block ambiguous auto-graded prompts with regression coverage. |
+| `81815a8` | Multi-device | Exercised competing same-opportunity due review with conservative merge. |
 
 ## CI tracking
 
@@ -46,7 +54,10 @@ As of 2026-09-27:
 - Duplicate final answer through real UI/retry path.
 - Multi-tab local transaction contention.
 - Two browser profiles: offline edits, reconnect and merged state (browser coverage added; CI evidence pending).
-- Fake-clock 1/10-minute learning progression and reload during wait/retry.
+- Fake-clock 1/10-minute learning progression; retry reload is now covered in browser E2E, CI evidence pending.
+- Full game/face setup persistence and configurable mix.
+- Arbitrary per-set custom field definitions.
+- Separate bounded/versioned media blob storage.
 
 ## Documentation rule
 
@@ -55,3 +66,20 @@ When behavior changes:
 - update `docs/TEST_REPORT.md` only for evidence actually executed;
 - append meaningful milestones/CI findings here;
 - do not mark AT/UX items passed from UI appearance alone.
+
+
+## 2026-09-27 implementation batch
+
+Implemented without waiting for CI between commits:
+
+- Browser duplicate-action protection and retry state restoration after reload.
+- Two-profile and multi-tab offline/sync browser scenarios.
+- Exact-versus-descendant topic scope.
+- Topic drag reparenting and sibling ordering with cycle protection.
+- Result-screen started/graduated/error-book transition metrics.
+- Maximum SRS interval setting in the UI.
+- Level, variants and tags in manual editing and Excel round-trip.
+- Ambiguous identical prompts are blocked from auto-graded questions.
+- Multi-device same-opportunity review test now exercises conservative merge.
+
+CI is intentionally treated as a parallel feedback loop; failures are fixed as evidence arrives rather than blocking the next independent implementation item.
