@@ -13,7 +13,7 @@ export function openEditor(id) {
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(c.name)}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I ___ to school."')}${field('answers','answers',w.answers?.join(', '))}
-  ${field('level','level',w.level||'','placeholder="A1, HSK 2, JLPT N4..."')}${field('variants','variants',w.variants?.join(', ')||'','placeholder="went, gone")}${field('tags','tags',w.tags?.join(', ')||'','placeholder="hay-nhầm, công-việc"')}
+  ${field('level','level',w.level||'','placeholder="A1, HSK 2, JLPT N4..."')}${field('variants','variants',w.variants?.join(', ')||'','placeholder="went, gone"')}${field('tags','tags',w.tags?.join(', ')||'','placeholder="hay-nhầm, công-việc"')}
   <label>${t('note')}<textarea name="note" rows="3">${esc(w.note||'')}</textarea></label>
   <label>${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label><div id="media-image">${w.image?`<img class="editor-image" src="${esc(w.image)}" alt="${t('image')}">`:''}</div>${button(t('clear'),'clearImage','quiet')}
   <label>${t('audioFile')}<input type="file" id="audio-upload" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"></label><small id="audio-status">${w.audio?t('saved'):t('missingAudio')}</small>${button(t('clear'),'clearAudio','quiet')}
