@@ -31,13 +31,21 @@ export function workbookToCards(book, mapping = detectMapping(book.rows[0]?.cell
     if(!Object.values(cells).some(v=>v.trim())&&!book.imageRows.has(row))continue;
     const card = Object.fromEntries(COLUMNS.filter(c=>mapping[c.key]).map(c=>[c.key,(cells[mapping[c.key]] || '').trim()]));
     if(!card.word){errors.push({row,message:'Missing Word'});continue;}
-    let answers = [];
-    if(card.answers) {
-      try {answers=card.answers.startsWith('[')?JSON.parse(card.answers):card.answers.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);}
-      catch {errors.push({row,message:'Invalid answers list'});continue;}
-    }
-    if(!Array.isArray(answers)||answers.some(a=>typeof a!=='string')) {errors.push({row,message:'Invalid answers list'});continue;}
-    cards.push({...card,answers,image:book.imageRows.get(row)||card.image||'',row});
+    const parseList = (value, label) => {
+      if(!value)return [];
+      try {
+        const parsed=value.startsWith('[')?JSON.parse(value):value.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);
+        if(!Array.isArray(parsed)||parsed.some(a=>typeof a!=='string'))throw new Error();
+        return parsed;
+      } catch {throw new Error(`Invalid ${label} list`);}
+    };
+    let answers=[],variants=[],tags=[];
+    try {
+      answers=parseList(card.answers,'answers');
+      variants=parseList(card.variants,'variants');
+      tags=parseList(card.tags,'tags');
+    } catch(error) {errors.push({row,message:error.message});continue;}
+    cards.push({...card,answers,variants,tags,image:book.imageRows.get(row)||card.image||'',row});
   }
   return {cards,errors,warnings:book.warnings,skipped:0,mapping};
 }
