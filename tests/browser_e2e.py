@@ -75,7 +75,9 @@ def run_journey(page, context, browser, origin, errors):
     expect(page.locator('[data-action="add"]').first).to_be_visible()
     add_word(page, "apple", "quả táo")
     expect(page.locator("body")).to_contain_text("1")
+    page.locator('[data-action="library"]').click()
     apple_row = page.locator(".word-row", has_text="apple")
+    expect(apple_row).to_be_visible()
     apple_row.locator('[data-action="edit"]').click()
     expect(page.locator("#word-form")).to_be_visible()
     png = base64.b64decode(
