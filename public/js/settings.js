@@ -31,7 +31,8 @@ export async function syncInfo() {
 }
 
 export function buildTopicTree(categories, parentId = null, depth = 0) {
-  const list = Object.values(categories).filter(c => (c.parentId || null) === parentId);
+  const list = Object.values(categories).filter(c => (c.parentId || null) === parentId)
+    .sort((a,b)=>(a.order??Number.MAX_SAFE_INTEGER)-(b.order??Number.MAX_SAFE_INTEGER)||a.name.localeCompare(b.name,'vi'));
   const out = [];
   for (const c of list) {
     out.push({...c, depth});
