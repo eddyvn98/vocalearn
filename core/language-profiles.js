@@ -1,6 +1,4 @@
-const escapeRegExp=value=>String(value||'').replace(/[.*+?^(){}|[\]\\$]/g,'\\const escapeRegExp=value=>String(value||'').replace(/[.*+?^(){}|[\]\\$]/g,'\\$&');
-
-');
+const escapeRegExp=value=>String(value||'').replace(/[.*+?^(){}|[\]\\$]/g,'\\$&');
 
 export const RELEASED_PHASE=2;
 export const LANGUAGE_PROFILES=Object.freeze({
