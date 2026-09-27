@@ -58,8 +58,10 @@ function refs(record,state,index,level){
   }).join('');
 }
 export function handwritingMarkup(q){
-  const s=stateFor(q),data=q.handwriting.strokeData,record=data.characters[s.charIndex],level=q.handwriting.level;
-  const chars=data.characters.map((item,index)=>`<span class="${index===s.charIndex?'badge good':'badge'}">${esc(item.char)}${index<s.charIndex?' ✓':''}</span>`).join(' ');
+  const s=stateFor(q),data=q.handwriting.strokeData,level=q.handwriting.level,done=s.charIndex>=data.characters.length;
+  const activeIndex=Math.min(s.charIndex,data.characters.length-1),record=data.characters[activeIndex];
+  const chars=data.characters.map((item,index)=>`<span class="${!done&&index===s.charIndex?'badge good':'badge'}">${esc(item.char)}${index<s.charIndex?' ✓':''}</span>`).join(' ');
+  if(done)return `<div class="stack handwriting-meta"><div>${chars}</div><p class="muted small handwriting-source">${esc(data.source)} · ${esc(data.version)} · ${esc(data.license)}</p></div>`;
   const allRefs=data.characters.map((item,index)=>refs(item,s,index,level)).join('');
   const status=s.lastError?t('handwritingWrong')+' · '+t('handwriting_'+s.lastError):t('handwritingDraw');
   return `<div class="stack handwriting-meta"><div>${chars}</div><p>${t('handwritingLevel')}: <strong>${t('handwriting_'+level)}</strong> · ${t('stroke')} ${s.strokeIndex+1}/${record.strokes.length}</p>
