@@ -68,7 +68,7 @@ def main():
         page.locator("#setup-handwriting-level").dispatch_event("change")
         page.locator('[data-action="startSession"]').click()
         expect(page.locator("[data-handwriting-canvas]")).to_be_visible()
-        draw(page,20,50,80,50);expect(page.locator("[data-handwriting-canvas]")).to_be_visible()
+        draw(page,20,50,80,50);expect(page.locator(".handwriting-meta")).to_contain_text("Nét 2/2")
         draw(page,50,20,50,80);expect(page.locator("#feedback")).to_be_visible()
         expect(page.locator("#feedback")).to_contain_text("Khó")
         assert not errors,repr(errors)
