@@ -50,7 +50,12 @@ export function previewQueue() {
   });
 }
 export function setup(mode=app.mode,game=app.game) {
-  if(app.session&&!app.session.finished){notify(t('paused'));return;}
+  if(app.session&&!app.session.finished){
+    const started=app.session.queue?.some(q=>q.result||q.hadError||q.hint||q.input||q.flipped||q.audioPlayed);
+    if(started){notify(t('paused'));return;}
+    app.session.finished=true;
+    setMeta('session',app.session).catch(()=>{});
+  }
   app.mode=mode;app.game=game;
   if(!GAME_FACES[game]?.includes(app.face))app.face=GAME_FACES[game]?.[0]||'meaning';
   persistSetup();
