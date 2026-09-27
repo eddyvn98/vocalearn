@@ -57,6 +57,7 @@ export const vi = {audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidF
   "cloze": "Điền câu: gõ",
   "clozeChoice": "Điền câu: chọn",
   "mix": "Trộn game",
+  "mixGames": "Game được dùng khi Trộn",
   "setup": "Thiết lập buổi học",
   "mode": "Chế độ",
   "game": "Game",
