@@ -56,7 +56,8 @@ export async function recognizeSpeech(language,onState=()=>{}){
     const started=performance.now(),result=await a.recognize(language,{onState});
     onState('recognizing');
     if(!result?.transcript||result.confidence===0)return {kind:'technical',code:'lowConfidence'};
-    return {kind:'recognition',transcript:String(result.transcript),activeMs:Number.isFinite(result.activeMs)?Math.max(0,result.activeMs):Math.max(0,performance.now()-started)};
+    const timed=Number.isFinite(result.activeMs);
+    return {kind:'recognition',transcript:String(result.transcript),activeMs:timed?Math.max(0,result.activeMs):0,timingUnknown:!timed};
   }catch(error){
     const map={'not-allowed':'permissionDenied','service-not-allowed':'permissionDenied','audio-capture':'mic','language-not-supported':'notTested','language-unavailable':'notTested','no-speech':'noSpeech'};
     return {kind:'technical',code:map[error?.code]||error?.code||'recognitionError'};
