@@ -66,7 +66,7 @@ def main():
                 form=page.locator("#word-form");form.locator('[name="word"]').fill("deploy")
                 form.locator('[type="submit"]').click()
                 expect(form).not_to_be_visible()
-                page.get_by_text("deploy",exact=True).first.click()
+                page.get_by_role("button",name="Sửa thẻ",exact=True).click()
                 panel=page.locator("#ai-panel");expect(panel).to_be_visible()
                 expect(panel.locator('[data-action="aiStart"]')).to_be_enabled()
                 panel.locator('[data-action="aiStart"]').click()
