@@ -43,9 +43,9 @@ export async function installLocalSpeech(language){
 }
 export function speechCapabilityMarkup(language){
   const s=speechStatus(language);
-  if(s.available)return \`<p class="info">\${t('speechLocalReady')}</p>\`;
-  if(s.reason==='languagePackNeeded')return \`<p class="info">\${t('speechPackNeeded')} <button type="button" class="btn quiet" data-speech-install="\${esc(language)}">\${t('speechInstallPack')}</button></p>\`;
-  return \`<p class="muted small">\${t('speechUnavailable')}: \${t('speechReason_'+s.reason)}</p>\`;
+  if(s.available)return `<p class="info">${t('speechLocalReady')}</p>`;
+  if(s.reason==='languagePackNeeded')return `<p class="info">${t('speechPackNeeded')} <button type="button" class="btn quiet" data-speech-install="${esc(language)}">${t('speechInstallPack')}</button></p>`;
+  return `<p class="muted small">${t('speechUnavailable')}: ${t('speechReason_'+s.reason)}</p>`;
 }
 function correctTranscript(q,transcript){
   const candidates=[q.snapshot.word,...(q.snapshot.variants||[])];
@@ -86,11 +86,11 @@ export async function startLocalSpeech(){
 }
 export function speechMarkup(q){
   const status=q.speechStatus||'ready',transcript=q.speechTranscript||'',error=q.speechError||'';
-  return \`<div class="stack center"><p class="muted">\${t('speechPrompt')}</p>
-    <button type="button" class="btn primary" data-speech-record \${q.result?'disabled':''}>\${t(status==='recording'?'speechListening':'speechRecord')}</button>
-    <p role="status">\${transcript?t('speechRecognized')+': '+esc(transcript):t('speechStatus_'+status)}</p>
-    \${error?\`<p class="error-text">\${t('speechTechnicalNoPenalty')} · \${esc(error)}</p>\`:''}
-    <p class="muted small">\${t('speechLocalOnly')}</p></div>\`;
+  return `<div class="stack center"><p class="muted">${t('speechPrompt')}</p>
+    <button type="button" class="btn primary" data-speech-record ${q.result?'disabled':''}>${t(status==='recording'?'speechListening':'speechRecord')}</button>
+    <p role="status">${transcript?t('speechRecognized')+': '+esc(transcript):t('speechStatus_'+status)}</p>
+    ${error?`<p class="error-text">${t('speechTechnicalNoPenalty')} · ${esc(error)}</p>`:''}
+    <p class="muted small">${t('speechLocalOnly')}</p></div>`;
 }
 document.addEventListener('click',async event=>{
   const install=event.target.closest?.('[data-speech-install]');
