@@ -16,6 +16,7 @@ import {replay} from '../core/model.js';
 import {createAiProvider} from './ai-provider.js';
 import {createJob,listJobs,retryJob,runDueJobs} from './ai-jobs.js';
 import {lookupWord,LOOKUP_SOURCES} from './lookups.js';
+import {strokesFor,STROKE_SOURCES} from './strokes.js';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const resetDefaults={mode:'disabled',appOrigin:'http://localhost',providerUrl:'',providerToken:'',resendApiKey:'',resendFrom:'',ttlMs:30*60000};
 const ipOf=req=>String(req.socket.remoteAddress||'unknown');
@@ -114,6 +115,11 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
       if(path==='/api/me'&&req.method==='GET')return json(res,200,{user});
       if(path==='/api/logout'&&req.method==='POST'){
         logout(db,req);return json(res,200,{ok:true},{'Set-Cookie':cookie('',secure,true)});
+      }
+      if(path==='/api/strokes'&&req.method==='GET'){
+        const language=String(url.searchParams.get('language')||''),text=String(url.searchParams.get('text')||'');
+        if(!['zh','ja'].includes(language)||![...text].length||[...text].length>16)return json(res,400,{error:'language and text required'});
+        return json(res,200,{result:await strokesFor(language,text),sources:STROKE_SOURCES});
       }
       if(path==='/api/lookups'&&req.method==='GET'){
         const language=String(url.searchParams.get('language')||''),word=String(url.searchParams.get('word')||'');
