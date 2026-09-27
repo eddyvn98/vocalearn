@@ -59,7 +59,7 @@ def sync_from_ui(page):
     page.locator('#modal [data-action="close"]').click()
 
 
-def run_journey(page, context, browser, origin, errors):
+def run_journey(page, context, browser, origin, errors, clock_path):
     page.goto(page.url, wait_until="networkidle")
     expect(page.locator("#auth-form")).to_be_visible(timeout=10000)
     assert not errors, "Browser module/runtime errors: " + repr(errors)
@@ -160,6 +160,24 @@ def run_journey(page, context, browser, origin, errors):
     expect(page.locator('[data-action="home"]').first).to_be_visible()
     page.locator('[data-action="home"]').first.click()
     print("PASS: duplicate UI action still records one final answer")
+
+    # Advance the trusted server clock past the first learning wait. Browser time stays
+    # real; the next sync refreshes the client/server anchor used for effectiveAt.
+    clock_path.write_text(str(int(time.time() * 1000) + 61_000))
+    sync_from_ui(page)
+    page.locator('[data-action="home"]').first.click()
+    expect(page.locator('[data-action="setupReview"]')).to_be_visible()
+    page.locator('[data-action="setupReview"]').click()
+    expect(page.locator("#modal")).to_be_visible()
+    expect(page.locator("#modal")).to_contain_text("1/1")
+    page.locator('#modal [data-action="startSession"]').click()
+    expect(page.locator("#answer")).to_be_visible()
+    page.locator("#answer").fill("apple")
+    page.locator('#answer-form [type="submit"]').click()
+    expect(page.locator("#feedback")).to_be_visible()
+    page.locator('[data-action="next"]').click()
+    page.locator('[data-action="home"]').first.click()
+    print("PASS: trusted fake clock unlocks the 1-minute learning step")
 
     page.locator('[data-action="setupFree"]').click()
     expect(page.locator("#modal")).to_be_visible()
@@ -320,6 +338,8 @@ def main():
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         origin = f"http://127.0.0.1:{port}"
+        clock_path = Path(temp) / "clock.txt"
+        clock_path.write_text(str(int(time.time() * 1000)))
         env = dict(
             os.environ,
             PORT=str(port),
@@ -328,6 +348,7 @@ def main():
             ALLOW_SIGNUP="true",
             NODE_ENV="test",
             APP_ORIGIN=origin,
+            TEST_CLOCK_PATH=str(clock_path),
         )
         with (EVIDENCE / "server.log").open("w") as log:
             server = subprocess.Popen(
@@ -347,7 +368,7 @@ def main():
                     page.on("pageerror", lambda error: errors.append(str(error)))
                     try:
                         page.goto(origin, wait_until="domcontentloaded")
-                        run_journey(page, context, browser, origin, errors)
+                        run_journey(page, context, browser, origin, errors, clock_path)
                     finally:
                         page.screenshot(
                             path=str(EVIDENCE / "last-page.png"), full_page=True
