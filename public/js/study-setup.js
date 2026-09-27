@@ -7,16 +7,23 @@ import {normalize} from '/core/grading.js';
 import {studySetProfile} from '/core/language-profiles.js';
 
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
+const profile=()=>studySetProfile(app.model.sets[app.setId])||{};
+const profileGames=()=>GAMES.filter(game=>!['tone','classifier'].includes(game)||profile().id==='zh');
+const profileMixGames=()=>MIX_GAMES.filter(game=>!['tone','classifier'].includes(game)||profile().id==='zh');
+const profileFaces=()=>FACES.filter(face=>{
+  if(['pinyin','hanViet'].includes(face))return profile().id==='zh';
+  return face!=='ipa'||profile().id==='en';
+});
 const answerFaceFor=game=>['quiz','match'].includes(game)?app.answerFace:undefined;
-const enabledMix=()=>app.mixGames.filter(game=>MIX_GAMES.includes(game));
+const enabledMix=()=>app.mixGames.filter(game=>profileMixGames().includes(game));
 
 export function applyStudySetup(saved) {
   if(!saved||typeof saved!=='object')return;
-  if(['mix',...GAMES].includes(saved.game))app.game=saved.game;
-  if(FACES.includes(saved.face))app.face=saved.face;
+  if(['mix',...profileGames()].includes(saved.game))app.game=saved.game;
+  if(profileFaces().includes(saved.face))app.face=saved.face;
   if(['word','meaning','ipa','image'].includes(saved.answerFace))app.answerFace=saved.answerFace;
   if(Array.isArray(saved.mixGames)){
-    const games=[...new Set(saved.mixGames.filter(game=>MIX_GAMES.includes(game)))];
+    const games=[...new Set(saved.mixGames.filter(game=>profileMixGames().includes(game)))];
     app.mixGames=games;
   }
 }
@@ -72,16 +79,16 @@ function gameStats(pool) {
 function mixControls() {
   if(app.game!=='mix')return '';
   return `<fieldset><legend>${t('mixGames')}</legend><p class="muted small">${t('mixHelp')}</p>
-    ${MIX_GAMES.map(game=>`<label class="check-label"><input type="checkbox" data-mix-game="${game}"
+    ${profileMixGames().map(game=>`<label class="check-label"><input type="checkbox" data-mix-game="${game}"
       ${app.mixGames.includes(game)?'checked':''}>${t(game)}</label>`).join('')}
     <p class="muted small">${t('matchSeparate')}</p></fieldset>`;
 }
 function faceControls() {
   if(app.mode==='new')return `<p class="info">${t('requiredLearningSetup')}</p>`;
-  const face=`<label>${t('questionFace')}<select id="setup-face">${FACES.map(value=>
+  const face=`<label>${t('questionFace')}<select id="setup-face">${profileFaces().map(value=>
     `<option value="${value}" ${value===app.face?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
   if(!['mix','quiz','match'].includes(app.game))return face;
-  const answerGame=app.game==='mix'?'quiz':app.game,answers=GAME_ANSWER_FACES[answerGame]||[];
+  const answerGame=app.game==='mix'?'quiz':app.game,answers=(GAME_ANSWER_FACES[answerGame]||[]).filter(value=>profileFaces().includes(value));
   return face+`<label>${t(app.game==='mix'?'quizAnswerFace':'answerFace')}<select id="setup-answer-face">${answers.map(value=>
     `<option value="${value}" ${value===app.answerFace?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
 }
@@ -92,7 +99,7 @@ export function setup(mode=app.mode,game=app.game) {
   const queue=previewQueue(),good=queue.filter(q=>!q.blocked),reasons=reasonCounts(queue);
   const limited=app.game==='match'&&good.length<2;
   const pool=availablePool(app.model,app.setId,inCurrentScope,app.mode,Date.now());
-  const gamePicker=mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...GAMES].map(value=>
+  const gamePicker=mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...profileGames()].map(value=>
     `<option value="${value}" ${value===app.game?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
   modal(t('setup'),`<div class="stack"><p>${t(mode)} · ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
     ${gamePicker}${mixControls()}${faceControls()}
