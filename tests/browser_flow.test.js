@@ -207,3 +207,38 @@ test('Browser Flow: Đăng ký -> Tạo bộ học -> Thêm từ -> Học -> T�
   const allWord2Answers = clientEvents.filter(e => e.kind === 'answer' && e.data.wordId === 'w2');
   assert.equal(allWord2Answers.length, 1);
 });
+
+
+test('Question Flow: matching and cloze keep required interaction semantics', () => {
+  const baseReview = {phase:'review',step:3,rev:'rev-1',dueAt:0,dueDate:'2026-09-27'};
+  const apple = {
+    id:'qa',setId:'set-q',word:'apple',meaning:'qua tao',sentence:'I ate an ___ today.',
+    answers:['apple'],audio:'media-a',ready:true,deleted:false,review:baseReview
+  };
+  const pear = {
+    id:'qb',setId:'set-q',word:'pear',meaning:'qua le',sentence:'This is a ___.',
+    answers:['pear'],audio:'media-b',ready:true,deleted:false,review:{...baseReview,rev:'rev-2'}
+  };
+  const pool=[apple,pear];
+
+  const match=question(apple,pool,'match','word','free',DEFAULTS,()=> 'match-q');
+  assert.equal(match.game,'match');
+  assert.equal(match.prompt,'apple');
+  assert.deepEqual(match.answers,['apple']);
+  assert.equal(match.blocked,undefined);
+
+  const cloze=question(apple,pool,'cloze','sentence','free',DEFAULTS,()=> 'cloze-q');
+  assert.equal(cloze.game,'cloze');
+  assert.equal(cloze.prompt,'I ate an ___ today.');
+  assert.deepEqual(cloze.answers,['apple']);
+  assert.equal(checkAnswer('apple',cloze.answers,false).kind,'correct');
+  assert.notEqual(checkAnswer('pear',cloze.answers,false).kind,'correct');
+
+  const choice=question(apple,pool,'clozeChoice','sentence','free',DEFAULTS,()=> 'choice-q');
+  assert.equal(choice.choices.length,2);
+  assert.equal(choice.choices.filter(x=>x.correct).length,1);
+  assert.equal(choice.choices.find(x=>x.correct).label,'apple');
+
+  const missingSentence=question({...apple,sentence:'No blank here'},pool,'cloze','sentence','free',DEFAULTS,()=> 'bad-q');
+  assert.deepEqual(missingSentence.blocked,['missingSentence']);
+});
