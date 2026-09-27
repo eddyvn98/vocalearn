@@ -95,10 +95,16 @@ def run_journey(page, context, browser, origin, errors, clock_path):
 
     page.locator('[data-action="settings"]').first.click()
     expect(page.locator("#settings-form")).to_be_visible()
+    settings_details = page.locator("#settings-form details")
+    if not settings_details.get_attribute("open"):
+        settings_details.locator("summary").click()
     page.locator('#settings-form [name="maxInterval"]').fill("30")
     page.locator('#settings-form [type="submit"]').click()
     expect(page.locator("#settings-form")).not_to_be_visible()
     page.locator('[data-action="settings"]').first.click()
+    settings_details = page.locator("#settings-form details")
+    if not settings_details.get_attribute("open"):
+        settings_details.locator("summary").click()
     expect(page.locator('#settings-form [name="maxInterval"]')).to_have_value("30")
     page.locator('#modal [data-action="close"]').click()
     page.locator('[data-action="library"]').click()
