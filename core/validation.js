@@ -113,6 +113,19 @@ export function validateEvent(e) {
       if ('readingInput' in d && !text(d.readingInput,500)) fail('Invalid reading input');
       if ('selectedForm' in d && !text(d.selectedForm,500)) fail('Invalid selected form');
       if ('sentenceId' in d && d.sentenceId && !id(d.sentenceId)) fail('Invalid sentence ID');
+      if (d.game==='handwriting') {
+        const s=d.handwritingState;
+        if (!['trace','guided','memory'].includes(d.handwritingLevel) || !s || typeof s!=='object' || Array.isArray(s)
+          || !Array.isArray(s.characters) || !s.characters.length || s.characters.length>16
+          || !Number.isInteger(s.index) || s.index<0 || s.index>s.characters.length
+          || typeof s.hadError!=='boolean' || typeof s.unknown!=='boolean') fail('Invalid handwriting evidence');
+        for (const item of s.characters) {
+          if (!item || !text(item.ch,8) || !Array.isArray(item.wrongStrokes) || item.wrongStrokes.length>256
+            || item.wrongStrokes.some(value=>!Number.isInteger(value)||value<0||value>63)
+            || typeof item.completed!=='boolean' || typeof item.assisted!=='boolean') fail('Invalid handwriting character evidence');
+        }
+        if (d.handwritingErrors!==undefined && (!Array.isArray(d.handwritingErrors)||d.handwritingErrors.length>256)) fail('Invalid handwriting errors');
+      }
       if (d.config) validateEvent({...e, kind: 'settings', data: d.config});
       break;
     case 'attempt':
