@@ -132,7 +132,7 @@ document.addEventListener('submit',async e=>{
     }
     if(form.id==='set-form'){
       const f=new FormData(form),id=uuid();
-      await commit([prepare('set',{id,name:f.get('name').trim(),language:'en',meaningLanguage:f.get('meaningLanguage')})]);
+      await commit([prepare('set',{id,name:f.get('name').trim(),language:f.get('language'),meaningLanguage:f.get('meaningLanguage')})]);
       app.setId=id;await navigate('home');
     }
     if(form.id==='word-form')await saveWord(form);
@@ -172,6 +172,11 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',async e=>{
   try{
+    if(e.target.id==='set-language'){
+      const options={en:[['vi','Tiếng Việt'],['en','English']],zh:[['vi','Tiếng Việt'],['zh','中文']],ja:[['vi','Tiếng Việt'],['ja','日本語']]};
+      const target=document.querySelector('#set-meaning-language');
+      if(target)target.innerHTML=(options[e.target.value]||options.en).map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
+    }
     if(e.target.id==='setup-game'){app.game=e.target.value;setup();}
     if(e.target.id==='setup-face'){app.face=e.target.value;setup();}
     if(e.target.matches('[data-mix-game]')){app.mixGames=[...document.querySelectorAll('[data-mix-game]:checked')].map(x=>x.dataset.mixGame);setup();}
