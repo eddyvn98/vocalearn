@@ -211,3 +211,29 @@ test('Server enforces per-set custom field definitions and select options', asyn
   const badUnknown=await request('/api/sync',batch([unknown]));
   assert.equal(badUnknown.status,400);
 });
+
+
+test('Server validates Phase 3 handwriting as one whole-word result', async () => {
+  const set=event('hand-set','set',{id:'handset',name:'Handwriting',language:'zh',meaningLanguage:'vi'});
+  const strokeData={language:'zh',text:'十人',source:'fixture',version:'test-v1',license:'test-only',complete:true,missing:[],
+    characters:[
+      {char:'十',format:'points',strokes:[[[20,50],[80,50]],[[50,20],[50,80]]]},
+      {char:'人',format:'points',strokes:[[[50,20],[25,82]],[[50,20],[78,82]]]}
+    ]};
+  const word=event('hand-word','word',{id:'handword',setId:'handset',patch:{word:'十人',meaning:'mười người',strokeData}});
+  assert.equal((await request('/api/sync',batch([set,word]))).status,200);
+  const evidence={characters:[
+    {ch:'十',wrongStrokes:[0],completed:true,assisted:false},
+    {ch:'人',wrongStrokes:[],completed:true,assisted:false}
+  ],index:1,hadError:true,unknown:false};
+  const answer=event('hand-answer','answer',{
+    schemaVersion:2,wordId:'handword',questionId:'hand-q',opportunityId:'question:hand-q',
+    baseRev:'root-handword',mode:'free',game:'handwriting',face:'meaning',grade:'hard',
+    hadError:true,assisted:true,hint:false,unknown:false,activeMs:9000,input:'十人',
+    config:DEFAULTS,familiarize:false,handwritingLevel:'guided',handwritingState:evidence,
+    handwritingErrors:[{charIndex:0,char:'十',strokeIndex:0}],
+    question:{prompt:'mười người',answers:['十人'],word:'十人',meaning:'mười người',
+      fields:{word:'hand-word',meaning:'hand-word',strokeData:'hand-word'}}
+  });
+  assert.equal((await request('/api/sync',batch([answer]))).status,200);
+});
