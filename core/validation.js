@@ -1,6 +1,6 @@
 import {DEFAULTS} from './srs.js';
 import {isMediaRef} from './media.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','custom']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','lookupMeta','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -47,6 +47,15 @@ export function validateEvent(e) {
               || sentence.acceptedAnswers.some(answer=>!text(answer,500))
               || !text(sentence.wordContentVersion,1000)
               || !['ready','reported','deleted','needsReview'].includes(sentence.status)) fail('Invalid sentence pool');
+          }
+        } else if (key === 'lookupMeta') {
+          if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).some(field=>!['ipa','pinyin','hanViet'].includes(field))) fail('Invalid lookup metadata');
+          for (const meta of Object.values(v)) {
+            if (!meta || typeof meta !== 'object' || Array.isArray(meta)
+              || !text(meta.source,500) || !text(meta.version,500) || !text(meta.license,200)
+              || !['lookup','unsupported','user'].includes(meta.status)
+              || typeof meta.confirmed !== 'boolean' || typeof meta.needsCheck !== 'boolean'
+              || (meta.ambiguous!==undefined&&(!Array.isArray(meta.ambiguous)||meta.ambiguous.length>100||meta.ambiguous.some(x=>!text(x,20))))) fail('Invalid lookup metadata');
           }
         } else if (key === 'custom') {
           if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).length > 30) fail('Invalid custom data');
