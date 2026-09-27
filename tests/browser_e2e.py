@@ -353,13 +353,15 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     assert answer_count_after_back == answer_count_before_back, "Browser Back submitted an unfinished answer"
     print("PASS: browser Back preserves draft answer without submitting it")
     answer = page.locator("#answer")
-    answer.fill("applf")
+    prompt_text = page.locator(".prompt").inner_text()
+    retry_value = "applf" if "táo" in prompt_text else "bananb"
+    answer.fill(retry_value)
     page.locator('#answer-form [type="submit"]').click()
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
     page.reload(wait_until="networkidle")
     expect(page.locator('[data-action="resume"]').first).to_be_visible(timeout=10000)
     page.locator('[data-action="resume"]').first.click()
-    expect(page.locator("#answer")).to_have_value("applf")
+    expect(page.locator("#answer")).to_have_value(retry_value)
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
     page.locator("#answer").fill("apple")
     page.locator('#answer-form [type="submit"]').click()
