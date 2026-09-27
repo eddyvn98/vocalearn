@@ -15,7 +15,7 @@ export async function lookupEditorReading(language){
   const result=data.result||{},status=document.querySelector('#lookup-status');
   for(const [field,value] of Object.entries(result.fields||{})){
     const input=form.elements[field];if(!input||!value)continue;
-    input.value=value;draft[field]={...result.meta?.[field],value,word};
+    input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));draft[field]={...result.meta?.[field],value,word};
   }
   const messages=[];
   for(const field of language==='zh'?['pinyin','hanViet']:['ipa']){
