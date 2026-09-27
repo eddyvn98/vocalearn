@@ -85,6 +85,9 @@ jobs:
         env:
           PW_BROWSER: ${{ matrix.browser }}
         run: python tests/browser_accessibility.py
+      - name: Run Phase-2 Chinese acceptance
+        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'chromium' && matrix.viewport == '1280x900'
+        run: python tests/browser_chinese.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -15,7 +15,7 @@ import {installAccessibility,isComposing} from './a11y.js';
 import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './navigation.js';
 import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
 import {reminderPlan} from '/core/reminders.js';
-const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
+const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
     :app.page==='study'?studyView():app.page==='results'?resultsView():['library','errors'].includes(app.page)?libraryView():homeView();
@@ -165,7 +165,7 @@ document.addEventListener('submit',async e=>{
     }
     if(form.id==='set-form'){
       const f=new FormData(form),id=uuid();
-      await commit([prepare('set',{id,name:f.get('name').trim(),language:'en',meaningLanguage:f.get('meaningLanguage')})]);
+      await commit([prepare('set',{id,name:f.get('name').trim(),language:f.get('language'),meaningLanguage:f.get('meaningLanguage')})]);
       app.setId=id;await navigate('home');
     }
     if(form.id==='word-form')await saveWord(form);

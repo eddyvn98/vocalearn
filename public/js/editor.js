@@ -4,6 +4,8 @@ import {prepare,transact,model,uuid} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {categoryPath} from '/core/model.js';
 import {WORD_FIELDS} from '/core/validation.js';
+import {studySetProfile} from '/core/language-profiles.js';
+import {parsePinyin} from '/core/chinese-games.js';
 import {hydrateMedia,ingestFile,mediaMarkup} from './media-store.js';
 let editing=null,media={};
 const listValue=value=>(value||[]).join(', ');
@@ -52,11 +54,16 @@ export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};app.dirty=false;
   const w=editing||{};
   const categories=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
+  const profile=studySetProfile(app.model.sets[app.setId]);
+  const languageFields=profile?.id==='zh'
+    ?`${field('pinyin','pinyin',w.pinyin||w.ipa||'')}${field('hanViet','hanViet',w.hanViet||'')}${field('radical','radical',w.radical||'')}${field('strokeCount','strokeCount',w.strokeCount||0,'type="number" min="0"')}${field('classifier','classifier',listValue(w.classifiers))}`
+    :field('ipa','ipa',w.ipa);
+  const wordLabel=profile?.id==='zh'?'wordGeneric':'word';
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
-  ${field('word','word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
+  ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
-  <details><summary>${t('advanced')}</summary><div class="stack">${field('ipa','ipa',w.ipa)}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
+  <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
   <div class="row wrap">${button('Tạo ô trống từ phần bôi đen','makeSentenceBlank','quiet')}</div>
   <div id="sentence-preview" class="wait-panel stack" aria-live="polite"><strong>Xem thử câu hỏi</strong>${sentencePreview(w.sentence||'',w.answers||[])}</div>
   ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
@@ -89,6 +96,13 @@ export async function saveWord(form) {
     register:String(f.get('register')||'').trim(),level:String(f.get('level')||'').trim(),
     translation:String(f.get('translation')||'').trim(),mnemonic:String(f.get('mnemonic')||'').trim(),
     source:String(f.get('source')||'').trim(),custom,note:String(f.get('note')).trim(),...media};
+  const profile=studySetProfile(app.model.sets[app.setId]);
+  if(profile?.id==='zh'){
+    const pinyin=String(f.get('pinyin')||'').trim();
+    Object.assign(patch,{ipa:pinyin,pinyin,pinyinSyllables:parsePinyin(pinyin),
+      hanViet:String(f.get('hanViet')||'').trim(),radical:String(f.get('radical')||'').trim(),
+      strokeCount:Number(f.get('strokeCount')||0),classifiers:list('classifier')});
+  }
   if(!patch.word)throw new Error(t('word'));
   if(patch.sentence&&(patch.sentence.split('___').length!==2||!patch.answers.length))throw new Error(t('missingSentence'));
   const identity=editing&&(normalize(editing.word)!==normalize(patch.word)||normalize(editing.meaning)!==normalize(patch.meaning));
