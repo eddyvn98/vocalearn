@@ -1,3 +1,5 @@
+import {normalizePinyin} from './language-profiles.js';
+
 export function toneQuestion(pinyinSyllables,audio=null){
   if(!Array.isArray(pinyinSyllables)||!pinyinSyllables.length)return null;
   return {syllables:pinyinSyllables.map((x,i)=>({index:i,base:x.base,tone:x.tone,label:x.tone===0?'nhẹ':String(x.tone)})),audio};
@@ -12,3 +14,10 @@ export function classifierQuestion(word){
   return {prompt:word.classifierSentence||('一 ___ '+word.word),answers:values,completed:value=>(word.classifierSentence||('一 ___ '+word.word)).replace('___',value)};
 }
 export function gradeClassifier(question,value){return !!question&&question.answers.includes(value);}
+
+export function parsePinyin(input){
+  return normalizePinyin(input).map(value=>{
+    const match=String(value).match(/^(.+?)([0-4])$/);
+    return match?{base:match[1],tone:Number(match[2])}:null;
+  }).filter(Boolean);
+}
