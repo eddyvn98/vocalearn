@@ -14,9 +14,9 @@ export function openDatabase(path) {
     CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT NOT NULL REFERENCES users(id),event_id TEXT NOT NULL,payload TEXT NOT NULL,UNIQUE(user_id,event_id));
     CREATE INDEX IF NOT EXISTS user_events ON events(user_id,seq);
     CREATE TABLE IF NOT EXISTS devices(user_id TEXT,device_id TEXT,server_at INTEGER,client_at INTEGER,PRIMARY KEY(user_id,device_id));
-    CREATE TABLE IF NOT EXISTS media(user_id TEXT NOT NULL REFERENCES users(id),id TEXT NOT NULL,mime TEXT NOT NULL,
-      data BLOB NOT NULL,size INTEGER NOT NULL,created INTEGER NOT NULL,PRIMARY KEY(user_id,id));
-    CREATE INDEX IF NOT EXISTS user_media_created ON media(user_id,created);`);
+    CREATE TABLE IF NOT EXISTS media_files(user_id TEXT NOT NULL REFERENCES users(id),id TEXT NOT NULL,mime TEXT NOT NULL,
+      size INTEGER NOT NULL,created INTEGER NOT NULL,PRIMARY KEY(user_id,id));
+    CREATE INDEX IF NOT EXISTS user_media_files_created ON media_files(user_id,created);`);
   return db;
 }
 export function allEvents(db, userId) {
