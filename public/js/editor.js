@@ -107,7 +107,8 @@ export async function saveWord(form) {
   }
   if(!patch.word)throw new Error(t('word'));
   if(patch.sentence&&(patch.sentence.split('___').length!==2||!patch.answers.length))throw new Error(t('missingSentence'));
-  const identity=editing&&(normalize(editing.word)!==normalize(patch.word)||normalize(editing.meaning)!==normalize(patch.meaning));
+  const identity=editing&&(normalize(editing.word)!==normalize(patch.word)
+    ||(normalize(editing.meaning)&&normalize(editing.meaning)!==normalize(patch.meaning)));
   const copy=identity&&f.get('identity')!=='reset';
   const id=editing&&!copy?editing.id:uuid();
   if(Object.values(app.model.words).some(w=>!w.deleted&&w.id!==id&&w.setId===app.setId&&normalize(w.word)===normalize(patch.word)&&normalize(w.meaning)===normalize(patch.meaning)&&normalize(w.pos)===normalize(patch.pos)))throw new Error(t('duplicate'));
