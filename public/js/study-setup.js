@@ -6,11 +6,15 @@ import {inScope} from '/core/model.js';
 import {normalize} from '/core/grading.js';
 import {studySetProfile} from '/core/language-profiles.js';
 import {ensureSentencePool} from './sentence-pool.js';
+import {speechAvailability,prepareSpeechCapability} from './speech.js';
 
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 const profile=()=>studySetProfile(app.model.sets[app.setId])||{};
-const profileGames=()=>GAMES.filter(game=>game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
-const profileMixGames=()=>MIX_GAMES.filter(game=>game==='handwriting'?['zh','ja'].includes(profile().id):!['tone','classifier'].includes(game)||profile().id==='zh');
+const gameForProfile=game=>game==='speak'?speechAvailability(profile().id).available
+  :game==='handwriting'?['zh','ja'].includes(profile().id)
+  :!['tone','classifier'].includes(game)||profile().id==='zh';
+const profileGames=()=>GAMES.filter(gameForProfile);
+const profileMixGames=()=>MIX_GAMES.filter(gameForProfile);
 const profileFaces=()=>FACES.filter(face=>{
   if(['pinyin','hanViet'].includes(face))return profile().id==='zh';
   if(face==='kana')return profile().id==='ja';
@@ -98,17 +102,19 @@ function faceControls() {
   return face+level+`<label>${t(app.game==='mix'?'quizAnswerFace':'answerFace')}<select id="setup-answer-face">${answers.map(value=>
     `<option value="${value}" ${value===app.answerFace?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
 }
-export function setup(mode=app.mode,game=app.game) {
+export async function setup(mode=app.mode,game=app.game) {
   if(app.session&&!app.session.finished){notify(t('paused'));return;}
   app.mode=mode;app.game=game;
+  await prepareSpeechCapability(profile().id);
   const globalBlock=mode==='new'?learningAllowed(app.model,words().filter(inCurrentScope),Date.now()):null;
   const queue=previewQueue(),good=queue.filter(q=>!q.blocked),reasons=reasonCounts(queue);
   const limited=app.game==='match'&&good.length<2;
   const pool=availablePool(app.model,app.setId,inCurrentScope,app.mode,Date.now());
   const gamePicker=mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...profileGames()].map(value=>
     `<option value="${value}" ${value===app.game?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
+  const speech=speechAvailability(profile().id),speechNote=!speech.available?`<p class="muted small">${t('speechUnavailable')} · ${t(speech.reason)}</p>`:'';
   modal(t('setup'),`<div class="stack"><p>${t(mode)} · ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
-    ${gamePicker}${mixControls()}${faceControls()}
+    ${gamePicker}${speechNote}${mixControls()}${faceControls()}
     <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>
     ${gameStats(pool)}
     ${reasons.map(([reason,count])=>`<p class="info"><strong>${count}</strong> · ${t(reason)}</p>`).join('')}
