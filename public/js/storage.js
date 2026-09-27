@@ -99,7 +99,7 @@ export async function transact(events,session,metadata={}) {
     }
     if (session !== undefined) tx.objectStore('meta').put(session,'session');
     for(const [key,value] of Object.entries(metadata))tx.objectStore('meta').put(value,key);
-    await done(tx);await refresh();await hydrateMedia(data.events);channel?.postMessage({owner});
+    await done(tx);await refresh();channel?.postMessage({owner});
   };
   queue=queue.catch(()=>{}).then(()=>navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());
   return queue;
@@ -131,7 +131,7 @@ export async function sync() {
     tx.objectStore('meta').put(data.cursor,'cursor');
     offset=data.anchorServer-data.anchorClient;tx.objectStore('meta').put(offset,'offset');
     tx.objectStore('meta').put(Date.now(),'lastSync');
-    await done(tx);await refresh();channel?.postMessage({owner});
+    await done(tx);await refresh();await hydrateMedia(data.events);channel?.postMessage({owner});
   };
   try {await queue.catch(()=>{});await(navigator.locks?navigator.locks.request(`voca-${owner}`,run):run());}
   finally {syncing=false;}
