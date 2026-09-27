@@ -207,3 +207,23 @@ Update this file whenever a meaningful PR is merged or a major acceptance gap is
 - Phase-2 Chinese UI work remains outside the MVP RC1 integration so this release does not accidentally expand its scope.
 - Issue #29 Resend production activation remains explicitly deferred.
 - RC1 must pass Verify, Browser regression and Deployed smoke on the integrated code before promotion to `main`.
+
+
+## Phase 2 release gate (2026-09-27)
+
+### PR #69 - lookup adapters - merged and production-verified
+Merged feature commit: `17dd49e0839e5f5a19b49919e538fa9c4f0f5148`
+
+- Added deterministic English IPA from a vendored open-dict-data snapshot.
+- Added deterministic Chinese Pinyin + Hán-Việt from Unicode Unihan 17, including simplified-to-traditional fallback for missing Vietnamese readings.
+- Persisted source/version/license provenance and confirmation/review state; unsupported data remains missing instead of being fabricated.
+- Added editor lookup actions and Browser acceptance for saved provenance, ambiguous readings, unsupported lookups, manual overrides and `中国 → zhōng guó / trung quốc`.
+- Browser acceptance exposed a real source-provenance schema mismatch before release; it was fixed on the branch before merge.
+- PR Verify, Browser regression and Production web smoke were green before squash merge.
+- Main Verify run `36315084208` and Browser regression run `36315084206` passed on the merged feature SHA.
+- Railway deployment `31340611-c8eb-400c-bf19-877c76779cbf` reached terminal **SUCCESS**.
+- Production web smoke run `36315084159`, attempt 2, verified the exact deployed feature SHA before browser smoke and passed.
+- Phase-3-only Japanese full-profile UI, handwriting and speech remain gated.
+
+### Issue #65 - final Phase-2 release gate
+This release-gate documentation PR records only evidence already observed above. After it merges, the resulting documentation-only main SHA must also reach Railway terminal **SUCCESS** and pass the post-deploy exact-SHA production smoke before #65 is closed. Planning percentages are left unchanged because release evidence alone does not add product scope.
