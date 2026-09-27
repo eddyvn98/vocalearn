@@ -4,6 +4,14 @@ import {prepare,transact,model,uuid,storeMediaUri,mediaSrc} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {WORD_FIELDS} from '/core/validation.js';
 let editing=null,media={};
+function editorDirty(){
+  const form=document.querySelector('#word-form');
+  return app.dirty||!!(form&&editing&&['word','meaning','pos','ipa','sentence','note'].some(name=>
+    String(new FormData(form).get(name)??'')!==String(editing[name]??'')));
+}
+export function canCloseEditor(){
+  return !editorDirty()||confirm(t('discardChanges'));
+}
 export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};app.dirty=false;
   const w=editing||{};
