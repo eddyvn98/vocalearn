@@ -53,13 +53,14 @@ export function setup(mode=app.mode,game=app.game) {
   if(app.session&&!app.session.finished){notify(t('paused'));return;}
   app.mode=mode;app.game=game;
   if(!GAME_FACES[game]?.includes(app.face))app.face=GAME_FACES[game]?.[0]||'meaning';
+  persistSetup();
   const blocked=mode==='new'?learningAllowed(app.model,words().filter(inCurrentScope),Date.now()):null;
   const queue=previewQueue(),good=queue.filter(q=>!q.blocked);
   const errors=[...new Set(queue.flatMap(q=>q.blocked||[]))];
   const limited=app.game==='match'&&good.length<2;
   modal(t('setup'),`<div class="stack"><p>${t(mode)} \u00b7 ${t(mode==='free'||mode==='errors'?'noSchedule':'reviewHint')}</p>
     ${mode==='new'?'':`<label>${t('game')}<select id="setup-game">${['mix',...GAMES].map(g=>`<option value="${g}" ${g===app.game?'selected':''}>${t(g)}</option>`).join('')}</select></label>`}
-    <label ${['mix','typing','flash','quiz'].includes(app.game)?'':'hidden'}>${t('face')}<select id="setup-face">${(GAME_FACES[app.game]||[]).map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
+    <label ${GAME_FACES[app.game]?.length>1?'':'hidden'}>${t('face')}<select id="setup-face">${(GAME_FACES[app.game]||[]).map(f=>`<option value="${f}" ${f===app.face?'selected':''}>${t(f)}</option>`).join('')}</select></label>
     ${app.game==='mix'?`<fieldset><legend>${t('mixGames')}</legend><div class="row wrap">${MIXABLE.map(g=>`<label class="check-label"><input type="checkbox" data-mix-game="${g}" ${app.mixGames.includes(g)?'checked':''}>${t(g)}</label>`).join('')}</div></fieldset>`:''}
     <p><strong>${good.length}/${queue.length}</strong> ${t('validCards')}</p>${errors.map(e=>`<p class="info">${t(e)}</p>`).join('')}
     ${blocked||limited?`<p class="error-text">${t(blocked||'missingChoices')}</p>`:''}
