@@ -169,7 +169,23 @@ def run_journey(page, context, browser, origin, errors, clock_path):
 
     # Advance the trusted server clock through the 1/10/10-minute learning waits.
     # With one card, step 1 quiz falls back to flash; step 2 spell falls back to typing.
-    base_clock = int(time.time() * 1000)
+    # The first answer was recorded before this block; anchor fake time to its persisted effectiveAt.
+    base_clock = page.evaluate("""async () => {
+      const user = JSON.parse(localStorage.getItem('vocalearn-user'));
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('vocalearn-' + user.id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const events = await new Promise((resolve, reject) => {
+        const req = db.transaction('events').objectStore('events').getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      db.close();
+      const answers = events.filter(e => e.kind === 'answer');
+      return Math.max(...answers.map(e => e.effectiveAt || e.at));
+    }""")
     phase_now = base_clock + 61_000
     clock_path.write_text(str(phase_now))
     page.clock.install(time=phase_now)
