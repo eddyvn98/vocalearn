@@ -22,6 +22,7 @@ const profileFaces=()=>FACES.filter(face=>{
 });
 const answerFaceFor=game=>['quiz','match'].includes(game)?app.answerFace:undefined;
 const enabledMix=()=>app.mixGames.filter(game=>profileMixGames().includes(game));
+const speechProbeStarted=new Set();
 
 export function applyStudySetup(saved) {
   if(!saved||typeof saved!=='object')return;
@@ -102,10 +103,16 @@ function faceControls() {
   return face+level+`<label>${t(app.game==='mix'?'quizAnswerFace':'answerFace')}<select id="setup-answer-face">${answers.map(value=>
     `<option value="${value}" ${value===app.answerFace?'selected':''}>${t(value)}</option>`).join('')}</select></label>`;
 }
-export async function setup(mode=app.mode,game=app.game) {
+export function setup(mode=app.mode,game=app.game) {
   if(app.session&&!app.session.finished){notify(t('paused'));return;}
   app.mode=mode;app.game=game;
-  await prepareSpeechCapability(profile().id);
+  const speechId=profile().id;
+  if(!speechProbeStarted.has(speechId)){
+    speechProbeStarted.add(speechId);
+    prepareSpeechCapability(speechId).then(available=>{
+      if(available&&!app.session&&document.querySelector('#modal')?.open)setup(app.mode,app.game);
+    }).catch(()=>{});
+  }
   const globalBlock=mode==='new'?learningAllowed(app.model,words().filter(inCurrentScope),Date.now()):null;
   const queue=previewQueue(),good=queue.filter(q=>!q.blocked),reasons=reasonCounts(queue);
   const limited=app.game==='match'&&good.length<2;
