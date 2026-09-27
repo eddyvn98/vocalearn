@@ -28,6 +28,12 @@ export async function refresh() {
   const tx = db.transaction(['events','meta'],'readonly');
   const [events,c] = await Promise.all([request(tx.objectStore('events').getAll()),request(tx.objectStore('meta').get('cursor'))]);
   cached=events;cursor=c || 0;
+  // Restore the local-order high-water mark after reload so a newly created
+  // event can never sort before an older unsynced dependency from this device.
+  if(deviceId)for(const e of events)if(e.deviceId===deviceId){
+    const order=Number.isFinite(e.localOrder)?e.localOrder:Number(e.at)*1000;
+    if(Number.isFinite(order))lastOrder=Math.max(lastOrder,order);
+  }
   return replay(cached);
 }
 export const model = () => replay(cached);
@@ -127,22 +133,29 @@ export function sync() {
   if(syncPromise)return syncPromise;
   const run = async()=>{
     await refresh();
-    // Media is uploaded separately by content hash before small journal references are synced.
-    const pending=cached.filter(e=>!e.seq).sort((a,b)=>a.localOrder-b.localOrder);
-    await syncPendingMedia(pending);
-    const batch=[];let bytes=0;
-    for(const e of pending) {
-      const size=JSON.stringify(e).length;
-      if(batch.length && (bytes+size>6000000||batch.length===150))break;
-      batch.push(e);bytes+=size;
+    let first=true;
+    while(first||pendingCount()){
+      first=false;
+      // Media is uploaded separately by content hash before small journal references are synced.
+      const pending=cached.filter(e=>!e.seq).sort((a,b)=>a.localOrder-b.localOrder);
+      await syncPendingMedia(pending);
+      const batch=[];let bytes=0;
+      for(const e of pending) {
+        const size=JSON.stringify(e).length;
+        if(batch.length && (bytes+size>6000000||batch.length===150))break;
+        batch.push(e);bytes+=size;
+      }
+      const before=pending.length;
+      const data=await api('sync',{events:batch,cursor,deviceId,clientNow:Date.now()});
+      const tx=db.transaction(['events','meta'],'readwrite');
+      for(const e of data.events)tx.objectStore('events').put(e);
+      tx.objectStore('meta').put(data.cursor,'cursor');
+      offset=data.anchorServer-data.anchorClient;tx.objectStore('meta').put(offset,'offset');
+      tx.objectStore('meta').put(Date.now(),'lastSync');
+      await done(tx);await refresh();
+      if(batch.length&&pendingCount()>=before)throw new Error('Sync did not acknowledge local changes');
     }
-    const data=await api('sync',{events:batch,cursor,deviceId,clientNow:Date.now()});
-    const tx=db.transaction(['events','meta'],'readwrite');
-    for(const e of data.events)tx.objectStore('events').put(e);
-    tx.objectStore('meta').put(data.cursor,'cursor');
-    offset=data.anchorServer-data.anchorClient;tx.objectStore('meta').put(offset,'offset');
-    tx.objectStore('meta').put(Date.now(),'lastSync');
-    await done(tx);await refresh();channel?.postMessage({owner});
+    channel?.postMessage({owner});
   };
   syncPromise=(async()=>{
     await queue.catch(()=>{});
@@ -151,4 +164,3 @@ export function sync() {
   return syncPromise;
 }
 channel?.addEventListener('message',e=>{if(e.data.owner===owner)window.dispatchEvent(new CustomEvent('voca-external'));});
-if (typeof window !== 'undefined') window.addEventListener('online', () => sync().catch(() => {}));
