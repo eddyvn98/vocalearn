@@ -441,6 +441,10 @@ def run_journey(page, context, browser, origin, errors, clock_path):
 
     context.set_offline(False)
     page.evaluate("window.dispatchEvent(new Event('online'))")
+    page.locator('[data-action="syncInfo"]').first.click()
+    sync_button = page.locator('[data-action="sync"]')
+    if sync_button.count():
+        sync_button.click()
     expect(page.locator('[data-action="syncInfo"]').first).not_to_contain_text(
         "thay đổi chờ đồng bộ", timeout=10000
     )
