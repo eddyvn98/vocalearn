@@ -163,3 +163,16 @@ test('Missing media file can be repaired by idempotent upload',async()=>{
  assert.equal(repair.status,200);
  assert.equal((await fetch(url+'/api/media/'+id,{headers:{Cookie:mediaCookie}})).status,200);
 });
+
+
+test('Media rejects hash mismatch and unsupported MIME',async()=>{
+ const login=await request('/api/login',{email:'test@example.com',password:'long-secure-password'},null);
+ const mediaCookie=login.headers.get('set-cookie').split(';')[0];
+ const bytes=Buffer.from('bad-media');
+ const wrong='0'.repeat(64);
+ const mismatch=await request('/api/media',{id:wrong,uri:'data:audio/wav;base64,'+bytes.toString('base64')},mediaCookie);
+ assert.equal(mismatch.status,400);
+ const id=createHash('sha256').update(bytes).digest('hex');
+ const mime=await request('/api/media',{id,uri:'data:text/html;base64,'+bytes.toString('base64')},mediaCookie);
+ assert.equal(mime.status,400);
+});
