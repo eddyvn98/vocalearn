@@ -256,7 +256,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     expect(answer).to_be_visible()
     answer.fill("draft answer")
     page.go_back()
-    expect(page.locator('[data-action="resume"]')).to_be_visible(timeout=10000)
+    expect(page.locator('[data-action="resume"]').first).to_be_visible(timeout=10000)
     page.go_forward()
     expect(page.locator("#answer")).to_have_value("draft answer")
     answer_count_after_back = page.evaluate("""async () => {
@@ -281,7 +281,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     page.locator('#answer-form [type="submit"]').click()
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
     page.reload(wait_until="networkidle")
-    expect(page.locator('[data-action="resume"]')).to_be_visible(timeout=10000)
+    expect(page.locator('[data-action="resume"]').first).to_be_visible(timeout=10000)
     page.locator('[data-action="resume"]').click()
     expect(page.locator("#answer")).to_have_value("applf")
     expect(page.locator("#input-error")).to_contain_text("Sai 1 ký tự")
