@@ -106,7 +106,7 @@ export function validateEvent(e) {
     case 'answer':
       if (!id(d.wordId) || !id(d.questionId) || !text(d.baseRev, 200)
         || !['review','new','free','errors'].includes(d.mode)
-        || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting'].includes(d.game)
+        || !['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier','handwriting','speak'].includes(d.game)
         || !['forget','hard','good','easy'].includes(d.grade)
         || typeof d.hadError !== 'boolean' || typeof d.assisted !== 'boolean') fail('Invalid answer');
       if (d.schemaVersion === 2 && (!text(d.opportunityId, 500) || !d.opportunityId)) fail('Invalid opportunity');
