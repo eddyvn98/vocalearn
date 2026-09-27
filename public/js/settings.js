@@ -59,10 +59,10 @@ export function topics(editId) {
   const cs = Object.values(app.model.categories).filter(c => c.setId === app.setId), c = app.model.categories[editId];
   const tree = buildTopicTree(Object.fromEntries(cs.map(cat => [cat.id, cat])));
   const allCards = words();
-  modal(t('topics'), `<div class="stack"><div class="topic-tree">${tree.map(cat => {
+  modal(t('topics'), `<div class="stack"><p class="muted small">Kéo một chủ đề vào chủ đề khác để đổi cha; thả vào vùng gốc để đưa về cấp cao nhất.</p><div class="topic-row" data-topic-drop-root="true"><span>Thả tại đây để đưa về cấp gốc</span></div><div class="topic-tree">${tree.map(cat => {
     const count = allCards.filter(w => inScope(w, [cat.id], app.model.categories)).length;
     const indent = '\u00a0\u00a0\u00a0\u00a0'.repeat(cat.depth) + (cat.depth ? '└─ ' : '');
-    return `<div class="topic-row"><span>${indent}${esc(cat.name)} <small class="muted">(${count} thẻ)</small></span><div class="row">${button(t('edit'),'editTopic','quiet',`data-id="${cat.id}"`)}${button('&times;','deleteTopic','icon-button',`data-id="${cat.id}" aria-label="${t('delete')} ${esc(cat.name)}"`)}</div></div>`;
+    return `<div class="topic-row" draggable="true" data-topic-drag="${cat.id}" data-topic-drop="${cat.id}"><span>${indent}${esc(cat.name)} <small class="muted">(${count} thẻ)</small></span><div class="row">${button(t('edit'),'editTopic','quiet',`data-id="${cat.id}"`)}${button('&times;','deleteTopic','icon-button',`data-id="${cat.id}" aria-label="${t('delete')} ${esc(cat.name)}"`)}</div></div>`;
   }).join('') || `<p class="muted">${t('noTopics')}</p>`}</div>
   <form id="topic-form" data-id="${c?.id||''}" class="stack">${field('topicName','name',c?.name||'','required maxlength="100"')}<label>${t('parent')}<select name="parentId"><option value="">${t('root')}</option>${cs.filter(cat=>!c||!descendants(app.model.categories,c.id).has(cat.id)).map(cat=>`<option value="${cat.id}" ${cat.id===c?.parentId?'selected':''}>${esc(cat.name)}</option>`).join('')}</select></label><button type="submit" class="btn primary">${t(c?'save':'addTopic')}</button></form></div>`);
 }
