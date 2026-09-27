@@ -15,5 +15,8 @@
     "build:sw": "node scripts/build-sw.js",
     "feature:check": "node scripts/feature-check.js",
     "preview:fixtures": "node --experimental-vm-modules scripts/preview.mjs"
+  },
+  "dependencies": {
+    "fflate": "0.8.3"
   }
 }
