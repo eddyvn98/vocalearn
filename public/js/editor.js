@@ -31,6 +31,14 @@ function sentencePreview(sentence,answers) {
   return `<span>${esc(parts[0])}<strong aria-label="ô trống">_____</strong>${esc(parts[1])}</span>
     <small class="muted">Đáp án chấp nhận: ${esc(answers.length?answers.join(', '):'chưa có')}</small>`;
 }
+function sentencePoolMarkup(w){
+  const pool=Array.isArray(w.sentencePool)?w.sentencePool:[];
+  if(!pool.length)return '';
+  return `<section class="wait-panel stack"><strong>${t('sentencePool')}</strong><p class="muted small">${t('sentencePoolHelp')}</p>
+    ${pool.map(sentence=>`<article class="stack"><span>${esc(sentence.text)}</span><small class="muted">${esc((sentence.acceptedAnswers||[]).join(', '))} · ${t('sentence_'+sentence.status)}</small>
+      <div class="row wrap">${sentence.status==='ready'?button(t('report'),'sentenceReport','quiet',`data-word-id="${w.id}" data-sentence-id="${sentence.id}"`):''}
+      ${sentence.status!=='deleted'?button(t('delete'),'sentenceDelete','quiet',`data-word-id="${w.id}" data-sentence-id="${sentence.id}"`):''}</div></article>`).join('')}</section>`;
+}
 export function updateSentencePreview() {
   const form=document.querySelector('#word-form'),out=document.querySelector('#sentence-preview');
   if(!form||!out)return;
@@ -67,6 +75,7 @@ export function openEditor(id) {
   <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
   <div class="row wrap">${button('Tạo ô trống từ phần bôi đen','makeSentenceBlank','quiet')}</div>
   <div id="sentence-preview" class="wait-panel stack" aria-live="polite"><strong>Xem thử câu hỏi</strong>${sentencePreview(w.sentence||'',w.answers||[])}</div>
+  ${sentencePoolMarkup(w)}
   ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
   ${field('collocations','collocations',listValue(w.collocations))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
   ${field('register','register',w.register)}${field('level','level',w.level)}${field('translation','translation',w.translation)}
