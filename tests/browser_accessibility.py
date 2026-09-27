@@ -40,7 +40,7 @@ def main():
         }""")
         assert prevented, "IME composing Enter must not submit"
         expect(page.locator("#word-form")).to_be_visible()
-        page.locator('#modal [data-action="close"]').click()
+        page.locator('#modal [data-action="close"]').first.click()
         expect(add_button).to_be_focused()
         page.keyboard.press("Tab")
         assert page.evaluate("getComputedStyle(document.activeElement).outlineStyle") != "none"

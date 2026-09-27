@@ -119,8 +119,17 @@ async function click(action,el){
   }
 }
 document.addEventListener('click',async e=>{
-  const el=e.target.closest('[data-action]');if(!el||el.disabled||app.busy)return;
-  app.busy=true;try{await click(el.dataset.action,el);}catch(error){showError(error);}finally{app.busy=false;}
+  const el=e.target.closest('[data-action]');if(!el||el.disabled)return;
+  const action=el.dataset.action;
+  // Opening sync status is read-only. Do not hold the global mutation lock while
+  // its async metadata lookup completes, otherwise an immediately-visible Sync
+  // button can receive a click that is silently discarded.
+  if(action==='syncInfo'){
+    try{await click(action,el);}catch(error){showError(error);}
+    return;
+  }
+  if(app.busy)return;
+  app.busy=true;try{await click(action,el);}catch(error){showError(error);}finally{app.busy=false;}
 });
 document.addEventListener('submit',async e=>{
   e.preventDefault();if(app.busy)return;app.busy=true;
