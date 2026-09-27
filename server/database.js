@@ -106,5 +106,13 @@ function assertReferences(db,userId,state,event,existing=[]){
     if(!['free','errors'].includes(d.mode)&&existing.some(e=>e.kind==='answer'&&e.deviceId===event.deviceId
       &&e.data.opportunityId===d.opportunityId&&e.id!==event.id))throw new Error('Duplicate review opportunity on device');
   }
-  if(kind==='attempt'&&existing.some(e=>e.kind==='answer'&&e.data.questionId===d.questionId))throw new Error('Cannot add attempt to completed question');
+  if(kind==='attempt'){
+    const final=existing.find(e=>e.kind==='answer'&&e.data.questionId===d.questionId);
+    if(final){
+      const reordered=event.deviceId===final.deviceId
+        && Number.isFinite(event.localOrder) && Number.isFinite(final.localOrder)
+        && event.localOrder<final.localOrder;
+      if(!reordered)throw new Error('Cannot add attempt to completed question');
+    }
+  }
 }

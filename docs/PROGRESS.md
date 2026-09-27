@@ -199,3 +199,11 @@ Update this file whenever a meaningful PR is merged or a major acceptance gap is
 - CI / acceptance evidence;
 - remaining caveat;
 - revised percentages only when enough scope changed to justify it.
+
+## 2026-09-27 MVP RC1 integration
+
+- Created `release/mvp-rc1` from current `main` instead of merging the long-lived hardening branch directly.
+- Curated only release-relevant post-main fixes: restore local event ordering after reload, drain/coalesce bounded sync batches, accept logically earlier same-device retry history delivered after its final answer, and build the generated service worker reproducibly in CI/deployment.
+- Phase-2 Chinese UI work remains outside the MVP RC1 integration so this release does not accidentally expand its scope.
+- Issue #29 Resend production activation remains explicitly deferred.
+- RC1 must pass Verify, Browser regression and Deployed smoke on the integrated code before promotion to `main`.
