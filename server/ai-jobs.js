@@ -5,7 +5,7 @@ const retryDelay=[5000,30000,120000];
 const parse=value=>{try{return JSON.parse(value||'{}')}catch{return {}}};
 const rowJob=row=>row?{
   id:row.id,type:row.type,wordId:row.word_id,status:row.status,retryCount:row.retry_count,
-  inputContentVersion:row.input_content_version,inputFieldRevisions:parse(row.input_field_revisions),
+  inputContentVersion:row.input_content_version,inputFieldRevisions:parse(row.input_field_revisions),inputSnapshot:parse(row.input_snapshot),
   result:parse(row.result),safePatch:parse(row.safe_patch),suggestions:parse(row.suggestions),
   errorCode:row.error_code,notBefore:row.not_before,createdAt:row.created,updatedAt:row.updated
 }:null;
@@ -13,9 +13,9 @@ const rowJob=row=>row?{
 export function createJob(db,userId,word,type='fill',now=Date.now(),id=randomUUID()){
   const job=startAiJob(word,type,id,now);
   db.prepare(`INSERT INTO ai_jobs(user_id,id,word_id,type,status,retry_count,input_content_version,
-    input_field_revisions,result,safe_patch,suggestions,error_code,not_before,created,updated)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(userId,job.id,word.id,type,'queued',0,
-      job.inputContentVersion,JSON.stringify(job.inputFieldRevisions),null,'{}','{}',null,now,now,now);
+    input_field_revisions,input_snapshot,result,safe_patch,suggestions,error_code,not_before,created,updated)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(userId,job.id,word.id,type,'queued',0,
+      job.inputContentVersion,JSON.stringify(job.inputFieldRevisions),JSON.stringify(word),null,'{}','{}',null,now,now,now);
   return job;
 }
 export function listJobs(db,userId,wordId){
@@ -31,7 +31,7 @@ export function retryJob(db,userId,id,now=Date.now()){
     .run(now,now,userId,id);
   return getJob(db,userId,id);
 }
-export async function runJob(db,userId,id,word,provider,now=Date.now()){
+export async function runJob(db,userId,id,word,provider,now=Date.now(),loadCurrent=null){
   const job=getJob(db,userId,id);if(!job||job.status!=='queued'||job.notBefore>now)return job;
   if(!word||word.deleted){
     db.prepare(`UPDATE ai_jobs SET status='stale',error_code='WORD_MISSING',updated=? WHERE user_id=? AND id=?`).run(now,userId,id);
@@ -39,9 +39,10 @@ export async function runJob(db,userId,id,word,provider,now=Date.now()){
   }
   db.prepare(`UPDATE ai_jobs SET status='running',updated=? WHERE user_id=? AND id=?`).run(now,userId,id);
   try{
-    const result=await provider.generate({word,type:job.type});
+    const result=await provider.generate({word:job.inputSnapshot||word,type:job.type});
     const candidate={mnemonic:result.mnemonic||''};
-    const done=completeAiJob(job,word,candidate,Date.now());
+    const currentWord=loadCurrent?loadCurrent():word;
+    const done=completeAiJob(job,currentWord,candidate,Date.now());
     db.prepare(`UPDATE ai_jobs SET status=?,result=?,safe_patch=?,suggestions=?,error_code=NULL,updated=? WHERE user_id=? AND id=?`)
       .run(done.status,JSON.stringify(result),JSON.stringify(done.safePatch||{}),JSON.stringify(done.suggestions||{}),Date.now(),userId,id);
   }catch(error){
@@ -54,6 +55,6 @@ export async function runJob(db,userId,id,word,provider,now=Date.now()){
 }
 export async function runDueJobs(db,provider,loadWord,limit=5){
   const rows=db.prepare(`SELECT user_id,id,word_id FROM ai_jobs WHERE status='queued' AND not_before<=? ORDER BY created LIMIT ?`).all(Date.now(),limit);
-  for(const row of rows)await runJob(db,row.user_id,row.id,loadWord(row.user_id,row.word_id),provider);
+  for(const row of rows){const current=()=>loadWord(row.user_id,row.word_id);await runJob(db,row.user_id,row.id,current(),provider,Date.now(),current);}
   return rows.length;
 }
