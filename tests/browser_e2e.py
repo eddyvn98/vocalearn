@@ -400,6 +400,7 @@ def run_journey(page, context, browser, origin, errors, clock_path):
     print("PASS: offline edit survives a real page reload")
 
     context.set_offline(False)
+    page.evaluate("window.dispatchEvent(new Event('online'))")
     expect(page.locator('[data-action="syncInfo"]').first).not_to_contain_text(
         "thay đổi chờ đồng bộ", timeout=10000
     )
