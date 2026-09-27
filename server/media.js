@@ -39,3 +39,9 @@ export function getMedia(db,userId,id,root) {
   if(!existsSync(file))return null;
   return {...item,data:readFileSync(file)};
 }
+
+
+export function mediaUsage(db,userId) {
+  const row=db.prepare('SELECT COUNT(*) AS count, COALESCE(SUM(size),0) AS bytes FROM media_files WHERE user_id=?').get(userId);
+  return {count:Number(row.count),bytes:Number(row.bytes),limit:maxUser,remaining:Math.max(0,maxUser-Number(row.bytes))};
+}
