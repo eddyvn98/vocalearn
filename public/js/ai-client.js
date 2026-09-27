@@ -38,7 +38,8 @@ function assertClean(wordId){
   return word;
 }
 export async function startAi(wordId){
-  assertClean(wordId);await api('ai/jobs',{wordId,type:'fill'});await refreshAiPanel(wordId);return wordId;
+  const word=app.model.words[wordId];if(!word||word.deleted)throw new Error(t('aiWordMissing'));
+  await api('ai/jobs',{wordId,type:'fill'});await refreshAiPanel(wordId);return wordId;
 }
 async function findJob(wordId,jobId){
   const data=await api('ai/jobs?wordId='+encodeURIComponent(wordId));
