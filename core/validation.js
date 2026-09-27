@@ -1,6 +1,6 @@
 import {DEFAULTS} from './srs.js';
 import {isMediaRef} from './media.js';
-export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','radical','strokeCount','classifiers','sentence','answers','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','custom']);
+export const WORD_FIELDS = new Set(['word','meaning','pos','ipa','pinyin','pinyinSyllables','hanViet','radical','strokeCount','classifiers','sentence','answers','sentencePool','image','audio','note','level','variants','tags','synonyms','antonyms','collocations','wordFamily','register','translation','mnemonic','source','custom']);
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 const text = (v, max = 2000) => typeof v === 'string' && v.length <= max;
 const fail = message => {throw new Error(message);};
@@ -38,6 +38,16 @@ export function validateEvent(e) {
           if (!Array.isArray(v) || v.length > 50 || v.some(s=>!s||!text(s.base,50)||!Number.isInteger(s.tone)||s.tone<0||s.tone>4)) fail('Invalid pinyin syllables');
         } else if (key === 'strokeCount') {
           if (!Number.isInteger(v) || v < 0 || v > 1000) fail('Invalid stroke count');
+        } else if (key === 'sentencePool') {
+          if (!Array.isArray(v) || v.length > 5) fail('Invalid sentence pool');
+          for (const sentence of v) {
+            if (!sentence || !id(sentence.id) || !text(sentence.text,5000) || !text(sentence.targetForm,500)
+              || !Number.isInteger(sentence.gapStart) || !Number.isInteger(sentence.gapEnd)
+              || !Array.isArray(sentence.acceptedAnswers) || sentence.acceptedAnswers.length > 10
+              || sentence.acceptedAnswers.some(answer=>!text(answer,500))
+              || !text(sentence.wordContentVersion,1000)
+              || !['ready','reported','deleted','needsReview'].includes(sentence.status)) fail('Invalid sentence pool');
+          }
         } else if (key === 'custom') {
           if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).length > 30) fail('Invalid custom data');
           for (const [customId,value] of Object.entries(v)) {
@@ -81,6 +91,7 @@ export function validateEvent(e) {
       if (d.schemaVersion === 2 && (!text(d.opportunityId, 500) || !d.opportunityId)) fail('Invalid opportunity');
       if ('readingInput' in d && !text(d.readingInput,500)) fail('Invalid reading input');
       if ('selectedForm' in d && !text(d.selectedForm,500)) fail('Invalid selected form');
+      if ('sentenceId' in d && d.sentenceId && !id(d.sentenceId)) fail('Invalid sentence ID');
       if (d.config) validateEvent({...e, kind: 'settings', data: d.config});
       break;
     case 'attempt':

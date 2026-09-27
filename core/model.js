@@ -36,6 +36,8 @@ export function replay(input) {
   }
   for (const w of Object.values(state.words)) {
     const related = events.filter(e => e.data.wordId === w.id);
+    w.sentenceUsage = related.filter(e=>e.kind==='answer'&&e.data.sentenceId)
+      .map(e=>({sentenceId:e.data.sentenceId,at:e.effectiveAt??e.at}));
     const resetIndex = events.findLastIndex(e => e.kind === 'resetWord' && e.data.id === w.id);
     const afterReset = resetIndex < 0 ? related : related.filter(e => events.indexOf(e) > resetIndex);
     const schedule = scheduleFor(w.generation, afterReset);

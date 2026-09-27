@@ -10,6 +10,7 @@ import {mediaBlob,mediaUrl} from './media-store.js';
 import {sessionBaseline} from '/core/session-summary.js';
 import {readingMatches,twoStepSnapshot} from '/core/script-typing.js';
 import {gradeTones,gradeClassifier} from '/core/chinese-games.js';
+import {ensureSentencePool} from './sentence-pool.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 let started=0;
 async function ensureQuestionMedia(q,allMatch=false) {
@@ -67,7 +68,7 @@ async function writeAnswer(q,correct) {
     target.result=result;if(!correct)target.hadError=true;
     next.error='';
     const data={schemaVersion:2,wordId:q.wordId,questionId:q.id,opportunityId:q.opportunityId,baseRev:q.baseRev,mode:q.mode,game:q.game,
-      answerFace:q.answerFace,
+      answerFace:q.answerFace,...(q.sentenceId?{sentenceId:q.sentenceId}:{}),
       ...result,hadError:target.hadError,config:q.config,familiarize:q.familiarize,
       activeMs:Math.round(q.activeMs),input:q.input,readingInput:q.twoStep?.readingInput||'',selectedForm:q.twoStep?.selected||'',face:q.face,hint:q.hint,interrupted:q.interrupted,
       unknown:!correct,selectedWordId:q.selectedWordId,question:{prompt:['image','audio'].includes(q.face)?`[${q.face}]`:q.prompt,answers:q.answers,
@@ -88,6 +89,7 @@ async function writeAnswer(q,correct) {
       notify(t('answeredElsewhere'));
     }
     app.model=model();app.render('#feedback');
+    if(q.sentenceNeedsRefill)ensureSentencePool(q.wordId,{force:true}).catch(()=>{});
   } catch(error){app.session.error=t('saveError')+' '+error.message;app.render();throw error;}
   finally{submitting=false;}
 }

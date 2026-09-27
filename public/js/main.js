@@ -16,6 +16,7 @@ import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './nav
 import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
 import {reminderPlan} from '/core/reminders.js';
 import {startAi,applyAi,applyAiField,applyAiMeaning,retryAi} from './ai-client.js';
+import {updateSentenceStatus} from './sentence-pool.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -76,6 +77,10 @@ async function click(action,el){
     form.elements.meaning.value=value;app.dirty=true;return;
   }
   if(action==='aiRetry')return retryAi(el.dataset.wordId,el.dataset.jobId);
+  if(action==='sentenceReport'||action==='sentenceDelete'){
+    const id=await updateSentenceStatus(el.dataset.wordId,el.dataset.sentenceId,action==='sentenceReport'?'reported':'deleted');
+    return openEditor(id);
+  }
   if(action==='deleteWord')return deleteWord(el.dataset.id);
   if(action==='clearImage'||action==='clearAudio')return clearMedia(action==='clearImage'?'image':'audio');
   if(action==='settings')return settings();

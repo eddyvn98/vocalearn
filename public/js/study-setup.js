@@ -5,6 +5,7 @@ import {availablePool,learningAllowed,question,GAMES,MIX_GAMES,FACES,GAME_ANSWER
 import {inScope} from '/core/model.js';
 import {normalize} from '/core/grading.js';
 import {studySetProfile} from '/core/language-profiles.js';
+import {ensureSentencePool} from './sentence-pool.js';
 
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories);
 const profile=()=>studySetProfile(app.model.sets[app.setId])||{};
@@ -108,4 +109,11 @@ export function setup(mode=app.mode,game=app.game) {
     ${reasons.map(([reason,count])=>`<p class="info"><strong>${count}</strong> · ${t(reason)}</p>`).join('')}
     ${globalBlock||limited?`<p class="error-text">${t(globalBlock||'missingChoices')}</p>`:''}
     ${button(t('start'),'startSession','primary full',!good.length||globalBlock||limited?'disabled':'')}</div>`);
+  if(['cloze','clozeChoice'].includes(app.game)&&typeof navigator!=='undefined'&&navigator.onLine){
+    const ids=[...new Set(queue.filter(q=>q.blocked?.includes('missingSentence')).map(q=>q.wordId))].slice(0,5);
+    if(ids.length)Promise.allSettled(ids.map(wordId=>ensureSentencePool(wordId))).then(results=>{
+      if(results.some(result=>result.status==='fulfilled'&&result.value)&&!app.session
+        &&document.querySelector('#modal')?.open&&['cloze','clozeChoice'].includes(app.game))setup(app.mode,app.game);
+    });
+  }
 }

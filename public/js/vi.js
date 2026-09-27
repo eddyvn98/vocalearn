@@ -1,5 +1,6 @@
 import {viAi} from './vi-ai.js';
-export const vi = {...viAi,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
+import {viSentences} from './vi-sentences.js';
+export const vi = {...viAi,...viSentences,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
   invalidAnswerFace:"Mặt đáp phải hợp lệ và khác mặt hỏi",
   missingAnswerFace:"Thiếu dữ liệu cho mặt đáp",
   noMixGames:"Hãy bật ít nhất một game trong Trộn",
