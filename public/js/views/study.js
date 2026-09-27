@@ -13,6 +13,16 @@ function typing(q) {
   const disabled=usesAudio(q)&&!q.audioPlayed;
   return `<form id="answer-form"><label>${t('word')}<input id="answer" name="answer" autocomplete="off" autocapitalize="none" spellcheck="false" value="${esc(q.input)}" ${q.result||disabled?'disabled':''} aria-invalid="${q.retry&&!q.result}" aria-describedby="input-error"></label><p id="input-error" class="error-text" role="status">${q.inputError|| (q.retry&&!q.result?t('retry')+q.position:'')}</p>${!q.result?`<div class="row between wrap">${button(t('dontKnow'),'unknown','quiet',disabled?'disabled':'')}${button(t('hint'),'hint','quiet',q.hint||disabled?'disabled':'')}<button type="submit" class="btn primary" ${disabled?'disabled':''}>${t('check')}</button></div>`:''}</form>`;
 }
+function chineseGame(q){
+  if(q.game==='tone'){
+    const selected=q.toneAnswers||[];
+    return `<div class="stack"><div class="tone-grid">${q.tone.syllables.map((s,i)=>`<fieldset><legend>${esc(s.base)}</legend><div class="row wrap">${[1,2,3,4,0].map(tone=>button(tone===0?'nhẹ':String(tone),'toneChoice',selected[i]===tone?'primary':'',`data-index="${i}" data-tone="${tone}" ${q.result?'disabled':''}`)).join('')}</div></fieldset>`).join('')}</div>${!q.result?button(t('check'),'checkTones','primary full',selected.length!==q.tone.syllables.length||selected.some(x=>x===null)?'disabled':''):''}</div>`;
+  }
+  if(q.game==='classifier'){
+    return `<div class="stack"><p class="assembled">${esc(q.classifier.prompt)}</p><div class="answers">${q.classifier.answers.map(value=>button(esc(value),'classifierChoice','answer',`data-value="${esc(value)}" ${q.result?'disabled':''}`)).join('')}</div></div>`;
+  }
+  return '';
+}
 function spelling(q) {
   const letters=Array.from(q.snapshot.word).map((ch,id)=>({ch,id}));
   const order=[...letters].sort((a,b)=>a.ch.localeCompare(b.ch)||a.id-b.id);
@@ -28,7 +38,7 @@ export function studyView() {
   ${q.game==='typing'?`<p class="muted">${t('typePrompt')}</p>`:''}${q.game==='quiz'||q.game==='clozeChoice'?`<p class="muted">${t('quizPrompt')}</p>`:''}</div>
   ${q.fallback?`<p class="info">${t(q.fallback)} \u2192 ${t(q.game)}</p>`:''}
   ${q.hint?`<p class="info">${t('hint')}: ${esc(q.snapshot.pinyin||q.snapshot.kana||q.snapshot.ipa||q.answers[0].slice(0,1)+'\u2026')} \u00b7 ${t('helpCap')}</p>`:''}
-  ${['typing','dictation','cloze'].includes(q.game)?typing(q):q.game==='spell'?spelling(q):q.game==='flash'?`
+  ${['typing','dictation','cloze'].includes(q.game)?typing(q):['tone','classifier'].includes(q.game)?chineseGame(q):q.game==='spell'?spelling(q):q.game==='flash'?`
   ${q.flipped?`<div class="flash-back"><h2>${esc(q.snapshot.word)}</h2><p>${esc(q.snapshot.meaning)}</p><p class="muted">${esc(q.snapshot.pinyin||q.snapshot.kana||q.snapshot.ipa||'')}</p><p>${esc(q.snapshot.note||'')}</p></div>${!q.result?`<div class="row center wrap">${q.familiarize?button(t('next'),'remember','primary'):button(t('forget'),'unknown')+button(t('remember'),'remember','primary')}</div>`:''}`:button(t('show'),'flip','primary full',usesAudio(q)&&!q.audioPlayed?'disabled':'')}`:
   `<div class="answers">${q.choices.map((c,i)=>button(`${String.fromCharCode(65+i)}. ${esc(c.label)}${q.result&&c.correct?' \u2713':''}`,'choose',`answer ${q.result&&c.correct?'correct':q.result&&q.chosen===i?'wrong':''}`,`data-index="${i}" ${q.result||usesAudio(q)&&!q.audioPlayed?'disabled':''}`)).join('')}</div>`}
   ${feedback(q)}<p id="study-error" class="error-text" role="alert">${esc(s.error||'')}</p></section><p class="muted small center">${t('saved')} \u00b7 ${pendingCount()} ${t('pending')}</p></main>`;
