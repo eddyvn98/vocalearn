@@ -75,9 +75,9 @@ export async function autofillEditor(language,meaningLanguage='vi'){
 }
 
 export async function ensureAutoAutofill(form=document.querySelector('#word-form')){
-  if(!form||form.dataset.autoAutofill!=='true')return null;
-  const word=String(form.elements.word?.value||'').trim();
-  if(!word||autoState.done===word)return null;
+  if(!form||!form.isConnected||form.dataset.autoAutofill!=='true')return null;
+  const word=String(form.elements.word?.value||'').trim(),meaning=String(form.elements.meaning?.value||'').trim();
+  if(!word||meaning||autoState.done===word)return null;
   if(autoState.promise&&autoState.word===word)return autoState.promise;
   const trigger=form.querySelector('[data-action="autofillWord"]');if(!trigger)return null;
   const promise=autofillEditor(trigger.dataset.language||'en',trigger.dataset.meaningLanguage||'vi');
