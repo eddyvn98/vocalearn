@@ -48,7 +48,7 @@ const typingAnswer = ({wordId, questionId, word, meaning, revision, baseRev = ''
 });
 
 test('Sync orders same-device pending events by localOrder before validation', async () => {
-  const set = event('order-set', 'set', {id:'order-set',name:'Order',language:'en',meaningLanguage:'vi'}, 'dev-order', 1000);
+  const set = {...event('order-set', 'set', {id:'order-set',name:'Order',language:'en',meaningLanguage:'vi'}, 'dev-order', 1000),localOrder:0};
   const word = {...event('order-word','word',{id:'order-word',setId:'order-set',patch:{word:'alpha',meaning:'a'}},'dev-order',1001),localOrder:1};
   const edit = {...event('order-edit','word',{id:'order-word',setId:'order-set',patch:{meaning:'updated'},baseFields:{meaning:'order-word'}},'dev-order',1002),localOrder:2};
   const answer = {...event('order-answer','answer',typingAnswer({
