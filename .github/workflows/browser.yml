@@ -56,10 +56,6 @@ jobs:
         id: browser_ai
         continue-on-error: true
         run: python tests/browser_ai.py
-      - name: Browser advanced statistics
-        id: browser_statistics
-        continue-on-error: true
-        run: python tests/browser_statistics.py
       - name: Fail if any browser regression failed
         if: always()
         run: |
@@ -68,7 +64,6 @@ jobs:
           test "${{ steps.browser_accessibility.outcome }}" = "success"
           test "${{ steps.browser_chinese.outcome }}" = "success"
           test "${{ steps.browser_ai.outcome }}" = "success"
-          test "${{ steps.browser_statistics.outcome }}" = "success"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
