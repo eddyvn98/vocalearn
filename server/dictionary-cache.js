@@ -60,11 +60,26 @@ async function fetchDictionary(word,fetchImpl){
   if(!response.ok){const error=new Error('Dictionary provider returned '+response.status);error.status=502;throw error;}
   return normalizeEnglish(await response.json(),word);
 }
-function dictionaryFields(dictionary){
+function clozeExample(example,word){
+  const text=clean(example),target=clean(word);if(!text||!target)return {sentence:'',answers:[]};
+  const escaped=target.replace(/[.*+?^${}()|[\]\\]/g,'\\function dictionaryFields(dictionary){
   if(!dictionary)return {};
   return {
     ipa:dictionary.ipa||'',pos:dictionary.pos||'',sentence:dictionary.example||'',
     answers:dictionary.example?[dictionary.word]:[],synonyms:dictionary.synonyms||[],
+    antonyms:dictionary.antonyms||[],source:SOURCE
+  };
+}');
+  const match=text.match(new RegExp('\\\\b'+escaped+'\\\\b','i'));
+  if(!match)return {sentence:'',answers:[]};
+  return {sentence:text.slice(0,match.index)+'___'+text.slice(match.index+match[0].length),answers:[match[0]]};
+}
+function dictionaryFields(dictionary){
+  if(!dictionary)return {};
+  const cloze=clozeExample(dictionary.example,dictionary.word);
+  return {
+    ipa:dictionary.ipa||'',pos:dictionary.pos||'',sentence:cloze.sentence,
+    answers:cloze.answers,synonyms:dictionary.synonyms||[],
     antonyms:dictionary.antonyms||[],source:SOURCE
   };
 }
