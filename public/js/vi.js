@@ -1,9 +1,10 @@
 import {viAi} from './vi-ai.js';
+import {viErrors} from './vi-errors.js';
 import {viSentences} from './vi-sentences.js';
 import {viLookups} from './vi-lookups.js';
 import {viStatistics} from './vi-statistics.js';
 import {viJapanese} from './vi-japanese.js';import {viHandwriting} from './vi-handwriting.js';import {viSpeech} from './vi-speech.js';
-export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,...viJapanese,...viHandwriting,...viSpeech,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
+export const vi = {...viAi,...viErrors,...viSentences,...viLookups,...viStatistics,...viJapanese,...viHandwriting,...viSpeech,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
   invalidAnswerFace:"Mặt đáp phải hợp lệ và khác mặt hỏi",
   missingAnswerFace:"Thiếu dữ liệu cho mặt đáp",
   noMixGames:"Hãy bật ít nhất một game trong Trộn",
@@ -144,12 +145,10 @@ export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,...viJapa
   "matched": "Đã ghép",
   "selected": "Đang chọn",
   "saved": "Đã lưu trên thiết bị",
-  "saveError": "Chưa lưu được. Giữ màn hình và thử lại.",
   "answeredElsewhere": "Cơ hội này đã được trả lời ở tab khác. Kết quả đầu tiên đã được giữ.",
   "sync": "Đồng bộ",
   "pending": "thay đổi chờ đồng bộ",
   "synced": "Đã đồng bộ",
-  "syncError": "Chưa đồng bộ được",
   "offline": "Đang offline",
   "lastSync": "Đồng bộ cuối",
   "tryAgain": "Thử lại",
@@ -212,7 +211,6 @@ export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,...viJapa
   "cleanupLocal": "Dọn bộ nhớ tạm trên thiết bị",
   "cleanupServer": "Dọn tệp trên máy chủ không còn được lịch sử sử dụng",
   "cleaned": "Đã dọn",
-  "mediaMigrationError": "Chưa chuyển đổi được media cũ",
   "createCopy": "Tạo thẻ mới",
   "resetProgress": "Thay nội dung và đặt lại tiến độ",
   "changeMeaning": "Đổi từ/nghĩa: chọn cách xử lý tiến độ",
@@ -281,7 +279,6 @@ export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,...viJapa
   "jsonHelp": "Xuất nội dung thẻ và ảnh nổi; không phải sao lưu lịch ôn. Ảnh Place in Cell chưa hỗ trợ.",
   "phaseNotice": "Bản phát triển 0.1 · Chưa nghiệm thu đầy đủ MVP",
   "logoutBlocked": "Hãy đồng bộ các thay đổi trước khi đăng xuất.",
-  "audioError": "Chưa phát được audio. Không tính lỗi học.",
   "conflicts": "Lịch sử xung đột nội dung",
   "scheduleAdjusted": "Lịch đã điều chỉnh sau đồng bộ.",
   "scheduleChanges": "Điều chỉnh lịch sau đồng bộ",
@@ -290,25 +287,9 @@ export const vi = {...viAi,...viSentences,...viLookups,...viStatistics,...viJapa
   "mergedResultReason": "Kết quả từ thiết bị khác đã làm thay đổi trạng thái lịch hợp nhất.",
   "replayReason": "Lịch được tính lại từ lịch sử đã đồng bộ.",
   "retainedLogs": "Log giữ lại",
-  "loadError": "Không mở được dữ liệu. Không xóa dữ liệu; hãy thử lại.",
   "restore": "Khôi phục",
   "deleted": "Thẻ đã xóa",
   "clear": "Xóa lựa chọn",
   "showErrors": "Xem thẻ thiếu",
   "onlyLocal": "Dữ liệu lưu trên thiết bị hiện chưa được mã hóa.",
-  "Registration is disabled": "Hiện chưa cho phép tạo tài khoản mới.",
-  "Unable to create account": "Không thể tạo tài khoản. Email này có thể đã được sử dụng.",
-  "Email or password is incorrect": "Email hoặc mật khẩu không đúng.",
-  "Use a valid email": "Hãy nhập địa chỉ email hợp lệ.",
-  "Use a password of 12-200 characters": "Mật khẩu phải có từ 12 đến 200 ký tự.",
-  "Account event limit reached": "Tài khoản đã đạt giới hạn dữ liệu. Hãy liên hệ quản trị viên.",
-  "Invalid sync batch": "Dữ liệu đồng bộ không hợp lệ.",
-  "Wrong device": "Dữ liệu này thuộc thiết bị khác.",
-  "Unknown study set": "Không tìm thấy bộ học.",
-  "A word is required": "Bạn cần nhập từ hoặc cụm từ.",
-  "Unknown word": "Không tìm thấy thẻ từ.",
-  "Invalid media upload": "Tệp tải lên không hợp lệ.",
-  "Media type or size is not allowed": "Loại tệp hoặc dung lượng tệp không được hỗ trợ.",
-  "Media storage limit reached": "Kho tệp đã đầy.",
-  "Reset link is invalid or expired": "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn."
 };
