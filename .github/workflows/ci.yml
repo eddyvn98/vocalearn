@@ -20,6 +20,10 @@ jobs:
           node-version: '22'
       - run: npm ci --ignore-scripts
       - run: npm run verify
+      - name: Probe pinned lexical database
+        run: |
+          npm run lexicon:install
+          node scripts/probe-lexicon.js
       - name: Build offline manifest
         run: |
           npm run build:sw
