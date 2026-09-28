@@ -16,6 +16,7 @@ import {replay} from '../core/model.js';
 import {createAiProvider} from './ai-provider.js';
 import {createJob,listJobs,retryJob,runDueJobs} from './ai-jobs.js';
 import {lookupWord,LOOKUP_SOURCES} from './lookups.js';
+import {autofillWord,DICTIONARY_SOURCE} from './dictionary-cache.js';
 import {strokesFor,STROKE_SOURCES} from './strokes.js';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const resetDefaults={mode:'disabled',appOrigin:'http://localhost',providerUrl:'',providerToken:'',resendApiKey:'',resendFrom:'',ttlMs:30*60000};
@@ -125,6 +126,13 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
         const language=String(url.searchParams.get('language')||''),word=String(url.searchParams.get('word')||'');
         if(!['en','zh'].includes(language)||!word||word.length>100)return json(res,400,{error:'language and word required'});
         return json(res,200,{result:lookupWord(language,word),sources:LOOKUP_SOURCES});
+      }
+      if(path==='/api/autofill'&&req.method==='GET'){
+        const language=String(url.searchParams.get('language')||''),meaningLanguage=String(url.searchParams.get('meaningLanguage')||'vi');
+        const word=String(url.searchParams.get('word')||'');
+        if(language!=='en'||!['en','vi','zh','ja'].includes(meaningLanguage)||!word||word.length>100)
+          return json(res,400,{error:'English word and meaning language required'});
+        return json(res,200,{result:await autofillWord(db,provider,{language,meaningLanguage,word}),source:DICTIONARY_SOURCE});
       }
       if(path==='/api/media'&&req.method==='POST')return json(res,200,putMedia(db,user.id,await body(req,configuredLimits.maxRequestBytes)));
       if(path==='/api/media-info'&&req.method==='GET')return json(res,200,mediaStats(db,user.id));
