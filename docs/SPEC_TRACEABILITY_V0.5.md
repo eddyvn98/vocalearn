@@ -74,7 +74,7 @@ These percentages are planning estimates, not release certification.
 | AT-23 | **Pass** | Offline sentence-bank exhaustion falls back/reuses safely or disables cloze without creating a learning error. | Released sentence-pool semantics and browser acceptance cover deterministic reuse/refill and safe disable behavior without creating a learning error. |
 | AT-24 | **Pass (software gate)** | Missing offline TTS/ASR capability must not be presented as available or silently upload speech. | Speak is hidden unless an explicitly verified local/on-device ASR adapter/device marker is present; technical capability failure has an explicit fallback and no implicit cloud-audio upload path exists. Physical combinations remain issue #84. |
 | AT-25 | **Pass** | Chinese pinyin and Japanese whole-word/reading input behavior. | Phase-2 Chinese and Phase-3 Japanese browser acceptance cover whole-word reading, kana-only skip, katakana normalization and IME-safe submission. |
-| AT-26 | **Partial** | Phase-2 Chinese cards upgrade to Phase 3 without reset or handwriting dependency. | Phase-3 handwriting is optional and missing stroke data disables handwriting only without blocking core games. An explicit historical Phase-2-to-Phase-3 migration drill is still useful evidence. |
+| AT-26 | **Pass** | Phase-2 Chinese cards upgrade to Phase 3 without reset or handwriting dependency. | Exact migration regression in `tests/phase2-chinese.test.js` graduates a legacy Chinese card through the Phase-2 core chain, verifies missing stroke data blocks only handwriting, then adds Phase-3 stroke data and proves the existing review state is unchanged while both core typing and handwriting remain valid. |
 | AT-27 | **Pass** | Moving a multi-topic card replaces only the chosen source membership; other memberships and schedule stay intact. | PR #33; exact domain regression and live card/topic/bulk browser acceptance. |
 | AT-28 | **Pass** | Submit then close/reopen/resend preserves one result/log/schedule transition and the correct next position. | Idempotent event append, deterministic opportunity identity, reload/session persistence and same-opportunity contention are automated. |
 | AT-29 | **Pass (software timing semantics)** | Long TTS/ASR wait and pause time must not count as recall latency; interruption must not earn Easy or become Forget. | Speech adapters may report active speaking time; unknown ASR timing is excluded and marks the attempt ineligible for Easy. Technical recognition latency/failure never becomes Forget. Physical timing measurements remain issue #84. |
@@ -133,11 +133,7 @@ The remaining Phase-1 acceptance work is concentrated rather than broad:
 
 ## Remaining cross-phase evidence
 
-Released Phase-2/3 cases have been promoted to evidence-backed states above. One cross-phase acceptance item remains intentionally Partial:
-
-- AT-26: run an explicit historical Phase-2 → Phase-3 Chinese-card migration drill to complement the current proof that handwriting is optional and missing stroke resources do not block core games.
-
-Physical-device-only evidence is tracked separately in issue #84 and is not inferred from desktop automation.
+The explicit AT-26 historical Phase-2 → Phase-3 Chinese-card migration regression is now automated. Remaining cross-phase evidence is physical-device-only and is tracked separately in issue #84; it is not inferred from desktop automation.
 
 ## Evidence sources in the repository
 
