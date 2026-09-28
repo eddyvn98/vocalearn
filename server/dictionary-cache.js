@@ -1,6 +1,9 @@
+import {lookupWord} from './lookups.js';
 const SOURCE='dictionaryapi.dev';
 const API='https://api.dictionaryapi.dev/api/v2/entries/en/';
 const MAX_CACHE_ENTRIES=20000;
+const FETCH_TIMEOUT_MS=6000;
+const FETCH_ATTEMPTS=2;
 const clean=value=>String(value||'').normalize('NFC').trim();
 const keyWord=value=>clean(value).toLocaleLowerCase('en-US');
 const list=(value,limit=12)=>[...new Set((Array.isArray(value)?value:[]).map(x=>clean(x)).filter(Boolean))].slice(0,limit);
@@ -66,11 +69,28 @@ export function putEnrichment(db,language,word,meaningLanguage,enrichment,now=Da
     .run(JSON.stringify(enrichments),now,now,language,keyWord(word));
   return cachedDictionary(db,language,word);
 }
+async function fetchOnce(word,fetchImpl){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),FETCH_TIMEOUT_MS);
+  try{
+    const response=await fetchImpl(API+encodeURIComponent(word),{headers:{Accept:'application/json'},signal:controller.signal});
+    if(response.status===404)return null;
+    if(!response.ok){
+      const error=new Error('Dictionary provider returned '+response.status);
+      error.status=503;error.code=response.status>=500?'DICTIONARY_TEMPORARY':'DICTIONARY_REJECTED';throw error;
+    }
+    return normalizeEnglish(await response.json(),word);
+  }catch(error){
+    if(error.name==='AbortError'){error.code='DICTIONARY_TEMPORARY';error.status=503;error.message='Dictionary provider timed out';}
+    throw error;
+  }finally{clearTimeout(timer);}
+}
 async function fetchDictionary(word,fetchImpl){
-  const response=await fetchImpl(API+encodeURIComponent(word),{headers:{Accept:'application/json'}});
-  if(response.status===404)return null;
-  if(!response.ok){const error=new Error('Dictionary provider returned '+response.status);error.status=502;throw error;}
-  return normalizeEnglish(await response.json(),word);
+  let last;
+  for(let attempt=0;attempt<FETCH_ATTEMPTS;attempt++){
+    try{return await fetchOnce(word,fetchImpl);}
+    catch(error){last=error;if(error.code!=='DICTIONARY_TEMPORARY')throw error;}
+  }
+  throw last;
 }
 function clozeExample(example,word){
   const text=clean(example),target=clean(word);if(!text||!target)return {sentence:'',answers:[]};
@@ -101,23 +121,29 @@ export async function autofillWord(db,provider,{language,meaningLanguage,word},f
   if(language!=='en'||!normalized)throw new Error('English word required');
   let cached=cachedDictionary(db,language,value),cacheHit=Boolean(cached);
   if(!cached){
-    const dictionary=await fetchDictionary(value,fetchImpl);
+    let dictionary;
+    try{dictionary=await fetchDictionary(value,fetchImpl);}
+    catch(error){
+      if(error.code!=='DICTIONARY_TEMPORARY')throw error;
+      const local=lookupWord('en',value),ipa=local.fields?.ipa||'';
+      return {status:'partial',temporary:true,cacheHit:false,aiCacheHit:false,
+        aiConfigured:Boolean(provider?.configured),fields:{...(ipa?{ipa}: {})},
+        lookupMeta:local.meta||{},source:'local-fallback',errorCode:error.code};
+    }
     if(!dictionary)return {status:'missing',cacheHit:false,fields:{},source:SOURCE};
     cached=putDictionary(db,language,value,dictionary);
   }
-  let enrichment=cached.enrichments?.[meaningLanguage]||null,aiCacheHit=Boolean(enrichment);
+  let enrichment=cached.enrichments?.[meaningLanguage]||null,aiCacheHit=Boolean(enrichment),aiErrorCode='';
   if(!enrichment&&provider?.configured){
     try{
       enrichment=await provider.generate({type:'dictionary-autofill',word:{
         word:value,language,meaningLanguage,dictionary:cached.dictionary
       }});
       cached=putEnrichment(db,language,value,meaningLanguage,enrichment);
-    }catch(error){
-      if(!['AI_PROVIDER_UNAVAILABLE','AI_EMPTY_RESULT'].includes(error.code))throw error;
-    }
+    }catch(error){aiErrorCode=String(error.code||'AI_ERROR');}
   }
   return {
-    status:'found',cacheHit,aiCacheHit,aiConfigured:Boolean(provider?.configured),
+    status:'found',cacheHit,aiCacheHit,aiConfigured:Boolean(provider?.configured),aiErrorCode,
     fields:{...dictionaryFields(cached.dictionary),...enrichmentFields(enrichment)},
     dictionary:{definitions:cached.dictionary.definitions,audioUrl:cached.dictionary.audioUrl,
       sourceUrls:cached.dictionary.sourceUrls,license:cached.dictionary.license},
