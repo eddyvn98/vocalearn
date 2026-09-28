@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {createReadStream,createWriteStream,existsSync,renameSync,rmSync,statSync,writeFileSync} from 'node:fs';
+import {chmodSync,createReadStream,createWriteStream,existsSync,renameSync,rmSync,statSync,writeFileSync} from 'node:fs';
 import {mkdir,readFile} from 'node:fs/promises';
 import {dirname,resolve} from 'node:path';
 import {Readable} from 'node:stream';
@@ -19,9 +19,12 @@ async function current(){
   if(!existsSync(target)||!existsSync(marker)||statSync(target).size<1024)return false;
   try{return String(await readFile(marker,'utf8')).trim()===SHA256;}catch{return false;}
 }
+function ensureRuntimeReadable(){
+  chmodSync(target,0o644);chmodSync(marker,0o644);
+}
 async function main(){
   await mkdir(dirname(target),{recursive:true});
-  if(await current()){console.log('Lexical DB already installed:',target);return;}
+  if(await current()){ensureRuntimeReadable();console.log('Lexical DB already installed:',target);return;}
   const temp=target+'.download-'+process.pid;
   rmSync(temp,{force:true});
   console.log('Downloading local lexical database...');
@@ -30,7 +33,7 @@ async function main(){
   await pipeline(Readable.fromWeb(response.body),createWriteStream(temp,{mode:0o600}));
   const actual=await digest(temp);
   if(actual!==SHA256){rmSync(temp,{force:true});throw new Error('Lexical DB checksum mismatch');}
-  renameSync(temp,target);writeFileSync(marker,SHA256+'\n',{mode:0o600});
+  renameSync(temp,target);writeFileSync(marker,SHA256+'\n',{mode:0o644});ensureRuntimeReadable();
   console.log('Lexical DB installed:',target,statSync(target).size,'bytes');
 }
 main().catch(error=>{console.error(error.message);process.exitCode=1;});
