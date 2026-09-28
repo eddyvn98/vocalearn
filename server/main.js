@@ -40,6 +40,7 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),lexica
   limits={},reset={},ai={},aiProvider=null,logger=noopLogger}={}){
   const db=openDatabase(dbPath),configuredLimits={...DEFAULT_LIMITS,...limits},resetConfig={...resetDefaults,...reset};
   const provider=aiProvider||createAiProvider(ai),lexicon=createLocalLexicon(lexicalDbPath);
+  if(lexicalDbPath&&!lexicon.available)logger.warn('lexical_store_unavailable',{message:lexicon.error||'unknown error'});
   const loadWord=(userId,wordId)=>{
     const word=replay(allEvents(db,userId)).words[wordId];if(!word)return null;
     const set=replay(allEvents(db,userId)).sets[word.setId]||{};
