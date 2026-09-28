@@ -38,7 +38,7 @@ async function navigate(page){
 async function authenticated(user){
   app.user=user;localStorage.setItem('vocalearn-user',JSON.stringify(user));await openStore(user);
   try{await migrateLegacyMedia();}catch(error){notify(t('mediaMigrationError')+': '+error.message,true);}
-  try{await sync();}catch(error){notify(t('syncError')+': '+error.message,true);}
+  try{await sync();}catch(error){if(navigator.onLine!==false)notify(t('syncError')+': '+error.message,true);}
   try{if(await migrateLegacyMedia())await sync();}catch(error){notify(t('mediaMigrationError')+': '+error.message,true);}
   app.model=model();
   const saved=await getMeta('view');
