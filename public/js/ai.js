@@ -54,16 +54,17 @@ export async function acceptAi(wordId,jobId,field,index,source){
   const job=jobs.get(jobId),word=app.model.words[wordId];if(!job||job.status!=='success'||!word)throw new Error('Đề xuất AI không còn khả dụng');
   let value=field==='meaning'&&Number.isInteger(index)?job.result.meanings?.[index]:job.result?.[source||field];
   value=String(value||'').trim();if(!value)throw new Error('Đề xuất trống');
+  let targetId=word.id;
   if(field==='meaning'&&word.meaning&&word.meaning!==value){
-    const patch={word:word.word,meaning:value,pos:word.pos||''};
+    const patch={word:word.word,meaning:value,pos:word.pos||''};targetId=uuid();
     for(const key of ['ipa','pinyin','kana','hanViet','level'])if(word[key])patch[key]=word[key];
-    await transact([prepare('word',{id:uuid(),setId:word.setId,patch,baseFields:{}})]);
+    await transact([prepare('word',{id:targetId,setId:word.setId,patch,baseFields:{}})]);
   }else{
     const patch={[field]:value};
     if(field==='pinyin')patch.pinyinSyllables=parsePinyin(value);
     await transact([prepare('word',{id:word.id,setId:word.setId,patch,baseFields:word.fields})]);
   }
-  app.model=model();app.render();notify('Đã chấp nhận đề xuất AI.');return aiPanel(wordId);
+  app.model=model();maybeQueueForWord(targetId);app.render();notify('Đã chấp nhận đề xuất AI.');return aiPanel(wordId);
 }
 export async function removeSentence(wordId,id){
   await transact([prepare('deleteSentence',{id,wordId})]);app.model=model();notify('Đã loại câu khỏi kho.');return aiPanel(wordId);
