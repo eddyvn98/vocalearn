@@ -18,7 +18,7 @@ function snapshotFor(current, q, events) {
   for(const [field,id] of Object.entries(q.fields)) {
     if(!WORD_FIELDS.has(field))throw new Error('Invalid snapshot field');
     const origin=events.find(e=>e.id===id && e.kind==='word' && e.data.id===current.id && Object.hasOwn(e.data.patch,field));
-    if(!origin)throw new Error('Unknown snapshot field revision');
+    if(!origin)throw new Error(`Unknown snapshot field revision: ${field}:${id}:${current.id}`);
     snapshot[field]=origin.data.patch[field];
   }
   if(snapshot.word!==q.word || (q.meaning!==undefined && snapshot.meaning!==q.meaning))throw new Error('Question snapshot mismatch');
