@@ -5,5 +5,13 @@ export const viLookups={
   lookupNeedsCheck:'có nhiều cách đọc — kiểm tra trước khi lưu',
   lookupMissing:'không có dữ liệu xác nhận',
   lookupWordFirst:'Nhập từ trước khi tra dữ liệu.',
-  lookupNoEditor:'Không tìm thấy thẻ đang chỉnh sửa.'
+  lookupNoEditor:'Không tìm thấy thẻ đang chỉnh sửa.',
+  autofillWord:'Tự điền từ dữ liệu chung',
+  autofillWorking:'Đang tra kho dùng chung…',
+  autofillFound:'Đã điền các trường còn trống',
+  autofillCached:'Dùng dữ liệu đã có trong kho chung',
+  autofillFetched:'Đã lấy dữ liệu mới và lưu vào kho chung',
+  autofillAiCached:'Nghĩa và nội dung AI dùng lại từ kho chung',
+  autofillAiMissing:'Chưa có AI nên phần nghĩa tiếng Việt có thể cần bạn tự điền',
+  autofillMissing:'Không tìm thấy từ này trong nguồn từ điển.'
 };
