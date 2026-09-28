@@ -5,7 +5,7 @@ export const viHandwriting={
   handwritingWrong:"Nét chưa khớp, thử lại.",handwriting_direction:"Sai hướng nét",
   handwriting_position:"Sai vị trí tương đối",handwriting_shape:"Hình nét chưa khớp",
   handwriting_technical:"Không đọc được nét; lần này không tính lỗi.",strokeResources:"Dữ liệu thứ tự nét",
-  strokeResourcesHelp:"Tải dữ liệu nét có phiên bản trước khi bật game Viết tay.",loadStrokeData:"Tải dữ liệu nét",
+  strokeResourcesHelp:"Tải dữ liệu thứ tự nét trước khi bật dạng bài Viết tay.",loadStrokeData:"Tải dữ liệu nét",
   strokeDataReady:"Đã đủ dữ liệu nét",missingStrokeData:"Thiếu dữ liệu nét",
-  unsupportedGame:"Game này không hỗ trợ ngôn ngữ hiện tại.",undo:"Hoàn tác"
+  unsupportedGame:"Dạng bài này không hỗ trợ ngôn ngữ hiện tại.",undo:"Hoàn tác"
 };

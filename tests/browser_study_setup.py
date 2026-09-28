@@ -69,7 +69,7 @@ def main():
                 # Mixed practice uses only the games the learner explicitly leaves enabled.
                 page.locator('[data-action="practice"][data-game="mix"]').click()
                 expect(page.locator("dialog")).to_be_visible()
-                expect(page.locator("dialog")).to_contain_text("Game dùng trong Trộn")
+                expect(page.locator("dialog")).to_contain_text("Dạng bài dùng trong Trộn")
                 for game in ["spell","dictation","cloze","clozeChoice"]:
                     box=page.locator(f'[data-mix-game="{game}"]')
                     if box.is_checked():

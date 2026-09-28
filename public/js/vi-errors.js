@@ -1,0 +1,22 @@
+export const viErrors={
+  saveError:"Chưa lưu được. Giữ màn hình và thử lại.",
+  syncError:"Chưa đồng bộ được",
+  mediaMigrationError:"Chưa chuyển đổi được tệp cũ",
+  audioError:"Chưa phát được âm thanh. Không tính lỗi học.",
+  loadError:"Không mở được dữ liệu. Không xóa dữ liệu; hãy thử lại.",
+  "Registration is disabled":"Hiện chưa cho phép tạo tài khoản mới.",
+  "Unable to create account":"Không thể tạo tài khoản. Email này có thể đã được sử dụng.",
+  "Email or password is incorrect":"Email hoặc mật khẩu không đúng.",
+  "Use a valid email":"Hãy nhập địa chỉ email hợp lệ.",
+  "Use a password of 12-200 characters":"Mật khẩu phải có từ 12 đến 200 ký tự.",
+  "Account event limit reached":"Tài khoản đã đạt giới hạn dữ liệu. Hãy liên hệ quản trị viên.",
+  "Invalid sync batch":"Dữ liệu đồng bộ không hợp lệ.",
+  "Wrong device":"Dữ liệu này thuộc thiết bị khác.",
+  "Unknown study set":"Không tìm thấy bộ học.",
+  "A word is required":"Bạn cần nhập từ hoặc cụm từ.",
+  "Unknown word":"Không tìm thấy thẻ từ.",
+  "Invalid media upload":"Tệp tải lên không hợp lệ.",
+  "Media type or size is not allowed":"Loại tệp hoặc dung lượng tệp không được hỗ trợ.",
+  "Media storage limit reached":"Kho tệp đã đầy.",
+  "Reset link is invalid or expired":"Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn."
+};

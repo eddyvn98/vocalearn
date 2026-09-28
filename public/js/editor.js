@@ -82,7 +82,7 @@ export function openEditor(id) {
   ${sentencePoolMarkup(w)}
   ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
   ${field('collocations','collocations',listValue(w.collocations))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
-  ${field('register','register',w.register)}${field('level','level',w.level)}${field('translation','translation',w.translation)}
+  ${field('usageRegister','register',w.register)}${field('level','level',w.level)}${field('translation','translation',w.translation)}
   ${field('mnemonic','mnemonic',w.mnemonic)}${field('source','source',w.source)}${field('tags','tags',listValue(w.tags))}
   ${customInputs(w)}
   <label>${t('note')}<textarea name="note" rows="3">${esc(w.note||'')}</textarea></label>
