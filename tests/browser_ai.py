@@ -18,7 +18,7 @@ def main():
                     form=page.locator("#word-form");form.locator('[name="word"]').fill("deploy");form.locator('[name="meaning"]').fill("triển khai");form.locator('[type="submit"]').click()
                     row=page.locator(".word-row",has_text="deploy");row.locator('[data-action="ai"]').click();expect(page.locator("#modal")).to_contain_text("AI · deploy")
                     page.locator('[data-action="aiGenerate"][data-kind="sentences"]').click()
-                    expect(page.locator("#modal")).to_contain_text("We use deploy in practice example",timeout=10000)
+                    expect(page.locator("#modal")).to_contain_text("We use ___ in practice example",timeout=10000)
                     page.locator('#modal [data-action="close"]').click();page.locator('[data-action="home"]').first.click()
                     page.locator('[data-action="setupFree"]').click();page.locator("#setup-game").select_option("cloze");page.locator("#setup-game").dispatch_event("change")
                     expect(page.locator("#modal")).to_contain_text("1/1");page.locator('#modal [data-action="startSession"]').click()

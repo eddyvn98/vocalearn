@@ -36,7 +36,7 @@ export function synchronize(db, userId, input, now = Date.now()) {
   const received = [];
   db.exec('BEGIN IMMEDIATE');
   try {
-    for (const raw of input.events) {
+    for (const raw of [...input.events].sort((a,b)=>(a.localOrder??a.at)-(b.localOrder??b.at)||a.id.localeCompare(b.id))) {
       validateEvent(raw);
       if (raw.deviceId !== input.deviceId) throw new Error('Wrong device');
       const prior = db.prepare('SELECT payload FROM events WHERE user_id=? AND event_id=?').get(userId, raw.id);

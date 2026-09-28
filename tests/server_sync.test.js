@@ -47,6 +47,17 @@ const typingAnswer = ({wordId, questionId, word, meaning, revision, baseRev = ''
   unknown: grade === 'forget', question: questionSnapshot(word, meaning, revision)
 });
 
+test('Sync orders same-device pending events by localOrder before validation', async () => {
+  const set = event('order-set', 'set', {id:'order-set',name:'Order',language:'en',meaningLanguage:'vi'}, 'dev-order', 1000);
+  const word = {...event('order-word','word',{id:'order-word',setId:'order-set',patch:{word:'alpha',meaning:'a'}},'dev-order',1001),localOrder:1};
+  const edit = {...event('order-edit','word',{id:'order-word',setId:'order-set',patch:{meaning:'updated'},baseFields:{meaning:'order-word'}},'dev-order',1002),localOrder:2};
+  const answer = {...event('order-answer','answer',typingAnswer({
+    wordId:'order-word',questionId:'order-q',word:'alpha',meaning:'updated',revision:'order-edit',mode:'free',grade:'good',input:'alpha',activeMs:6000
+  }),'dev-order',1003),localOrder:3};
+  const r=await request('/api/sync',{events:[answer,edit,word,set],deviceId:'dev-order',cursor:0,clientNow:Date.now()});
+  assert.equal(r.status,200);
+});
+
 test('Server rejects recognition game claiming good or easy grade', async () => {
   const set = event('s1', 'set', {id: 'set1', name: 'Vocab', language: 'en', meaningLanguage: 'vi'});
   const word = event('w1', 'word', {id: 'word1', setId: 'set1', patch: {word: 'cat', meaning: 'con meo'}});
