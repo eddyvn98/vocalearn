@@ -62,8 +62,8 @@ async function fetchDictionary(word,fetchImpl){
 }
 function clozeExample(example,word){
   const text=clean(example),target=clean(word);if(!text||!target)return {sentence:'',answers:[]};
-  const escaped=target.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&');
-  const match=text.match(new RegExp('\\\\b'+escaped+'\\\\b','i'));
+  const escaped=target.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const match=text.match(new RegExp('\\b'+escaped+'\\b','i'));
   if(!match)return {sentence:'',answers:[]};
   return {sentence:text.slice(0,match.index)+'___'+text.slice(match.index+match[0].length),answers:[match[0]]};
 }
