@@ -64,18 +64,18 @@ export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};strokeDraft=structuredClone(editing?.strokeData||null);app.dirty=false;beginLookupDraft(editing);
   const w=editing||{};
   const categories=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
-  const profile=studySetProfile(app.model.sets[app.setId]);
-  const lookupButton=profile?.id==='ja'?'':button(t(profile?.id==='zh'?'lookupChinese':'lookupIpa'),'lookupReading','quiet',`data-language="${profile?.id||'en'}"`);
-  const languageFields=profile?.id==='zh'
+  const profile=studySetProfile(app.model.sets[app.setId]),profileId=profile?.id||'en';
+  const lookupButton=profileId==='ja'?'':button(t(profileId==='zh'?'lookupChinese':'lookupIpa'),'lookupReading','quiet',`data-language="${profileId}"`);
+  const languageFields=profileId==='zh'
     ?`${field('pinyin','pinyin',w.pinyin||w.ipa||'')}${field('hanViet','hanViet',w.hanViet||'')}${lookupButton}<p id="lookup-status" class="muted small"></p>${field('radical','radical',w.radical||'')}${field('strokeCount','strokeCount',w.strokeCount||0,'type="number" min="0"')}${field('classifier','classifier',listValue(w.classifiers))}`
-    :profile?.id==='ja'?`${field('kana','kana',w.kana||w.ipa||'')}${field('onReading','onReading',w.onReading||'')}${field('kunReading','kunReading',w.kunReading||'')}<p class="muted small">${t('japaneseReadingHelp')}</p>`
+    :profileId==='ja'?`${field('kana','kana',w.kana||w.ipa||'')}${field('onReading','onReading',w.onReading||'')}${field('kunReading','kunReading',w.kunReading||'')}<p class="muted small">${t('japaneseReadingHelp')}</p>`
     :`${field('ipa','ipa',w.ipa)}${lookupButton}<p id="lookup-status" class="muted small"></p>`;
-  const wordLabel=['zh','ja'].includes(profile?.id)?'wordGeneric':'word';
-  const strokePanel=['zh','ja'].includes(profile?.id)?`<section class="wait-panel stack"><strong>${t('strokeResources')}</strong><p id="stroke-status" class="muted small">${strokeDraft?esc(strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+(strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):'')):t('strokeResourcesHelp')}</p>${button(t('loadStrokeData'),'loadStrokeData','quiet')}</section>`:'';
-  const autoAttrs=profile?.id==='en'&&!editing?` data-auto-autofill="true" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`:'';
+  const wordLabel=['zh','ja'].includes(profileId)?'wordGeneric':'word';
+  const strokePanel=['zh','ja'].includes(profileId)?`<section class="wait-panel stack"><strong>${t('strokeResources')}</strong><p id="stroke-status" class="muted small">${strokeDraft?esc(strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+(strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):'')):t('strokeResourcesHelp')}</p>${button(t('loadStrokeData'),'loadStrokeData','quiet')}</section>`:'';
+  const autoAttrs=profileId==='en'?` data-auto-autofill="true" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`:'';
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack"${autoAttrs}>
   ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
-  ${profile?.id==='en'?'<div class="row wrap">'+button(t('autofillWord'),'autofillWord','quiet',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)+'</div><p id="autofill-status" class="muted small"></p><p class="muted small">'+t('autofillHint')+'</p>':''}
+  ${profileId==='en'?'<div class="row wrap">'+button(t('autofillWord'),'autofillWord','quiet',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)+'</div><p id="autofill-status" class="muted small"></p><p class="muted small">'+t('autofillHint')+'</p>':''}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${strokePanel}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
