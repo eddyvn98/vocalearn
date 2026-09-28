@@ -135,7 +135,7 @@ def main():
             page.get_by_label("Manual QA",exact=True).check()
             page.get_by_role("button",name="Lưu",exact=True).click()
             page.locator('[data-action="scope"]').click()
-            page.get_by_label("Manual QA",exact=False).check()
+            page.locator('#scope-form label').filter(has_text="Manual QA").locator('input[name="scope"]').check()
             page.locator('#scope-form [type="submit"]').click()
             expect(page.locator(".word-row")).to_have_count(1)
             page.locator('[data-action="scope"]').click()
