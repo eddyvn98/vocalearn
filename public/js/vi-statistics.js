@@ -7,5 +7,5 @@ export const viStatistics={
   practiceAnswers:"Câu luyện",
   errorAnswers:"Câu có lỗi",
   noActivity:"Chưa có hoạt động trong khoảng này.",
-  statisticsHelp:"Đã thuộc = đang ôn theo ngày, khoảng ôn từ 21 ngày, chưa quá hạn và không ở Sổ từ sai."
+  statisticsHelp:"Đã thuộc = đang ôn theo ngày, khoảng cách giữa các lần ôn từ 21 ngày trở lên, chưa quá hạn và không nằm trong Sổ từ sai."
 };
