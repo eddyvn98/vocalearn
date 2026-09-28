@@ -78,6 +78,20 @@ def saved_word(page, spelling):
 def english_acceptance(page, origin):
     register(page, origin, "lookup-en@example.test", "English Lookups", "en")
 
+    page.evaluate("""async () => {
+      const {app}=await import('/js/state.js');
+      app.model.sets[app.setId].language='legacy-english';
+    }""")
+    page.locator('[data-action="library"]').first.click()
+    page.locator('[data-action="add"]').first.click()
+    expect(page.locator('#word-form [data-action="autofillWord"]')).to_have_text("Tự điền các trường trống")
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.locator('#word-form [data-action="close"]').click()
+    page.evaluate("""async () => {
+      const {app}=await import('/js/state.js');
+      app.model.sets[app.setId].language='en';
+    }""")
+
     def autofill_route(route):
         if "word=launch" in route.request.url:
             route.fulfill(status=200, content_type="application/json", body='''{"result":{"status":"found","cacheHit":true,"aiCacheHit":true,"aiConfigured":true,"fetchedAt":123,"fields":{"meaning":"khởi chạy","pos":"verb","ipa":"lɔːntʃ","sentence":"We will ___ tomorrow.","answers":["launch"],"synonyms":["start"],"antonyms":[],"collocations":["launch an app"],"register":"trung tính","level":"B1","mnemonic":"đưa vào hoạt động","source":"dictionaryapi.dev"},"dictionary":{"license":{"name":"test"}}}}''')
