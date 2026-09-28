@@ -38,9 +38,10 @@ def main():
         original=form.locator('[name="meaning"]').input_value()
         form.locator('[name="meaning"]').fill("nghĩa riêng của người dùng")
         form.locator('[data-action="autofillWord"]').click()
+        expect(status).not_to_have_text("Đang tra kho dùng chung…",timeout=20000)
         expect(form.locator('[name="meaning"]')).to_have_value("nghĩa riêng của người dùng")
         form.locator('[type="submit"]').click()
-        expect(form).not_to_be_visible()
+        expect(form).not_to_be_visible(timeout=10000)
         row=page.locator(".word-row").filter(has_text="deploy").first
         row.locator('[data-action="edit"]').click()
         expect(page.locator('[name="meaning"]')).to_have_value("nghĩa riêng của người dùng")
