@@ -32,7 +32,7 @@ Status meanings:
 3. Finish the remaining staged-language and AI deployment work. Phase-2 Chinese plus the protected AI-job/sentence-pool path are implemented; production self-hosted model selection, licensing and latency/quality evidence still remain. Japanese/handwriting/speech stay gated to Phase 3.
 4. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
 5. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Complete keyboard focus, IME, screen-reader, zoom/contrast and mobile virtual-keyboard checks on declared devices.
-6. Establish production migrations, secret handling, backup/restore, account recovery, throttling/observability and tested scale limits before public hosting.
+6. Production schema migrations plus verified database/media backup/restore tooling are implemented. Remaining operations work is external account-recovery delivery, observability/alerts and tested scale limits before public hosting.
 
 ## Important known behavior differences
 
@@ -83,3 +83,9 @@ See `docs/PROGRESS.md` for the rolling change log and CI state.
 - Sentence generation is versioned against the word content. Editing the word/meaning/readings makes older AI jobs stale.
 - The app makes no external AI call when `AI_PROVIDER_URL` is unset. Previously downloaded sentence-pool events remain usable offline.
 - Production model quality, dictionary/licensing choices and latency/cost evidence are still pending deployment acceptance.
+
+## Operations hardening
+
+- Versioned SQLite migrations use `PRAGMA user_version`, adopt legacy unversioned databases without deleting rows, and refuse newer unsupported schemas.
+- `db:verify`, `db:backup` and `db:restore` provide integrity checks plus database/media restore drills; restore refuses to overwrite an existing target.
+- Password-reset email delivery remains deferred until a verified sending domain/provider is configured.

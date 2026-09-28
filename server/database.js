@@ -6,22 +6,12 @@ import {validateEvent} from '../core/validation.js';
 import {RECOGNITION} from '../core/grading.js';
 import {validateReview} from './reviews.js';
 import {contentVersion} from '../core/sentences.js';
+import {migrateDatabase} from './migrations.js';
 export function openDatabase(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
-  db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
-    CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,hash TEXT NOT NULL,salt TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires INTEGER NOT NULL);
-    CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT NOT NULL REFERENCES users(id),event_id TEXT NOT NULL,payload TEXT NOT NULL,UNIQUE(user_id,event_id));
-    CREATE INDEX IF NOT EXISTS user_events ON events(user_id,seq);
-    CREATE TABLE IF NOT EXISTS devices(user_id TEXT,device_id TEXT,server_at INTEGER,client_at INTEGER,PRIMARY KEY(user_id,device_id));
-    CREATE TABLE IF NOT EXISTS media_files(user_id TEXT NOT NULL REFERENCES users(id),id TEXT NOT NULL,mime TEXT NOT NULL,
-      size INTEGER NOT NULL,created INTEGER NOT NULL,PRIMARY KEY(user_id,id));
-    CREATE INDEX IF NOT EXISTS user_media_files_created ON media_files(user_id,created);
-    CREATE TABLE IF NOT EXISTS ai_jobs(user_id TEXT NOT NULL REFERENCES users(id),id TEXT NOT NULL,kind TEXT NOT NULL,word_id TEXT NOT NULL,
-      input_version TEXT NOT NULL,request_key TEXT NOT NULL,input_json TEXT NOT NULL DEFAULT '{}',status TEXT NOT NULL,retry_count INTEGER NOT NULL DEFAULT 0,next_attempt INTEGER,
-      result_json TEXT,error_code TEXT,created INTEGER NOT NULL,updated INTEGER NOT NULL,PRIMARY KEY(user_id,id),UNIQUE(user_id,kind,word_id,request_key));
-    CREATE INDEX IF NOT EXISTS user_ai_jobs ON ai_jobs(user_id,word_id,updated);`);
+  db.exec('PRAGMA journal_mode=WAL;');
+  migrateDatabase(db);
   return db;
 }
 export function allEvents(db, userId) {

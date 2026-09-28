@@ -14,7 +14,10 @@
     "verify": "npm run check && npm test",
     "build:sw": "node scripts/build-sw.js",
     "feature:check": "node scripts/feature-check.js",
-    "preview:fixtures": "node --experimental-vm-modules scripts/preview.mjs"
+    "preview:fixtures": "node --experimental-vm-modules scripts/preview.mjs",
+    "db:verify": "node scripts/db-maintenance.js verify",
+    "db:backup": "node scripts/db-maintenance.js backup",
+    "db:restore": "node scripts/db-maintenance.js restore"
   },
   "dependencies": {
     "fflate": "0.8.3"

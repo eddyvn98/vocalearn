@@ -87,6 +87,7 @@ docs/               original spec, reference demo, status and test report
 - [Original v0.5 specification](docs/spec-v0.5.docx)
 - [Approved HTML reference](docs/reference/approved-demo.html) (demonstration, not the actual app)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Production operations](docs/OPERATIONS.md)
 - [Status / next implementation steps](docs/STATUS.md)
 - [Test report](docs/TEST_REPORT.md)
 - [Rolling development progress](docs/PROGRESS.md)
