@@ -74,7 +74,7 @@ export function maybeQueueForWord(wordId){
   const word=app.model.words[wordId];if(!word||word.deleted)return;
   const version=contentVersion(word),pool=Object.values(app.model.sentences||{}).filter(s=>s.wordId===wordId&&!s.deleted&&s.status==='ready'&&s.wordContentVersion===version);
   const kind=word.meaning?(pool.length?'':'sentences'):'autofill';
-  if(kind)api('ai/jobs',{wordId,kind}).catch(()=>{});
+  if(kind)sync().then(()=>api('ai/jobs',{wordId,kind})).catch(()=>{});
 }
 export function maybeReplenish(wordId){
   if(!navigator.onLine)return;
