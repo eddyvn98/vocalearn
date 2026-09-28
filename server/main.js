@@ -17,6 +17,7 @@ import {createAiProvider} from './ai-provider.js';
 import {createJob,listJobs,retryJob,runDueJobs} from './ai-jobs.js';
 import {lookupWord,LOOKUP_SOURCES} from './lookups.js';
 import {autofillWord,DICTIONARY_SOURCE} from './dictionary-cache.js';
+import {createLocalLexicon,LOCAL_LEXICON_SOURCE} from './local-lexicon.js';
 import {strokesFor,STROKE_SOURCES} from './strokes.js';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const resetDefaults={mode:'disabled',appOrigin:'http://localhost',providerUrl:'',providerToken:'',resendApiKey:'',resendFrom:'',ttlMs:30*60000};
@@ -35,10 +36,10 @@ function rejectOrigin(req,origin){
   if(supplied==='null')return fetchSite!=='same-origin';
   return Boolean(supplied&&supplied!==expected);
 }
-export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure=false,origin='',allowSignup=true,
+export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),lexicalDbPath='',secure=false,origin='',allowSignup=true,
   limits={},reset={},ai={},aiProvider=null,logger=noopLogger}={}){
   const db=openDatabase(dbPath),configuredLimits={...DEFAULT_LIMITS,...limits},resetConfig={...resetDefaults,...reset};
-  const provider=aiProvider||createAiProvider(ai);
+  const provider=aiProvider||createAiProvider(ai),lexicon=createLocalLexicon(lexicalDbPath);
   const loadWord=(userId,wordId)=>{
     const word=replay(allEvents(db,userId)).words[wordId];if(!word)return null;
     const set=replay(allEvents(db,userId)).sets[word.setId]||{};
@@ -84,7 +85,8 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
         if(rejectOrigin(req,origin))return json(res,403,{error:'Origin rejected'});
         if(!String(req.headers['content-type']).startsWith('application/json'))return json(res,415,{error:'JSON required'});
       }
-      if(path==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:'0.1.0',commit:process.env.RAILWAY_GIT_COMMIT_SHA||null});
+      if(path==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:'0.1.0',commit:process.env.RAILWAY_GIT_COMMIT_SHA||null,
+        lexicalStore:lexicon.available?LOCAL_LEXICON_SOURCE.id:'unavailable'});
       if(path==='/api/ready'&&req.method==='GET'){
         db.prepare('SELECT 1 ok').get();
         return json(res,200,{ok:true,schemaVersion:schemaVersion(db),maxSyncEvents:configuredLimits.maxSyncEvents,
@@ -132,7 +134,8 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
         const word=String(url.searchParams.get('word')||'');
         if(language!=='en'||!['en','vi','zh','ja'].includes(meaningLanguage)||!word||word.length>100)
           return json(res,400,{error:'English word and meaning language required'});
-        return json(res,200,{result:await autofillWord(db,provider,{language,meaningLanguage,word}),source:DICTIONARY_SOURCE});
+        return json(res,200,{result:await autofillWord(db,provider,{language,meaningLanguage,word},undefined,lexicon),
+          source:lexicon.available?LOCAL_LEXICON_SOURCE:DICTIONARY_SOURCE});
       }
       if(path==='/api/media'&&req.method==='POST')return json(res,200,putMedia(db,user.id,await body(req,configuredLimits.maxRequestBytes)));
       if(path==='/api/media-info'&&req.method==='GET')return json(res,200,mediaStats(db,user.id));
@@ -162,13 +165,13 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),secure
       if(!res.headersSent)json(res,status,{error:error.message});else res.end();
     }
   });
-  server.on('close',()=>{clearInterval(aiTimer);db.close();});
+  server.on('close',()=>{clearInterval(aiTimer);lexicon.close();db.close();});
   return server;
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){
   try{process.loadEnvFile?.();}catch{}
   const config=loadConfig();
-  const server=application({dbPath:config.dbPath,secure:config.production,origin:config.appOrigin,
+  const server=application({dbPath:config.dbPath,lexicalDbPath:config.lexicalDbPath,secure:config.production,origin:config.appOrigin,
     allowSignup:config.allowSignup,limits:config.limits,reset:config.reset,ai:config.ai,logger:createLogger()});
   server.listen(config.port,config.host,()=>console.log(`VocaLearn: http://${config.host}:${config.port}`));
   process.on('SIGTERM',()=>server.close());process.on('SIGINT',()=>server.close());
