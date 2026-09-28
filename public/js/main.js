@@ -7,6 +7,7 @@ import {authView,setView} from './views/shell.js';
 import {homeView} from './views/home.js';
 import {libraryView,rows,filtered} from './views/library.js';
 import {studyView,resultsView} from './views/study.js';
+import {statsView} from './views/stats.js';
 import {setup,restoreSetup,studyAction,submitInput,startClock,stopClock} from './study.js';
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,customFields,logoutAction,offlineResources} from './settings.js';
@@ -15,10 +16,10 @@ import {aiPanel,generateAi,retryAi,acceptAi,removeSentence} from './ai.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
-    :app.page==='study'?studyView():app.page==='results'?resultsView():['library','errors'].includes(app.page)?libraryView():homeView();
+    :app.page==='study'?studyView():app.page==='results'?resultsView():app.page==='stats'?statsView():['library','errors'].includes(app.page)?libraryView():homeView();
   if(focus)requestAnimationFrame(()=>document.querySelector(focus)?.focus());
 };
-async function persistView(){await setMeta('view',{setId:app.setId,scope:app.scope,scopeChildren:app.scopeChildren,page:app.page,filter:app.filter,query:app.query});}
+async function persistView(){await setMeta('view',{setId:app.setId,scope:app.scope,scopeChildren:app.scopeChildren,page:app.page,filter:app.filter,query:app.query,statsDays:app.statsDays});}
 function showError(error){
   const el=document.querySelector('#form-error')||document.querySelector('#auth-error')||document.querySelector('#study-error');
   if(el)el.textContent=error.message;notify(error.message,true);
@@ -48,7 +49,7 @@ async function click(action,el){
   if(studyActions.has(action))return studyAction(action,el);
   if(action==='toggleAuth'){app.register=!app.register;app.render();return;}
   if(action==='close'){if(app.dirty&&!confirm(t('unsaved')))return;app.dirty=false;closeModal();return;}
-  if(['home','library','errors','sets'].includes(action)){
+  if(['home','library','errors','sets','stats'].includes(action)){
     if(action==='errors')app.filter='errors';if(action==='library')app.filter='all';return navigate(action);
   }
   if(action==='filter'){app.filter=el.dataset.filter;return navigate(app.filter==='errors'?'errors':'library');}
@@ -194,6 +195,7 @@ document.addEventListener('change',async e=>{
       const target=document.querySelector('#set-meaning-language'),profile=languageProfile(e.target.value);
       if(target)target.innerHTML=(profile?.supportedMeaningLanguages||['vi']).map(value=>`<option value="${value}">${labels[value]||value.toUpperCase()}</option>`).join('');
     }
+    if(e.target.id==='stats-window'){app.statsDays=e.target.value==='all'?'all':Number(e.target.value);app.render('h1');await persistView();}
     if(e.target.id==='setup-game'){app.game=e.target.value;setup();}
     if(e.target.id==='setup-face'){app.face=e.target.value;setup();}
     if(e.target.matches('[data-mix-game]')){app.mixGames=[...document.querySelectorAll('[data-mix-game]:checked')].map(x=>x.dataset.mixGame);setup();}
