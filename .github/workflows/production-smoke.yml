@@ -6,6 +6,7 @@ on:
     paths:
       - 'server/main.js'
       - 'tests/browser_production_smoke.py'
+      - 'tests/browser_production_exploratory.py'
       - '.github/workflows/production-smoke.yml'
       - 'docs/DELIVERY_WORKFLOW.md'
   workflow_dispatch:
@@ -44,10 +45,14 @@ jobs:
           PY
       - name: Run smoke against Railway production URL
         run: python tests/browser_production_smoke.py
+      - name: Run user-like exploratory journey against production
+        run: python tests/browser_production_exploratory.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: production-web-evidence
-          path: tests/browser-evidence/production-*.png
+          path: |
+            tests/browser-evidence/production-*.png
+            tests/browser-evidence/production-exploratory-results.json
           if-no-files-found: ignore
           retention-days: 7
