@@ -18,6 +18,15 @@ Open `http://localhost:3000`. Register a local account with a password of at lea
 
 There are **no third-party runtime packages** and no build step for normal startup. `npm ci` is optional for the empty dependency tree. No AI provider key is required.
 
+For high-coverage English autofill without runtime AI calls, install the optional read-only lexical database once:
+
+```sh
+npm run lexicon:install
+LEXICAL_DB_PATH=./data/dictionary.db npm start
+```
+
+The installer downloads the pinned MinhQND Dictionary v2.0.0 SQLite release, verifies its SHA-256 checksum, and stores it outside the source tree. Its data is CC BY-SA 4.0 and VocaLearn keeps source attribution in autofilled cards. When this local store contains a usable translation, autofill stops there; external dictionary lookup and AI are fallbacks rather than the default path.
+
 ```sh
 npm run verify      # syntax, modules below 300 lines, domain/API tests
 npm run build:sw    # regenerate the offline app-shell file list after edits
@@ -34,6 +43,7 @@ The development server binds to `127.0.0.1:3000`. Persistent server data lives i
 - Email/password authentication, HttpOnly session cookie, SQLite append-only journal and authenticated per-account sync endpoint.
 - Card editing, image/audio attachments, category hierarchy and multiple topic membership. Explicit delete/restore and field-conflict history.
 - Excel import/export is implemented for the current supported workbook/image cases, plus JSON content transfer as an additional utility. Neither format is a full server backup because review journals/accounts are excluded.
+- English card autofill uses a local-first lexical pipeline when `LEXICAL_DB_PATH` is configured: local SQLite data → shared server cache/external dictionary → AI enrichment only when required fields are still missing.
 
 See [Implementation status](docs/STATUS.md) for specific boundaries. Presence of a button or implementation is not proof that all acceptance cases passed.
 
