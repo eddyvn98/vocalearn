@@ -15,5 +15,6 @@ export const viLookups={
   autofillAiMissing:'Chưa có AI nên phần nghĩa tiếng Việt có thể cần bạn tự điền',
   autofillMissing:'Không tìm thấy từ này trong nguồn từ điển.',
   autofillTemporary:'Nguồn từ điển đang tạm thời không phản hồi. Đã điền phần dữ liệu có sẵn trên máy chủ.',
-  autofillAiFailed:'AI đang tạm thời không phản hồi; dữ liệu từ điển vẫn được giữ nguyên.'
+  autofillAiFailed:'AI đang tạm thời không phản hồi; dữ liệu từ điển vẫn được giữ nguyên.',
+  autofillFailed:'Không thể tự điền lúc này. Hãy thử lại.'
 };

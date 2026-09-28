@@ -39,7 +39,9 @@ export async function autofillEditor(language,meaningLanguage='vi'){
   const form=document.querySelector('#word-form');if(!form)throw new Error(t('lookupNoEditor'));
   const word=String(form.elements.word?.value||'').trim();if(!word)throw new Error(t('lookupWordFirst'));
   const status=document.querySelector('#autofill-status');if(status)status.textContent=t('autofillWorking');
-  const data=await api('autofill?language='+encodeURIComponent(language)+'&meaningLanguage='+encodeURIComponent(meaningLanguage)+'&word='+encodeURIComponent(word));
+  let data;
+  try{data=await api('autofill?language='+encodeURIComponent(language)+'&meaningLanguage='+encodeURIComponent(meaningLanguage)+'&word='+encodeURIComponent(word));}
+  catch(error){if(status)status.textContent=t('autofillFailed');throw error;}
   const result=data.result||{};
   if(result.status==='missing'){
     if(status)status.textContent=t('autofillMissing');
