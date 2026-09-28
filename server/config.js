@@ -47,7 +47,7 @@ export function loadConfig(env=process.env){
   const aiApiKey=String(env.AI_API_KEY||'');
   const config={
     production,host:String(env.HOST||'127.0.0.1'),port:integer(env.PORT,3000,1,65535,'PORT'),
-    dbPath:String(env.DB_PATH||'./data/vocalearn.sqlite'),appOrigin:origin,allowSignup,
+    dbPath:String(env.DB_PATH||'./data/vocalearn.sqlite'),lexicalDbPath:String(env.LEXICAL_DB_PATH||''),appOrigin:origin,allowSignup,
     ai:{baseUrl:aiBaseUrl,model:aiModel,apiKey:aiApiKey,timeoutMs:integer(env.AI_TIMEOUT_SECONDS,30,5,180,'AI_TIMEOUT_SECONDS')*1000},
     reset:{mode:resetMode,appOrigin:origin,providerUrl,providerToken,resendApiKey,resendFrom,
       ttlMs:integer(env.PASSWORD_RESET_TTL_MINUTES,30,10,1440,'PASSWORD_RESET_TTL_MINUTES')*60000},
