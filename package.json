@@ -15,6 +15,7 @@
     "build:sw": "node scripts/build-sw.js",
     "backup": "node scripts/backup.js",
     "restore:verify": "node scripts/restore-verify.js",
-    "preview:fixtures": "node --experimental-vm-modules scripts/preview.mjs"
+    "preview:fixtures": "node --experimental-vm-modules scripts/preview.mjs",
+    "lexicon:install": "node scripts/install-lexical-db.js"
   }
 }
