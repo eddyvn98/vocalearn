@@ -76,3 +76,11 @@ test('Logout invalidates server session',async()=>{
  assert.equal((await request('/api/logout',{})).status,200);
  assert.equal((await request('/api/me')).status,401);
 });
+
+test('Same-origin HTML reset form may send null Origin without being treated as cross-site',async()=>{
+ const headers={'Content-Type':'application/x-www-form-urlencoded',Origin:'null','Sec-Fetch-Site':'same-origin'};
+ const ok=await fetch(url+'/reset-password/request',{method:'POST',headers,body:'email=test%40example.com'});
+ assert.equal(ok.status,202);
+ const blocked=await fetch(url+'/reset-password/request',{method:'POST',headers:{...headers,'Sec-Fetch-Site':'cross-site'},body:'email=test%40example.com'});
+ assert.equal(blocked.status,403);
+});
