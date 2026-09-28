@@ -80,7 +80,10 @@ async function fetchOnce(word,fetchImpl){
     }
     return normalizeEnglish(await response.json(),word);
   }catch(error){
-    if(error.name==='AbortError'){error.code='DICTIONARY_TEMPORARY';error.status=503;error.message='Dictionary provider timed out';}
+    if(error.name==='AbortError'){
+      const timeoutError=new Error('Dictionary provider timed out');
+      timeoutError.code='DICTIONARY_TEMPORARY';timeoutError.status=503;throw timeoutError;
+    }
     throw error;
   }finally{clearTimeout(timer);}
 }
