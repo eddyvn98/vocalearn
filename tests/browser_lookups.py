@@ -93,7 +93,9 @@ def english_acceptance(page, origin):
     form.locator('[name="meaning"]').fill("cách viết riêng của tôi")
     form.locator('[data-action="autofillWord"]').click()
     expect(form.locator('[name="meaning"]')).to_have_value("cách viết riêng của tôi")
+    page.wait_for_function("() => import('/js/state.js').then(({app}) => !app.busy)")
     form.locator('[data-action="close"]').click()
+    expect(page.locator("dialog")).not_to_be_visible()
     print("PASS: shared autofill fills blanks and preserves user-written overrides")
 
     form = open_add(page, "deploy", "triển khai")
