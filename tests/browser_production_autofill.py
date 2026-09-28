@@ -38,6 +38,7 @@ def main():
         original=form.locator('[name="meaning"]').input_value()
         form.locator('[name="meaning"]').fill("nghĩa riêng của người dùng")
         form.locator('[data-action="autofillWord"]').click()
+        page.wait_for_function("() => import('/js/state.js').then(({app}) => !app.busy)",timeout=20000)
         expect(form.locator('[name="meaning"]')).to_have_value("nghĩa riêng của người dùng")
         form.locator('[type="submit"]').click()
         expect(form).not_to_be_visible()
