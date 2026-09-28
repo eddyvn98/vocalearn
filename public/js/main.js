@@ -16,7 +16,7 @@ import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './nav
 import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
 import {reminderPlan} from '/core/reminders.js';
 import {startAi,applyAi,applyAiField,applyAiMeaning,retryAi} from './ai-client.js';
-import {updateSentenceStatus} from './sentence-pool.js';import {lookupEditorReading} from './lookups.js';
+import {updateSentenceStatus} from './sentence-pool.js';import {lookupEditorReading,autofillEditor} from './lookups.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight','handwritingUndo','handwritingClear','speechStart']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -68,7 +68,7 @@ async function click(action,el){
   if(action==='practice')return setup('free',el.dataset.game);
   if(action==='add'||action==='edit')return openEditor(el.dataset.id);
   if(action==='makeSentenceBlank')return makeSentenceBlank();
-  if(action==='lookupReading')return lookupEditorReading(el.dataset.language||'en');if(action==='loadStrokeData')return loadStrokeData();
+  if(action==='lookupReading')return lookupEditorReading(el.dataset.language||'en');if(action==='autofillWord')return autofillEditor(el.dataset.language||'en',el.dataset.meaningLanguage||'vi');if(action==='loadStrokeData')return loadStrokeData();
   if(action==='aiStart')return startAi(el.dataset.wordId);
   if(action==='aiApply'){const id=await applyAi(el.dataset.wordId,el.dataset.jobId);return openEditor(id);}
   if(action==='aiApplyField'){const id=await applyAiField(el.dataset.wordId,el.dataset.jobId,el.dataset.field);return openEditor(id);}

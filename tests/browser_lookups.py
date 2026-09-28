@@ -78,6 +78,27 @@ def saved_word(page, spelling):
 def english_acceptance(page, origin):
     register(page, origin, "lookup-en@example.test", "English Lookups", "en")
 
+    def autofill_route(route):
+        route.fulfill(status=200, content_type="application/json", body='''{"result":{"status":"found","cacheHit":true,"aiCacheHit":true,"aiConfigured":true,"fetchedAt":123,"fields":{"meaning":"khởi chạy","pos":"verb","ipa":"lɔːntʃ","sentence":"We will ___ tomorrow.","answers":["launch"],"synonyms":["start"],"antonyms":[],"collocations":["launch an app"],"register":"trung tính","level":"B1","mnemonic":"đưa vào hoạt động","source":"dictionaryapi.dev"},"dictionary":{"license":{"name":"test"}}}}''')
+    page.route("**/api/autofill?*", autofill_route)
+
+    form = open_add(page, "launch", "")
+    form.locator('[data-action="autofillWord"]').click()
+    expect(form.locator('[name="meaning"]')).to_have_value("khởi chạy")
+    expect(form.locator('[name="pos"]')).to_have_value("verb")
+    expect(form.locator('[name="ipa"]')).to_have_value("lɔːntʃ")
+    expect(form.locator('[name="sentence"]')).to_have_value("We will ___ tomorrow.")
+    expect(form.locator('[name="collocations"]')).to_have_value("launch an app")
+    expect(form.locator("#autofill-status")).to_contain_text("kho chung")
+    form.locator('[name="meaning"]').fill("cách viết riêng của tôi")
+    form.locator('[data-action="autofillWord"]').click()
+    expect(form.locator('[name="meaning"]')).to_have_value("cách viết riêng của tôi")
+    page.wait_for_function("() => import('/js/state.js').then(({app}) => !app.busy)")
+    page.once("dialog", lambda dialog: dialog.accept())
+    form.locator('[data-action="close"]').click()
+    expect(page.locator("dialog")).not_to_be_visible()
+    print("PASS: shared autofill fills blanks and preserves user-written overrides")
+
     form = open_add(page, "deploy", "triển khai")
     form.locator('[data-action="lookupReading"]').click()
     expect(form.locator('[name="ipa"]')).not_to_have_value("")

@@ -74,6 +74,7 @@ export function openEditor(id) {
   const strokePanel=['zh','ja'].includes(profile?.id)?`<section class="wait-panel stack"><strong>${t('strokeResources')}</strong><p id="stroke-status" class="muted small">${strokeDraft?esc(strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+(strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):'')):t('strokeResourcesHelp')}</p>${button(t('loadStrokeData'),'loadStrokeData','quiet')}</section>`:'';
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack">
   ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
+  ${profile?.id==='en'?'<div class="row wrap">'+button(t('autofillWord'),'autofillWord','quiet',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)+'</div><p id="autofill-status" class="muted small"></p>':''}
   ${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${strokePanel}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}

@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION=4;
+export const SCHEMA_VERSION=5;
 const migrations=[
   {version:1,sql:`
     CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,hash TEXT NOT NULL,salt TEXT NOT NULL);
@@ -51,6 +51,21 @@ const migrations=[
     );
     CREATE INDEX IF NOT EXISTS ai_jobs_due ON ai_jobs(status,not_before);
     CREATE INDEX IF NOT EXISTS ai_jobs_word ON ai_jobs(user_id,word_id,created);
+  `},
+  {version:5,sql:`
+    CREATE TABLE IF NOT EXISTS dictionary_cache(
+      language TEXT NOT NULL,
+      normalized_word TEXT NOT NULL,
+      source TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      enrichments TEXT NOT NULL DEFAULT '{}',
+      fetched_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      last_used_at INTEGER NOT NULL,
+      PRIMARY KEY(language,normalized_word)
+    );
+    CREATE INDEX IF NOT EXISTS dictionary_cache_updated ON dictionary_cache(updated_at);
+    CREATE INDEX IF NOT EXISTS dictionary_cache_lru ON dictionary_cache(last_used_at);
   `}
 ];
 export function schemaVersion(db){
