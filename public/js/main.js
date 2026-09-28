@@ -99,7 +99,7 @@ async function click(action,el){
   if(action==='customFields'||action==='editCustomField')return customFields(el.dataset.id);
   if(action==='deleteCustomField')return deleteCustomField(el.dataset.id);
   if(action==='deleteTopic'){
-    if(!confirm('Delete this topic and its subtopics? Cards will be kept.'))return;
+    if(!confirm('Xóa chủ đề này và các chủ đề con? Các thẻ vẫn được giữ lại.'))return;
     await commit([prepare('deleteCategory',{id:el.dataset.id})]);topics();return app.render();
   }
   if(action==='samples')return samples();
