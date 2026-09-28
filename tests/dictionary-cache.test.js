@@ -109,3 +109,15 @@ test('AI outage does not discard dictionary fields or shared dictionary cache',a
   assert.ok(cachedDictionary(db,'en','deploy'));
   db.close();
 });
+
+test('AbortError from provider becomes bounded partial fallback instead of a server error',async()=>{
+  const db=openDatabase(':memory:');
+  let calls=0;
+  const result=await autofillWord(db,{configured:false},{language:'en',meaningLanguage:'vi',word:'deploy'},
+    async()=>{calls++;throw new DOMException('aborted','AbortError');});
+  assert.equal(calls,2);
+  assert.equal(result.status,'partial');
+  assert.equal(result.errorCode,'DICTIONARY_TEMPORARY');
+  assert.ok(result.fields.ipa);
+  db.close();
+});
