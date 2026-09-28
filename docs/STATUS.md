@@ -23,13 +23,13 @@ Status meanings:
 | UI-12 | Error-book filter, practice, episode counts/evidence display. Remaining recovery conditions are shown per card (clean evidence still needed, recall requirement, different-game requirement and minimum wait); pure recovery rules are tested. |
 | UI-13 | Daily limit, timezone, SRS hard/easy factors, easy threshold, maximum interval, and open-app reminder. No background notifications or primary-device scheduler. |
 | UI-14 | IndexedDB journal, authenticated sync, authoritative server snapshot & grade validation, opportunity deduplication, conservative multi-device merge, offline resource status modal. |
-| UI-15/16 | Phase-2 Chinese profile is partially implemented: Chinese card fields, Pinyin normalization, two-step whole-word typing, tone and classifier games are wired into study setup with release gating. AI autofill/sentence-pool automation is still pending. Japanese full profile, handwriting, speech and advanced statistics remain Phase 3 and are not advertised as released. |
+| UI-15/16 | Phase-2 Chinese profile plus protected AI infrastructure are implemented: Chinese card fields, Pinyin/two-step typing, tone/classifier games, revision-protected AI suggestion jobs, versioned five-sentence generation, offline sentence-pool events, usage tracking, deletion and stale-result protection. AI requires an explicitly configured self-hosted endpoint; without it the core app remains usable. Japanese full profile, handwriting, speech and advanced statistics remain Phase 3. |
 
 ## High-priority work before calling this MVP complete
 
 1. Extend the real-browser suite beyond the current register/create-set/card/reload/offline/reconnect path: fake-clock learning steps, retry reload, duplicate submissions, two browser profiles, multiple tabs, image/audio loading and browser Back.
 2. Continue authoritative sync hardening. Snapshot/grade validation, duplicate-final-answer rejection, tombstone protection, refreshed trusted clock anchors and deterministic device/event tie-breaking are implemented. Remaining focus: adversarial late-parent replay, descendant invalidation/reclassification and two-device browser acceptance.
-3. Finish the remaining UI/spec gaps and staged language work. The Phase-2 Chinese core now covers Pinyin/two-step typing plus tone/classifier interactions; AI-assisted content and sentence-pool work remain. Japanese/handwriting/speech stay gated to Phase 3. Ambiguous auto-graded prompts, topic descendant scope, topic drag ordering and maximum interval settings are implemented.
+3. Finish the remaining staged-language and AI deployment work. Phase-2 Chinese plus the protected AI-job/sentence-pool path are implemented; production self-hosted model selection, licensing and latency/quality evidence still remain. Japanese/handwriting/speech stay gated to Phase 3.
 4. Move media to a versioned, bounded, deduplicated blob store with compression and explicit offline resource status. Do not let missing assets silently create learning errors.
 5. Verify every applicable AT-01..AT-32 and UX-01..UX-30 case; record results individually. Complete keyboard focus, IME, screen-reader, zoom/contrast and mobile virtual-keyboard checks on declared devices.
 6. Establish production migrations, secret handling, backup/restore, account recovery, throttling/observability and tested scale limits before public hosting.
@@ -76,3 +76,10 @@ See `docs/PROGRESS.md` for the rolling change log and CI state.
 - Browser acceptance now covers trusted-clock 1/10/10 learning progression, matching, cloze, audio lifecycle, IME/keyboard focus, and 320/390/768/1024/1440 viewport checks.
 - Media storage exposes authenticated quota usage (200 MB/user), verifies content hashes/MIME, keeps duplicate uploads quota-neutral, and can self-heal a missing content-addressed file when the same bytes are uploaded again.
 - Intermediate hardening commits intentionally use `[skip ci]`; the next checkpoint runs the full Verify + Browser regression + Deployed smoke gates together.
+
+## Phase-2 AI safety boundary
+
+- AI results are proposals until explicitly accepted; manual edits are never silently overwritten.
+- Sentence generation is versioned against the word content. Editing the word/meaning/readings makes older AI jobs stale.
+- The app makes no external AI call when `AI_PROVIDER_URL` is unset. Previously downloaded sentence-pool events remain usable offline.
+- Production model quality, dictionary/licensing choices and latency/cost evidence are still pending deployment acceptance.

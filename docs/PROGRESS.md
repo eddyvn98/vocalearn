@@ -104,3 +104,14 @@ Batch includes browser audio/IME/responsive acceptance plus media quota, dedupli
 - Wired Chinese tone/classifier actions through the browser dispatcher and server-side answer validation.
 - Added focused unit coverage plus a real Chromium Phase-2 Chinese journey that verifies release gating, mixed-game availability, numeric Pinyin input, whole-word choices and sync acceptance.
 - This batch is not evidence that AI autofill, Japanese, handwriting, speech or Phase-3 statistics are complete.
+
+
+## 2026-09-28 Phase-2 AI and sentence-pool batch
+
+- Added authenticated AI jobs with waiting/running/success/failed/stale states, content-version deduplication and automatic retries at 5/30/120 seconds.
+- AI is provider-agnostic and disabled unless `AI_PROVIDER_URL` is configured. A deterministic provider exists only for browser/API tests.
+- Autofill stays a proposal. Accepting another meaning creates another card rather than merging learning histories.
+- Added versioned sentence-pool events, exact gap/answer validation, offline sync, usage counting, deletion and least-recently-used selection with original-sentence fallback.
+- Cloze questions carry the selected sentence ID; server validation rechecks sentence ownership/version and sentence-specific answers.
+- Added API/domain/browser coverage for stale jobs, sentence generation and the live Phase-2 AI journey.
+- Verify, Deployed smoke and Browser regression were green at commit 72fc55d after the implementation batch.

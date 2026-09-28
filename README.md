@@ -16,7 +16,7 @@ npm start
 
 Open `http://localhost:3000`. Register a local account with a password of at least 12 characters, create an English-to-Vietnamese or English-to-English study set, and add cards. The sample-content button adds explicitly chosen examples; the app does not silently seed a new account.
 
-There are **no third-party runtime packages** and no build step for normal startup. `npm ci` is optional for the empty dependency tree. No AI provider key is required.
+Normal startup has no build step. The small `fflate` runtime dependency is used for XLSX ZIP handling, so run `npm ci` after a fresh checkout. AI is optional: no provider credential is required unless you enable the Phase-2 self-hosted AI endpoint.
 
 ```sh
 npm run verify      # syntax, modules below 300 lines, domain/API tests
@@ -34,6 +34,7 @@ The development server binds to `127.0.0.1:3000`. Persistent server data lives i
 - Email/password authentication, HttpOnly session cookie, SQLite append-only journal and authenticated per-account sync endpoint.
 - Card editing, image/audio attachments, category hierarchy and multiple topic membership. Explicit delete/restore and field-conflict history.
 - Excel import/export is implemented in pure JavaScript with OpenXML/ZIP, including column mapping, row validation, sense-aware duplicate handling and embedded-image support. JSON transfer remains a separate utility and is not a full journal backup.
+- Optional Phase-2 AI jobs can suggest content and create a versioned five-sentence cloze pool. Results are protected by content revisions and never overwrite manual edits silently; the provider must be explicitly configured.
 
 See [Implementation status](docs/STATUS.md) for specific boundaries. Presence of a button or implementation is not proof that all acceptance cases passed.
 
@@ -65,6 +66,8 @@ Default startup does not automatically load `.env`. To override settings:
 cp .env.example .env
 node --env-file=.env server/main.js
 ```
+
+To enable Phase-2 AI, configure `AI_PROVIDER_URL` to a self-hosted JSON endpoint and optionally `AI_PROVIDER_TOKEN`. Leaving the URL empty disables AI cleanly.
 
 Do not expose the development HTTP server to the internet. Public deployment requires an HTTPS reverse proxy, `NODE_ENV=production`, `APP_ORIGIN=https://your-domain.example` and a suitable registration policy. First create the intended account, then restart with `ALLOW_SIGNUP=false` for a personal deployment. Read [architecture and security limits](docs/ARCHITECTURE.md) before deployment.
 

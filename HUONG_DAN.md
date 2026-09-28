@@ -12,7 +12,7 @@ npm start
 
 Mở `http://localhost:3000`, đăng ký tài khoản, tạo bộ học Anh-Việt hoặc Anh-Anh rồi thêm từ. Mật khẩu tối thiểu 12 ký tự. Nút thêm thẻ mẫu chỉ chạy khi bạn chọn; không tạo lịch sử học giả.
 
-Không cần API key và không cần cài thư viện runtime bên ngoài. Dữ liệu server lưu trong `data/`, dữ liệu trình duyệt lưu trong IndexedDB. Giữ cùng địa chỉ truy cập khi học.
+Sau khi clone mới, chạy `npm ci` để cài `fflate` dùng cho Excel. AI không bắt buộc: nếu chưa cấu hình máy chủ AI thì app vẫn học bình thường. Dữ liệu server lưu trong `data/`, dữ liệu trình duyệt lưu trong IndexedDB.
 
 ## 2. Tạo repo riêng tư và đẩy code
 
@@ -35,7 +35,7 @@ npm run verify
 
 ## 4. Giới hạn cần biết
 
-Chưa có nhập/xuất Excel đúng đặc tả. JSON chỉ là tiện ích bổ sung, không phải sao lưu toàn bộ. Game nghe cần file audio của thẻ. AI, nhận giọng nói và viết chữ thuộc giai đoạn sau, chưa triển khai.
+Nhập/xuất Excel và kho media đã có. AI giai đoạn 2 đã có hàng đợi, đề xuất có bảo vệ sửa tay và kho câu; để tạo nội dung thật cần trỏ `AI_PROVIDER_URL` tới model tự vận hành. Game nghe vẫn cần audio của thẻ. Nhận giọng nói và viết chữ thuộc giai đoạn 3, chưa phát hành.
 
 Chưa đưa ứng dụng lên Internet. Không mở cổng server phát triển ra ngoài; cần HTTPS và hoàn thiện các mục trong `docs/STATUS.md` trước khi triển khai.
 

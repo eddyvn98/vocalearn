@@ -44,3 +44,12 @@ Serve HTTPS on one stable origin. Configure `APP_ORIGIN` to the exact external o
 For a personal account, create it while registration is permitted, then restart with `ALLOW_SIGNUP=false`. There is no password-reset email flow in this slice. Preserve access credentials and maintain secure OS backups.
 
 The GitHub publishing scripts do not provision a server, register a domain, configure DNS, deploy an app or publish GitHub Pages.
+
+
+## Phase-2 AI queue and sentence pool
+
+AI is optional and explicitly configured. `AI_PROVIDER_URL` points to a self-hosted HTTP service that accepts `{kind, snapshot, count}` and returns JSON; `AI_PROVIDER_TOKEN` is optional. If the URL is absent, the server exposes AI as unavailable and never sends card content to another service.
+
+Each AI job snapshots the word/content revision and is deduplicated by task, word and request key. A result whose word was edited or deleted while the job ran is marked stale and cannot be applied. Temporary failures are retried after 5, 30 and 120 seconds, then remain failed until an explicit retry. Autofill output is shown as a proposal and only becomes normal card content after an explicit acceptance action.
+
+Generated cloze sentences become append-only `sentence` events so they sync through the same offline journal as study data. They carry a word-content version, exact gap offsets and sentence-specific accepted answers. `sentenceUsage` is committed locally with the final answer, while `deleteSentence` tombstones a bad sentence without rewriting old review snapshots. The question builder prefers valid unused/least-recently-used pool entries and falls back to the author's fixed sentence when no current AI sentence is available.
