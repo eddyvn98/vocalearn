@@ -13,5 +13,7 @@ export const viLookups={
   autofillFetched:'Đã lấy dữ liệu mới và lưu vào kho chung',
   autofillAiCached:'Nghĩa và nội dung AI dùng lại từ kho chung',
   autofillAiMissing:'Chưa có AI nên phần nghĩa tiếng Việt có thể cần bạn tự điền',
-  autofillMissing:'Không tìm thấy từ này trong nguồn từ điển.'
+  autofillMissing:'Không tìm thấy từ này trong nguồn từ điển.',
+  autofillTemporary:'Nguồn từ điển đang tạm thời không phản hồi. Đã điền phần dữ liệu có sẵn trên máy chủ.',
+  autofillAiFailed:'AI đang tạm thời không phản hồi; dữ liệu từ điển vẫn được giữ nguyên.'
 };
