@@ -109,3 +109,20 @@ test('AI outage does not discard dictionary fields or shared dictionary cache',a
   assert.ok(cachedDictionary(db,'en','deploy'));
   db.close();
 });
+
+test('dictionary timeout converts readonly AbortError into temporary fallback',async()=>{
+  const db=openDatabase(':memory:');
+  let calls=0;
+  const fetchImpl=async(_url,{signal})=>new Promise((resolve,reject)=>{
+    calls++;
+    signal.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError')),{once:true});
+  });
+  const started=Date.now();
+  const result=await autofillWord(db,{configured:false},{language:'en',meaningLanguage:'vi',word:'deploy'},fetchImpl);
+  assert.equal(calls,2);
+  assert.equal(result.status,'partial');
+  assert.equal(result.errorCode,'DICTIONARY_TEMPORARY');
+  assert.ok(result.fields.ipa);
+  assert.ok(Date.now()-started>=10000);
+  db.close();
+});
