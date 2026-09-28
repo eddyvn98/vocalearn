@@ -25,8 +25,8 @@ def main():
         page.locator('[data-action="library"]').first.click()
         page.locator('[data-action="add"]').first.click()
         form=page.locator("#word-form")
-        form.locator('[name="word"]').fill("deploy")
-        form.locator('[data-action="autofillWord"]').click()
+        form.locator('[name="word"]').fill("test")
+        form.locator('[name="word"]').press("Tab")
         status=form.locator("#autofill-status")
         expect(status).to_have_text(re.compile(r"(kho chung|tạm thời không phản hồi)"),timeout=20000)
         expect(form.locator('[name="ipa"]')).not_to_have_value("")
@@ -42,10 +42,10 @@ def main():
         expect(form.locator('[name="meaning"]')).to_have_value("nghĩa riêng của người dùng")
         form.locator('[type="submit"]').click()
         expect(form).not_to_be_visible(timeout=10000)
-        row=page.locator(".word-row").filter(has_text="deploy").first
+        row=page.locator(".word-row").filter(has_text="test").first
         row.locator('[data-action="edit"]').click()
         expect(page.locator('[name="meaning"]')).to_have_value("nghĩa riêng của người dùng")
-        print("PASS: production shared dictionary autofill")
+        print("PASS: production automatic shared dictionary autofill")
         print("first meaning:",original or "(AI enrichment not configured/available)")
         browser.close()
 

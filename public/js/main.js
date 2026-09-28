@@ -16,7 +16,7 @@ import {pushHistory,replaceHistory,restoreHistory,historyMatchesApp} from './nav
 import {hydrateMedia,migrateLegacyMedia} from './media-store.js';
 import {reminderPlan} from '/core/reminders.js';
 import {startAi,applyAi,applyAiField,applyAiMeaning,retryAi} from './ai-client.js';
-import {updateSentenceStatus} from './sentence-pool.js';import {lookupEditorReading,autofillEditor} from './lookups.js';
+import {updateSentenceStatus} from './sentence-pool.js';import {lookupEditorReading,autofillEditor,ensureAutoAutofill} from './lookups.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight','handwritingUndo','handwritingClear','speechStart']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -184,7 +184,7 @@ document.addEventListener('submit',async e=>{
       await commit([prepare('set',{id,name:f.get('name').trim(),language:f.get('language'),meaningLanguage:f.get('meaningLanguage')})]);
       app.setId=id;await navigate('home');
     }
-    if(form.id==='word-form')await saveWord(form);
+    if(form.id==='word-form'){try{await ensureAutoAutofill(form);}catch(error){showError(error);}await saveWord(form);}
     if(form.id==='custom-field-form')await saveCustomField(form);
     if(form.id==='answer-form')await submitInput(new FormData(form).get('answer'));
     if(form.id==='settings-form')await saveSettings(form);
@@ -234,7 +234,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='setup-game'){app.game=e.target.value;await saveStudySetup();setup();}
     if(e.target.id==='setup-face'){app.face=e.target.value;await saveStudySetup();setup();}
     if(e.target.id==='setup-answer-face'){app.answerFace=e.target.value;await saveStudySetup();setup();}
-    if(e.target.id==='setup-handwriting-level'){app.handwritingLevel=e.target.value;await saveStudySetup();setup();}
+    if(e.target.id==='setup-handwriting-level'){app.handwritingLevel=e.target.value;await saveStudySetup();setup();}if(e.target.name==='word'&&e.target.closest('#word-form'))setTimeout(()=>ensureAutoAutofill(e.target.closest('#word-form')).catch(showError),350);
     if(e.target.dataset.mixGame){
       const game=e.target.dataset.mixGame;
       app.mixGames=e.target.checked?[...new Set([...app.mixGames,game])]:app.mixGames.filter(value=>value!==game);

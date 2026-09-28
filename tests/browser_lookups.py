@@ -79,11 +79,17 @@ def english_acceptance(page, origin):
     register(page, origin, "lookup-en@example.test", "English Lookups", "en")
 
     def autofill_route(route):
-        route.fulfill(status=200, content_type="application/json", body='''{"result":{"status":"found","cacheHit":true,"aiCacheHit":true,"aiConfigured":true,"fetchedAt":123,"fields":{"meaning":"khởi chạy","pos":"verb","ipa":"lɔːntʃ","sentence":"We will ___ tomorrow.","answers":["launch"],"synonyms":["start"],"antonyms":[],"collocations":["launch an app"],"register":"trung tính","level":"B1","mnemonic":"đưa vào hoạt động","source":"dictionaryapi.dev"},"dictionary":{"license":{"name":"test"}}}}''')
+        if "word=launch" in route.request.url:
+            route.fulfill(status=200, content_type="application/json", body='''{"result":{"status":"found","cacheHit":true,"aiCacheHit":true,"aiConfigured":true,"fetchedAt":123,"fields":{"meaning":"khởi chạy","pos":"verb","ipa":"lɔːntʃ","sentence":"We will ___ tomorrow.","answers":["launch"],"synonyms":["start"],"antonyms":[],"collocations":["launch an app"],"register":"trung tính","level":"B1","mnemonic":"đưa vào hoạt động","source":"dictionaryapi.dev"},"dictionary":{"license":{"name":"test"}}}}''')
+        else:
+            route.fulfill(status=200, content_type="application/json", body='''{"result":{"status":"missing","cacheHit":false,"fields":{},"source":"dictionaryapi.dev"}}''')
     page.route("**/api/autofill?*", autofill_route)
 
-    form = open_add(page, "launch", "")
-    form.locator('[data-action="autofillWord"]').click()
+    page.locator('[data-action="library"]').first.click()
+    page.locator('[data-action="add"]').first.click()
+    form = page.locator("#word-form")
+    form.locator('[name="word"]').fill("launch")
+    form.locator('[name="word"]').press("Tab")
     expect(form.locator('[name="meaning"]')).to_have_value("khởi chạy")
     expect(form.locator('[name="pos"]')).to_have_value("verb")
     expect(form.locator('[name="ipa"]')).to_have_value("lɔːntʃ")
@@ -97,7 +103,7 @@ def english_acceptance(page, origin):
     page.once("dialog", lambda dialog: dialog.accept())
     form.locator('[data-action="close"]').click()
     expect(page.locator("dialog")).not_to_be_visible()
-    print("PASS: shared autofill fills blanks and preserves user-written overrides")
+    print("PASS: shared autofill runs automatically and preserves user-written overrides")
 
     form = open_add(page, "deploy", "triển khai")
     form.locator('[data-action="lookupReading"]').click()

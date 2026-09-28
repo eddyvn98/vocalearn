@@ -54,6 +54,7 @@ def main():
                 browser=p.chromium.launch()
                 page=browser.new_page(viewport={"width":1280,"height":900})
                 errors=[];page.on("pageerror",lambda error:errors.append(str(error)))
+                page.route("**/api/autofill?*",lambda route:route.fulfill(status=200,content_type="application/json",body='{"result":{"status":"missing","cacheHit":false,"fields":{},"source":"dictionaryapi.dev"}}'))
                 page.goto(origin,wait_until="networkidle")
                 page.locator('[data-action="toggleAuth"]').click()
                 page.locator('[name="email"]').fill("ai@example.test")
