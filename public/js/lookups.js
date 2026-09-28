@@ -41,7 +41,7 @@ export async function autofillEditor(language,meaningLanguage='vi'){
   const status=document.querySelector('#autofill-status');if(status)status.textContent=t('autofillWorking');
   const data=await api('autofill?language='+encodeURIComponent(language)+'&meaningLanguage='+encodeURIComponent(meaningLanguage)+'&word='+encodeURIComponent(word));
   const result=data.result||{};
-  if(result.status!=='found'){
+  if(result.status==='missing'){
     if(status)status.textContent=t('autofillMissing');
     return result;
   }
@@ -54,13 +54,19 @@ export async function autofillEditor(language,meaningLanguage='vi'){
     ['mnemonic',fields.mnemonic],['source',fields.source]
   ].filter(([name,value])=>setIfEmpty(form,name,value)).map(([name])=>name);
   if(fields.ipa){
-    draft.ipa={source:'dictionaryapi.dev',version:String(result.fetchedAt||'shared-cache-v1'),
+    const meta=result.lookupMeta?.ipa||{source:'dictionaryapi.dev',version:String(result.fetchedAt||'shared-cache-v1'),
       license:String(result.dictionary?.license?.name||result.dictionary?.license||'source metadata'),
-      status:'lookup',needsCheck:false,confirmed:false,value:fields.ipa,word};
+      status:'lookup',needsCheck:false,confirmed:false};
+    draft.ipa={...meta,value:fields.ipa,word};
+  }
+  if(result.status==='partial'){
+    if(status)status.textContent=t('autofillTemporary');
+    return {...result,changed};
   }
   const parts=[t('autofillFound')];
   parts.push(t(result.cacheHit?'autofillCached':'autofillFetched'));
   if(result.aiCacheHit)parts.push(t('autofillAiCached'));
+  else if(result.aiErrorCode)parts.push(t('autofillAiFailed'));
   else if(!result.aiConfigured)parts.push(t('autofillAiMissing'));
   if(status)status.textContent=parts.join(' · ');
   return {...result,changed};
