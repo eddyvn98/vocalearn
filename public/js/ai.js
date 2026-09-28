@@ -68,6 +68,13 @@ export async function acceptAi(wordId,jobId,field,index,source){
 export async function removeSentence(wordId,id){
   await transact([prepare('deleteSentence',{id,wordId})]);app.model=model();notify('Đã loại câu khỏi kho.');return aiPanel(wordId);
 }
+export function maybeQueueForWord(wordId){
+  if(!navigator.onLine)return;
+  const word=app.model.words[wordId];if(!word||word.deleted)return;
+  const version=contentVersion(word),pool=Object.values(app.model.sentences||{}).filter(s=>s.wordId===wordId&&!s.deleted&&s.status==='ready'&&s.wordContentVersion===version);
+  const kind=word.meaning?(pool.length?'':'sentences'):'autofill';
+  if(kind)api('ai/jobs',{wordId,kind}).catch(()=>{});
+}
 export function maybeReplenish(wordId){
   if(!navigator.onLine)return;
   const word=app.model.words[wordId];if(!word)return;
