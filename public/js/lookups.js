@@ -1,10 +1,10 @@
 import {api} from './storage.js';
 import {t,esc} from './ui.js';
 
-let draft={};
+let draft={},autoState={word:'',done:'',promise:null};
 
 export function beginLookupDraft(word){
-  draft=structuredClone(word?.lookupMeta||{});
+  draft=structuredClone(word?.lookupMeta||{});autoState={word:'',done:'',promise:null};
 }
 const userMeta=()=>({source:'user',version:'manual-v1',license:'user-provided',status:'user',needsCheck:false,confirmed:true});
 
@@ -72,6 +72,23 @@ export async function autofillEditor(language,meaningLanguage='vi'){
   else if(!result.aiConfigured)parts.push(t('autofillAiMissing'));
   if(status)status.textContent=parts.join(' · ');
   return {...result,changed};
+}
+
+export async function ensureAutoAutofill(form=document.querySelector('#word-form')){
+  if(!form||form.dataset.autoAutofill!=='true')return null;
+  const word=String(form.elements.word?.value||'').trim();
+  if(!word||autoState.done===word)return null;
+  if(autoState.promise&&autoState.word===word)return autoState.promise;
+  const trigger=form.querySelector('[data-action="autofillWord"]');if(!trigger)return null;
+  const promise=autofillEditor(trigger.dataset.language||'en',trigger.dataset.meaningLanguage||'vi');
+  autoState={word,done:autoState.done,promise};
+  try{
+    const result=await promise;
+    if(String(form.elements.word?.value||'').trim()===word)autoState.done=word;
+    return result;
+  }finally{
+    if(autoState.promise===promise)autoState.promise=null;
+  }
 }
 
 export function lookupMetaForSave(form,editing,language){
