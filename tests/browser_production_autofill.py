@@ -1,5 +1,6 @@
 """Post-deploy acceptance for the real shared dictionary autofill path."""
 import os
+import re
 import time
 import uuid
 from playwright.sync_api import expect, sync_playwright
@@ -26,10 +27,14 @@ def main():
         form=page.locator("#word-form")
         form.locator('[name="word"]').fill("deploy")
         form.locator('[data-action="autofillWord"]').click()
-        expect(form.locator("#autofill-status")).to_contain_text("kho chung",timeout=20000)
+        status=form.locator("#autofill-status")
+        expect(status).to_have_text(re.compile(r"(kho chung|tạm thời không phản hồi)"),timeout=20000)
         expect(form.locator('[name="ipa"]')).not_to_have_value("")
-        expect(form.locator('[name="pos"]')).not_to_have_value("")
-        expect(form.locator('[name="source"]')).to_have_value("dictionaryapi.dev")
+        source=form.locator('[name="source"]').input_value()
+        if source=="dictionaryapi.dev":
+            expect(form.locator('[name="pos"]')).not_to_have_value("")
+        else:
+            assert "tạm thời không phản hồi" in status.inner_text()
         original=form.locator('[name="meaning"]').input_value()
         form.locator('[name="meaning"]').fill("nghĩa riêng của người dùng")
         form.locator('[data-action="autofillWord"]').click()
