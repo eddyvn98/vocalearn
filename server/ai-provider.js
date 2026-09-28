@@ -20,6 +20,16 @@ function instruction(word,type){
     'Return {"meaningCandidates":[1 to 3 short strings],"mnemonic":"short optional memory aid"}.',
     'Do not invent pronunciation. Do not include markdown.'
   ].join('\n');
+  if(type==='dictionary-autofill')return [
+    'Return JSON only.',
+    'You enrich a shared dictionary entry for a vocabulary learning app.',
+    `Target language: ${language}. Meaning language: ${meaningLanguage}.`,
+    `Word: ${word.word}.`,
+    `Dictionary data: ${JSON.stringify(word.dictionary||{})}.`,
+    'Use the supplied dictionary data as the factual basis. Do not invent pronunciation or unsupported senses.',
+    'Return {"meaning":"one concise translation in the meaning language","collocations":["up to 6 useful collocations"],"register":"plain usage register such as neutral/formal/informal","level":"CEFR only if reasonably inferable, otherwise empty","mnemonic":"short optional memory aid"}.',
+    'Keep fields concise. Do not include markdown.'
+  ].join('\n');
   throw new Error('Unsupported AI job type');
 }
 
@@ -47,6 +57,17 @@ export function createAiProvider(config={}){
           const sentences=normalizeGeneratedSentences(parsed.sentences,word,5);
           if(!sentences.length){const error=new Error('AI provider returned no usable sentences');error.code='AI_EMPTY_RESULT';throw error;}
           return {sentences};
+        }
+        if(type==='dictionary-autofill'){
+          const result={
+            meaning:String(parsed.meaning||'').trim(),
+            collocations:Array.isArray(parsed.collocations)?parsed.collocations.map(x=>String(x||'').trim()).filter(Boolean).slice(0,6):[],
+            register:String(parsed.register||'').trim(),
+            level:String(parsed.level||'').trim(),
+            mnemonic:String(parsed.mnemonic||'').trim()
+          };
+          if(!result.meaning&&!result.collocations.length&&!result.mnemonic){const error=new Error('AI provider returned no usable fields');error.code='AI_EMPTY_RESULT';throw error;}
+          return result;
         }
         const meanings=Array.isArray(parsed.meaningCandidates)?parsed.meaningCandidates.map(x=>String(x||'').trim()).filter(Boolean).slice(0,3):[];
         const mnemonic=String(parsed.mnemonic||'').trim();
