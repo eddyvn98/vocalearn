@@ -5,6 +5,7 @@ import {normalize} from '/core/grading.js';
 import {WORD_FIELDS} from '/core/validation.js';
 import {studySetProfile} from '/core/language-profiles.js';
 import {parsePinyin} from '/core/chinese-games.js';
+import {maybeQueueForWord} from './ai.js';
 let editing=null,media={};
 function editorDirty(){
   const form=document.querySelector('#word-form');
@@ -73,7 +74,7 @@ export async function saveWord(form) {
     events.push(prepare(selected.includes(categoryId)?'link':'unlink',{wordId:id,categoryId,
       base:app.model.links[`${id}/${categoryId}`]?.rev||null}));
   }
-  await transact(events);app.model=model();app.dirty=false;closeModal();app.render();notify(t('saved'));
+  await transact(events);app.model=model();maybeQueueForWord(id);app.dirty=false;closeModal();app.render();notify(t('saved'));
 }
 export async function mediaFile(file,type) {
   if(!file)return;
