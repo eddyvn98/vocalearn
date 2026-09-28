@@ -1,5 +1,6 @@
 const SOURCE='dictionaryapi.dev';
 const API='https://api.dictionaryapi.dev/api/v2/entries/en/';
+const MAX_CACHE_ENTRIES=20000;
 const clean=value=>String(value||'').normalize('NFC').trim();
 const keyWord=value=>clean(value).toLocaleLowerCase('en-US');
 const list=(value,limit=12)=>[...new Set((Array.isArray(value)?value:[]).map(x=>clean(x)).filter(Boolean))].slice(0,limit);
@@ -34,24 +35,35 @@ function rowData(row){
   return {dictionary:JSON.parse(row.payload),enrichments:JSON.parse(row.enrichments||'{}'),
     source:row.source,fetchedAt:row.fetched_at,updatedAt:row.updated_at};
 }
-export function cachedDictionary(db,language,word){
-  return rowData(db.prepare('SELECT * FROM dictionary_cache WHERE language=? AND normalized_word=?')
-    .get(language,keyWord(word)));
+export function cachedDictionary(db,language,word,now=Date.now()){
+  const normalized=keyWord(word),row=db.prepare('SELECT * FROM dictionary_cache WHERE language=? AND normalized_word=?')
+    .get(language,normalized);
+  if(row)db.prepare('UPDATE dictionary_cache SET last_used_at=? WHERE language=? AND normalized_word=?')
+    .run(now,language,normalized);
+  return rowData(row);
+}
+function pruneCache(db){
+  const count=Number(db.prepare('SELECT COUNT(*) count FROM dictionary_cache').get().count||0);
+  if(count<=MAX_CACHE_ENTRIES)return;
+  db.prepare(`DELETE FROM dictionary_cache WHERE rowid IN (
+    SELECT rowid FROM dictionary_cache ORDER BY last_used_at ASC LIMIT ?
+  )`).run(count-MAX_CACHE_ENTRIES);
 }
 export function putDictionary(db,language,word,dictionary,now=Date.now()){
   const normalized=keyWord(word);
-  db.prepare(`INSERT INTO dictionary_cache(language,normalized_word,source,payload,enrichments,fetched_at,updated_at)
-    VALUES(?,?,?,?,?,?,?)
+  db.prepare(`INSERT INTO dictionary_cache(language,normalized_word,source,payload,enrichments,fetched_at,updated_at,last_used_at)
+    VALUES(?,?,?,?,?,?,?,?)
     ON CONFLICT(language,normalized_word) DO UPDATE SET source=excluded.source,payload=excluded.payload,
-      fetched_at=excluded.fetched_at,updated_at=excluded.updated_at`)
-    .run(language,normalized,SOURCE,JSON.stringify(dictionary),'{}',now,now);
-  return cachedDictionary(db,language,word);
+      fetched_at=excluded.fetched_at,updated_at=excluded.updated_at,last_used_at=excluded.last_used_at`)
+    .run(language,normalized,SOURCE,JSON.stringify(dictionary),'{}',now,now,now);
+  pruneCache(db);
+  return cachedDictionary(db,language,word,now);
 }
 export function putEnrichment(db,language,word,meaningLanguage,enrichment,now=Date.now()){
   const row=cachedDictionary(db,language,word);if(!row)throw new Error('Dictionary cache entry missing');
   const enrichments={...row.enrichments,[meaningLanguage]:enrichment};
-  db.prepare('UPDATE dictionary_cache SET enrichments=?,updated_at=? WHERE language=? AND normalized_word=?')
-    .run(JSON.stringify(enrichments),now,language,keyWord(word));
+  db.prepare('UPDATE dictionary_cache SET enrichments=?,updated_at=?,last_used_at=? WHERE language=? AND normalized_word=?')
+    .run(JSON.stringify(enrichments),now,now,language,keyWord(word));
   return cachedDictionary(db,language,word);
 }
 async function fetchDictionary(word,fetchImpl){
