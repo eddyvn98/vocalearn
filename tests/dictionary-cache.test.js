@@ -82,3 +82,30 @@ test('missing dictionary entries are not fabricated or cached',async()=>{
   assert.equal(cachedDictionary(db,'en','not-real'),null);
   db.close();
 });
+
+test('temporary dictionary outage retries then returns local partial data without poisoning shared cache',async()=>{
+  const db=openDatabase(':memory:');
+  let calls=0;
+  const result=await autofillWord(db,{configured:false},{language:'en',meaningLanguage:'vi',word:'deploy'},
+    async()=>{calls++;return {ok:false,status:522,json:async()=>({})};});
+  assert.equal(calls,2);
+  assert.equal(result.status,'partial');
+  assert.equal(result.temporary,true);
+  assert.ok(result.fields.ipa);
+  assert.equal(result.errorCode,'DICTIONARY_TEMPORARY');
+  assert.equal(cachedDictionary(db,'en','deploy'),null);
+  db.close();
+});
+
+test('AI outage does not discard dictionary fields or shared dictionary cache',async()=>{
+  const db=openDatabase(':memory:');
+  const provider={configured:true,generate:async()=>{const error=new Error('timeout');error.code='AI_TIMEOUT';throw error;}};
+  const result=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'deploy'},
+    async()=>({ok:true,status:200,json:async()=>dictionaryPayload}));
+  assert.equal(result.status,'found');
+  assert.equal(result.aiErrorCode,'AI_TIMEOUT');
+  assert.equal(result.fields.ipa,'dɪˈplɔɪ');
+  assert.equal(result.fields.pos,'verb');
+  assert.ok(cachedDictionary(db,'en','deploy'));
+  db.close();
+});
