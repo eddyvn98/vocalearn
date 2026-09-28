@@ -80,7 +80,9 @@ def english_acceptance(page, origin):
 
     page.evaluate("""async () => {
       const {app}=await import('/js/state.js');
-      app.model.sets[app.setId].language='legacy-english';
+      const set=Object.values(app.model.sets)[0];
+      if(!set)throw new Error('missing test set');
+      app.setId=set.id;set.language='legacy-english';
     }""")
     page.locator('[data-action="library"]').first.click()
     page.locator('[data-action="add"]').first.click()
@@ -89,7 +91,8 @@ def english_acceptance(page, origin):
     page.locator('#word-form [data-action="close"]').click()
     page.evaluate("""async () => {
       const {app}=await import('/js/state.js');
-      app.model.sets[app.setId].language='en';
+      const set=Object.values(app.model.sets)[0];
+      if(set){app.setId=set.id;set.language='en';}
     }""")
 
     def autofill_route(route):
