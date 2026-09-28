@@ -1,8 +1,15 @@
 # VocaLearn progress
 
-Updated: 2026-09-27
+Updated: 2026-09-28
 
 This file is the rolling engineering progress note for VocaLearn. The product requirements remain in `docs/spec-v0.5.docx`; this Markdown file records implementation status, acceptance evidence, active work and next steps so progress does not get lost across chats or PRs.
+
+## AT-26 migration evidence update (2026-09-28)
+
+- Added an exact historical Phase-2 → Phase-3 Chinese-card migration regression.
+- The fixture graduates a legacy Chinese card through the core Phase-2 learning chain, confirms missing stroke data disables only handwriting, then adds Phase-3 stroke data without resetting the existing review state.
+- Core typing remains valid both before and after the Phase-3 handwriting resource appears.
+- This closes the remaining software-only cross-phase acceptance gap; physical-device evidence remains tracked separately.
 
 ## Current progress
 
