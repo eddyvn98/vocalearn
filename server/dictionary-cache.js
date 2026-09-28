@@ -119,21 +119,33 @@ function enrichmentFields(enrichment){
     mnemonic:clean(enrichment.mnemonic)
   };
 }
-export async function autofillWord(db,provider,{language,meaningLanguage,word},fetchImpl=fetch){
+function localResult(lexicon,language,word,meaningLanguage){
+  if(!lexicon?.available)return null;
+  try{return lexicon.lookup(language,word,meaningLanguage);}catch{return null;}
+}
+export async function autofillWord(db,provider,{language,meaningLanguage,word},fetchImpl=fetch,lexicon=null){
   const value=clean(word),normalized=keyWord(value);
   if(language!=='en'||!normalized)throw new Error('English word required');
+  const local=localResult(lexicon,language,value,meaningLanguage);
+  if(local?.status==='found'&&clean(local.fields?.meaning)){
+    return {...local,localHit:true,cacheHit:true,aiCacheHit:false,
+      aiConfigured:Boolean(provider?.configured),aiSkipped:true};
+  }
   let cached=cachedDictionary(db,language,value),cacheHit=Boolean(cached);
   if(!cached){
     let dictionary;
     try{dictionary=await fetchDictionary(value,fetchImpl);}
     catch(error){
       if(error.code!=='DICTIONARY_TEMPORARY')throw error;
-      const local=lookupWord('en',value),ipa=local.fields?.ipa||'';
-      return {status:'partial',temporary:true,cacheHit:false,aiCacheHit:false,
-        aiConfigured:Boolean(provider?.configured),fields:{...(ipa?{ipa}: {})},
-        lookupMeta:local.meta||{},source:'local-fallback',errorCode:error.code};
+      const fallback=local||lookupWord('en',value),ipa=fallback.fields?.ipa||'';
+      return {status:'partial',temporary:true,localHit:Boolean(local),cacheHit:false,aiCacheHit:false,
+        aiConfigured:Boolean(provider?.configured),fields:{...(local?.fields||{}),...(ipa?{ipa}: {})},
+        lookupMeta:local?.lookupMeta||fallback.meta||{},source:local?.source||'local-fallback',errorCode:error.code};
     }
-    if(!dictionary)return {status:'missing',cacheHit:false,fields:{},source:SOURCE};
+    if(!dictionary){
+      if(local)return {...local,localHit:true,cacheHit:false,aiCacheHit:false,aiConfigured:Boolean(provider?.configured)};
+      return {status:'missing',cacheHit:false,fields:{},source:SOURCE};
+    }
     cached=putDictionary(db,language,value,dictionary);
   }
   let enrichment=cached.enrichments?.[meaningLanguage]||null,aiCacheHit=Boolean(enrichment),aiErrorCode='';
@@ -146,11 +158,11 @@ export async function autofillWord(db,provider,{language,meaningLanguage,word},f
     }catch(error){aiErrorCode=String(error.code||'AI_ERROR');}
   }
   return {
-    status:'found',cacheHit,aiCacheHit,aiConfigured:Boolean(provider?.configured),aiErrorCode,
-    fields:{...dictionaryFields(cached.dictionary),...enrichmentFields(enrichment)},
-    dictionary:{definitions:cached.dictionary.definitions,audioUrl:cached.dictionary.audioUrl,
+    status:'found',localHit:Boolean(local),cacheHit,aiCacheHit,aiConfigured:Boolean(provider?.configured),aiErrorCode,
+    fields:{...(local?.fields||{}),...dictionaryFields(cached.dictionary),...enrichmentFields(enrichment)},
+    lookupMeta:local?.lookupMeta||{},dictionary:{definitions:cached.dictionary.definitions,audioUrl:cached.dictionary.audioUrl,
       sourceUrls:cached.dictionary.sourceUrls,license:cached.dictionary.license},
-    source:SOURCE,fetchedAt:cached.fetchedAt
+    source:enrichment?'ai-fallback':SOURCE,fetchedAt:cached.fetchedAt
   };
 }
 export const DICTIONARY_SOURCE={id:SOURCE,url:'https://dictionaryapi.dev/'};
