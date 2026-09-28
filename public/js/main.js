@@ -26,8 +26,9 @@ app.render=(focus)=>{
 };
 async function persistView(){await setMeta('view',{setId:app.setId,scope:app.scope,page:app.page,filter:app.filter,query:app.query});}
 function showError(error){
+  const message=t(error?.message||String(error));
   const el=document.querySelector('#form-error')||document.querySelector('#auth-error')||document.querySelector('#study-error');
-  if(el)el.textContent=error.message;notify(error.message,true);
+  if(el)el.textContent=message;notify(message,true);
 }
 async function commit(events){await transact(events);app.model=model();}
 async function navigate(page){
