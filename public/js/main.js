@@ -234,8 +234,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='setup-game'){app.game=e.target.value;await saveStudySetup();setup();}
     if(e.target.id==='setup-face'){app.face=e.target.value;await saveStudySetup();setup();}
     if(e.target.id==='setup-answer-face'){app.answerFace=e.target.value;await saveStudySetup();setup();}
-    if(e.target.id==='setup-handwriting-level'){app.handwritingLevel=e.target.value;await saveStudySetup();setup();}
-    if(e.target.name==='word'&&e.target.closest('#word-form'))await ensureAutoAutofill(e.target.closest('#word-form'));
+    if(e.target.id==='setup-handwriting-level'){app.handwritingLevel=e.target.value;await saveStudySetup();setup();}if(e.target.name==='word'&&e.target.closest('#word-form'))await ensureAutoAutofill(e.target.closest('#word-form'));
     if(e.target.dataset.mixGame){
       const game=e.target.dataset.mixGame;
       app.mixGames=e.target.checked?[...new Set([...app.mixGames,game])]:app.mixGames.filter(value=>value!==game);
