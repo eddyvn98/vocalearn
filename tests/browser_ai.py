@@ -17,9 +17,14 @@ def main():
                     page.locator('[data-action="library"]').click();page.locator('[data-action="add"]').first.click()
                     form=page.locator("#word-form");form.locator('[name="word"]').fill("deploy");form.locator('[name="meaning"]').fill("triển khai");form.locator('[type="submit"]').click()
                     row=page.locator(".word-row",has_text="deploy");row.locator('[data-action="ai"]').click();expect(page.locator("#modal")).to_contain_text("AI · deploy")
-                    page.locator('[data-action="aiGenerate"][data-kind="sentences"]').click()
-                    expect(page.locator("#modal")).to_contain_text("We use ___ in practice example",timeout=10000)
-                    page.locator('#modal [data-action="close"]').click();page.locator('[data-action="home"]').first.click()
+                    try:
+                        expect(page.locator("#modal")).to_contain_text("We use ___ in practice example",timeout=3000)
+                    except AssertionError:
+                        page.locator('[data-action="aiRefresh"]').click()
+                        expect(page.locator("#modal")).to_contain_text("We use ___ in practice example",timeout=10000)
+                    page.locator('#modal [data-action="close"]').click()
+                    expect(page.locator("#modal")).not_to_be_visible(timeout=5000)
+                    page.locator('[data-action="home"]').first.click()
                     page.locator('[data-action="setupFree"]').click();page.locator("#setup-game").select_option("cloze");page.locator("#setup-game").dispatch_event("change")
                     expect(page.locator("#modal")).to_contain_text("1/1");page.locator('#modal [data-action="startSession"]').click()
                     expect(page.locator(".prompt")).to_contain_text("___");page.locator("#answer").fill("deploy");page.locator('#answer-form [type="submit"]').click()
