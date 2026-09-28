@@ -16,6 +16,7 @@ ORIGIN=os.environ.get("PRODUCTION_ORIGIN","https://vocalearn-web-production.up.r
 EVIDENCE=Path("tests/browser-evidence")
 EVIDENCE.mkdir(parents=True,exist_ok=True)
 RESULTS=[]
+ACTIVE_PAGE=None
 
 
 def mark(name,status,detail=""):
@@ -32,6 +33,11 @@ def run_check(name,fn,blocked=False):
         mark(name,"PASS",detail)
     except Exception as exc:
         mark(name,"FAIL",f"{type(exc).__name__}: {exc}")
+        if ACTIVE_PAGE:
+            try:
+                ACTIVE_PAGE.reload(wait_until="networkidle",timeout=15000)
+            except Exception:
+                pass
 
 
 def no_overflow(page):
@@ -48,6 +54,9 @@ def main():
         browser=p.chromium.launch()
         context=browser.new_context(viewport={"width":1440,"height":1000},accept_downloads=True)
         page=context.new_page()
+        global ACTIVE_PAGE
+        ACTIVE_PAGE=page
+        page.set_default_timeout(8000)
         page_errors=[];console_errors=[]
         page.on("pageerror",lambda e:page_errors.append(str(e)))
         page.on("console",lambda m:console_errors.append(m.text) if m.type=="error" else None)
@@ -94,7 +103,7 @@ def main():
         run_check("Nạp thẻ mẫu và dashboard Hôm nay",load_samples)
 
         def library_edit():
-            page.get_by_role("button",name=lambda n:n and "Kho từ" in n).click()
+            page.locator('[data-action="library"]').first.click()
             expect(page.get_by_role("heading",name="Kho từ")).to_be_visible()
             rows=page.locator(".word-row")
             assert rows.count()>=8
@@ -139,7 +148,8 @@ def main():
             page.locator('[data-action="home"]').first.click()
             page.locator('[data-action="practice"][data-game="typing"]').click()
             expect(page.get_by_role("heading",name="Thiết lập buổi học")).to_be_visible()
-            expect(page.get_by_text("Dạng bài",exact=True).first).to_be_visible()
+            expect(page.locator("dialog")).to_be_visible()
+            expect(page.locator('[data-action="startSession"]')).to_be_enabled()
             page.locator('[data-action="startSession"]').click()
             expect(page.locator(".question-panel")).to_be_visible()
             prompt=page.locator(".prompt h1").inner_text().strip()
