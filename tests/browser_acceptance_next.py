@@ -172,6 +172,7 @@ def offline_reconnect(page, context):
 
     page.reload(wait_until="domcontentloaded")
     expect(page.locator(".game-grid")).to_be_visible(timeout=10000)
+    expect(page.locator("#notice")).not_to_contain_text("Chưa đồng bộ được")
     expect(page.locator('[data-action="syncInfo"]:visible').first).to_contain_text("chờ đồng bộ")
     context.set_offline(False)
     page.locator('[data-action="syncInfo"]:visible').first.click()
