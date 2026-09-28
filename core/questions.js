@@ -2,6 +2,7 @@ import {normalize} from './grading.js';
 import {isDue, dayAt} from './time.js';
 import {toneQuestion,classifierQuestion} from './chinese-games.js';
 import {twoStepFor} from './script-typing.js';
+import {sentenceSource} from './sentences.js';
 export const GAMES = ['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice','tone','classifier'];
 // Only expose implemented, valid pairs. Typing always answers the target word.
 export const GAME_FACES = Object.freeze({
@@ -19,7 +20,8 @@ export function requiredGame(w) {
 const promptFace = (game, face) => GAME_FACES[game]?.length === 1 ? GAME_FACES[game][0] : face;
 function alternatives(w, pool, game, face) {
   const cloze = game === 'clozeChoice';
-  const answers = cloze ? (w.answers || []) : face === 'word' ? [w.meaning] : [w.word];
+  const source=cloze?sentenceSource(w):null;
+  const answers = cloze ? (source?.answers || []) : face === 'word' ? [w.meaning] : [w.word];
   const seen = new Set(answers.map(normalize));
   return pool.filter(x => !x.deleted && x.setId === w.setId && x.id !== w.id)
     .filter(x => cloze || normalize(x[face] || '') !== normalize(w[face] || ''))
@@ -27,15 +29,16 @@ function alternatives(w, pool, game, face) {
     .filter(x => {if (!x || seen.has(normalize(x))) return false; seen.add(normalize(x)); return true;});
 }
 function ambiguous(w, game, face, pool) {
-  const prompt = game.startsWith('cloze') ? w.sentence : w[face];
+  const source=game.startsWith('cloze')?sentenceSource(w):null;
+  const prompt = source?.prompt || w[face];
   if(!prompt)return false;
-  const answer = game.startsWith('cloze') ? (w.answers || []).map(normalize).sort().join('|')
+  const answer = game.startsWith('cloze') ? (source?.answers || []).map(normalize).sort().join('|')
     : game==='quiz'&&face==='word' ? normalize(w.meaning || '') : normalize(w.word || '');
   return pool.some(x=>{
     if(x.id===w.id||x.deleted)return false;
-    const otherPrompt=game.startsWith('cloze')?x.sentence:x[face];
+    const otherPrompt=game.startsWith('cloze')?sentenceSource(x)?.prompt:x[face];
     if(!otherPrompt||normalize(otherPrompt)!==normalize(prompt))return false;
-    const otherAnswer=game.startsWith('cloze')?(x.answers || []).map(normalize).sort().join('|')
+    const otherAnswer=game.startsWith('cloze')?(sentenceSource(x)?.answers || []).map(normalize).sort().join('|')
       : game==='quiz'&&face==='word'?normalize(x.meaning || ''):normalize(x.word || '');
     return otherAnswer!==answer;
   });
@@ -52,7 +55,7 @@ export function reasons(w, game, face = 'meaning', pool = [], profileId = 'en') 
   if (['typing','quiz','spell','dictation','cloze','clozeChoice'].includes(game) && ambiguous(w,game,face,pool)) return ['ambiguousPrompt'];
   if (game === 'quiz' && face === 'word' && !w.meaning) return ['missingMeaning'];
   if (['spell','dictation'].includes(game) && !w.audio) return ['missingAudio'];
-  if (['cloze','clozeChoice'].includes(game) && (!w.sentence || w.sentence.split('___').length !== 2 || !w.answers?.length)) return ['missingSentence'];
+  if (['cloze','clozeChoice'].includes(game) && !sentenceSource(w)) return ['missingSentence'];
   if (['quiz','clozeChoice'].includes(game) && !alternatives(w,pool,game,face).length) return ['missingChoices'];
   if (game === 'match') {
     if (!w.meaning) return ['missingMeaning'];
@@ -92,15 +95,16 @@ export function question(w, pool, game, face = 'meaning', mode = 'review', confi
   const why = reasons(w,game,face,pool,profileId);
   if (why.length) return {blocked:why,wordId:w.id};
   const twoStep=twoStepFor(w,pool,game,face,profileId);
+  const cloze=game.startsWith('cloze')?sentenceSource(w):null;
   const reverse = game === 'quiz' && face === 'word';
-  const answers = game.startsWith('cloze') ? [...w.answers] : game==='tone' ? (w.pinyinSyllables||[]).map(s=>String(s.tone)) : game==='classifier' ? [...(w.classifiers||[])] : reverse ? [w.meaning] : [w.word];
+  const answers = cloze ? [...cloze.answers] : game==='tone' ? (w.pinyinSyllables||[]).map(s=>String(s.tone)) : game==='classifier' ? [...(w.classifiers||[])] : reverse ? [w.meaning] : [w.word];
   const tone=game==='tone'?toneQuestion(w.pinyinSyllables||[],w.audio):null;
-  const prompt = game.startsWith('cloze') ? w.sentence : game === 'match' ? w.word : game==='tone' ? tone.syllables.map(s=>s.base).join(' ') : game==='classifier' ? classifierQuestion(w).prompt : w[face];
+  const prompt = cloze ? cloze.prompt : game === 'match' ? w.word : game==='tone' ? tone.syllables.map(s=>s.base).join(' ') : game==='classifier' ? classifierQuestion(w).prompt : w[face];
   const choices = ['quiz','clozeChoice'].includes(game) ? [answers[0],...alternatives(w,pool,game,face)].slice(0,4)
     .map((label,index) => ({label,correct:index === 0})) : [];
   const rotation = w.word.length % Math.max(1,choices.length); choices.push(...choices.splice(0,rotation));
   return {id:uuid(),eventId:uuid(),wordId:w.id,baseRev:w.review.rev,mode,game,face,
-    config:{...config},snapshot:structuredClone(w),prompt,answers,choices,fallback,familiarize,
+    config:{...config},snapshot:structuredClone(w),prompt,answers,choices,fallback,familiarize,sentenceId:cloze?.id||null,
     input:'',hadError:false,hint:false,retry:false,flipped:false,result:null,
     twoStep:twoStep&&!twoStep.blocked?{...twoStep,readingPassed:!twoStep.readingRequired,readingInput:'',selected:''}:null,
     tone,classifier:game==='classifier'?classifierQuestion(w):null,

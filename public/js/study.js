@@ -8,6 +8,7 @@ import {studySetProfile} from '/core/language-profiles.js';
 import {readingMatches,twoStepSnapshot} from '/core/script-typing.js';
 import {gameAvailability} from '/core/capabilities.js';
 import {gradeTones,gradeClassifier} from '/core/chinese-games.js';
+import {maybeReplenish} from './ai.js';
 const inCurrentScope=w=>inScope(w,app.scope,app.model.categories,app.scopeChildren);
 const BASE_GAMES=['flash','quiz','match','typing','spell','dictation','cloze','clozeChoice'];
 const BASE_MIXABLE=['flash','quiz','typing','spell','dictation','cloze','clozeChoice'];
@@ -125,12 +126,14 @@ async function writeAnswer(q,correct) {
       ...result,hadError:target.hadError,config:q.config,familiarize:q.familiarize,
       activeMs:Math.round(q.activeMs),input:q.input,readingInput:q.twoStep?.readingInput||'',selectedForm:q.twoStep?.selected||'',
       face:q.face,hint:q.hint,interrupted:q.interrupted,unknown:!correct,selectedWordId:q.selectedWordId,
-      question:{prompt:['image','audio'].includes(q.face)?`[${q.face}]`:q.prompt,answers:q.answers,
+      question:{prompt:['image','audio'].includes(q.face)?`[${q.face}]`:q.prompt,answers:q.answers,sentenceId:q.sentenceId||null,
         word:q.snapshot.word,meaning:q.snapshot.meaning,fields:q.snapshot.fields,twoStep:twoStepSnapshot(q.twoStep)}};
     const event=q.pendingAnswer || prepare('answer',data,q.eventId);
     q.pendingAnswer=event;target.hadError=event.data.hadError;target.result={grade:event.data.grade,assisted:event.data.assisted};
     delete target.pendingAnswer;
-    await transact([event],next);app.session=next;app.model=model();app.render('#feedback');
+    const events=[event];
+    if(q.sentenceId)events.push(prepare('sentenceUsage',{sentenceId:q.sentenceId,wordId:q.wordId,questionId:q.id},q.eventId+'-usage'));
+    await transact(events,next);app.session=next;app.model=model();if(q.sentenceId)maybeReplenish(q.wordId);app.render('#feedback');
   } catch(error){app.session.error=t('saveError')+' '+error.message;app.render();throw error;}
   finally{submitting=false;}
 }

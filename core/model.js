@@ -3,7 +3,7 @@ import {errorBook} from './errors.js';
 export function replay(input) {
   const events = [...input].sort((a, b) => (a.seq ?? Number.MAX_SAFE_INTEGER) - (b.seq ?? Number.MAX_SAFE_INTEGER)
     || (a.localOrder ?? a.at) - (b.localOrder ?? b.at) || a.id.localeCompare(b.id));
-  const state = {sets: {}, categories: {}, words: {}, links: {}, settings: {...DEFAULTS}, conflicts: [], events};
+  const state = {sets: {}, categories: {}, words: {}, links: {}, sentences: {}, settings: {...DEFAULTS}, conflicts: [], events};
   for (const e of events) {
     const d = e.data;
     if (e.kind === 'set') state.sets[d.id] = {...state.sets[d.id], ...d};
@@ -28,6 +28,15 @@ export function replay(input) {
     if (e.kind === 'deleteWord' && state.words[d.id]) state.words[d.id].deleted = true;
     if (e.kind === 'restoreWord' && state.words[d.id]) state.words[d.id].deleted = false;
     if (e.kind === 'resetWord' && state.words[d.id]) state.words[d.id].generation = `${d.id}-${e.id}`;
+    if (e.kind === 'sentence') {
+      const old=state.sentences[d.id]||{};
+      state.sentences[d.id]={...old,...d,deleted:false,usageCount:old.usageCount||0,lastUsedAt:old.lastUsedAt||0};
+    }
+    if (e.kind === 'deleteSentence' && state.sentences[d.id]) state.sentences[d.id].deleted=true;
+    if (e.kind === 'sentenceUsage' && state.sentences[d.sentenceId]) {
+      const sentence=state.sentences[d.sentenceId];sentence.usageCount=(sentence.usageCount||0)+1;
+      sentence.lastUsedAt=Math.max(sentence.lastUsedAt||0,e.effectiveAt||e.at||0);sentence.lastQuestionId=d.questionId;
+    }
     if (e.kind === 'link' || e.kind === 'unlink') {
       const key = `${d.wordId}/${d.categoryId}`, old = state.links[key];
       if (e.kind === 'link' && old?.removed && d.base !== old.rev) continue;
@@ -43,6 +52,7 @@ export function replay(input) {
     w.accepted = schedule.accepted;
     w.errors = errorBook(related);
     w.categoryIds = Object.values(state.links).filter(l => !l.removed && l.wordId === w.id && state.categories[l.categoryId]).map(l => l.categoryId);
+    w.sentencePool = Object.values(state.sentences).filter(sentence=>sentence.wordId===w.id);
     w.ready = !!(w.word?.trim() && (w.meaning?.trim() || w.ipa?.trim() || w.image));
   }
   return state;

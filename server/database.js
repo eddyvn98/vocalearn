@@ -5,6 +5,7 @@ import {replay} from '../core/model.js';
 import {validateEvent} from '../core/validation.js';
 import {RECOGNITION} from '../core/grading.js';
 import {validateReview} from './reviews.js';
+import {contentVersion} from '../core/sentences.js';
 export function openDatabase(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
@@ -16,7 +17,11 @@ export function openDatabase(path) {
     CREATE TABLE IF NOT EXISTS devices(user_id TEXT,device_id TEXT,server_at INTEGER,client_at INTEGER,PRIMARY KEY(user_id,device_id));
     CREATE TABLE IF NOT EXISTS media_files(user_id TEXT NOT NULL REFERENCES users(id),id TEXT NOT NULL,mime TEXT NOT NULL,
       size INTEGER NOT NULL,created INTEGER NOT NULL,PRIMARY KEY(user_id,id));
-    CREATE INDEX IF NOT EXISTS user_media_files_created ON media_files(user_id,created);`);
+    CREATE INDEX IF NOT EXISTS user_media_files_created ON media_files(user_id,created);
+    CREATE TABLE IF NOT EXISTS ai_jobs(user_id TEXT NOT NULL REFERENCES users(id),id TEXT NOT NULL,kind TEXT NOT NULL,word_id TEXT NOT NULL,
+      input_version TEXT NOT NULL,request_key TEXT NOT NULL,input_json TEXT NOT NULL DEFAULT '{}',status TEXT NOT NULL,retry_count INTEGER NOT NULL DEFAULT 0,next_attempt INTEGER,
+      result_json TEXT,error_code TEXT,created INTEGER NOT NULL,updated INTEGER NOT NULL,PRIMARY KEY(user_id,id),UNIQUE(user_id,kind,word_id,request_key));
+    CREATE INDEX IF NOT EXISTS user_ai_jobs ON ai_jobs(user_id,word_id,updated);`);
   return db;
 }
 export function allEvents(db, userId) {
@@ -60,6 +65,24 @@ export function synchronize(db, userId, input, now = Date.now()) {
     cursor: existing.at(-1)?.seq ?? 0, serverNow: now,
     anchorServer: now, anchorClient: input.clientNow};
 }
+export function appendServerEvents(db,userId,items,now=Date.now()) {
+  if(!Array.isArray(items)||items.length>50)throw new Error('Invalid server event batch');
+  const existing=allEvents(db,userId),received=[];
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    for(let i=0;i<items.length;i++){
+      const raw=items[i],event={id:raw.id,kind:raw.kind,data:raw.data,at:now+i,deviceId:'ai-server',
+        localOrder:now*1000+i,effectiveAt:now,receivedAt:now,clockAdjusted:false};
+      validateEvent(event);
+      const prior=db.prepare('SELECT payload FROM events WHERE user_id=? AND event_id=?').get(userId,event.id);
+      if(prior){const original=JSON.parse(prior.payload);if(original.kind!==event.kind||JSON.stringify(original.data)!==JSON.stringify(event.data))throw new Error('Event ID already used with different content');continue;}
+      const model=replay(existing);assertReferences(model,event,existing);
+      const row=db.prepare('INSERT INTO events(user_id,event_id,payload) VALUES(?,?,?)').run(userId,event.id,JSON.stringify(event));
+      event.seq=Number(row.lastInsertRowid);existing.push(event);received.push(event.id);
+    }
+    db.exec('COMMIT');return received;
+  }catch(error){db.exec('ROLLBACK');throw error;}
+}
 function assertReferences(state, event, existing = []) {
   const {kind, data: d} = event;
   if (['category','word'].includes(kind) && !state.sets[d.setId]) throw new Error('Unknown study set');
@@ -76,8 +99,15 @@ function assertReferences(state, event, existing = []) {
       parent = c.parentId;
     }
   }
-  if (['answer','attempt','link','unlink'].includes(kind) && !state.words[d.wordId]) throw new Error('Unknown word');
-  if (['answer','attempt'].includes(kind) && state.words[d.wordId].deleted) throw new Error('Deleted word is not learnable');
+  if (['answer','attempt','link','unlink','sentence','deleteSentence','sentenceUsage'].includes(kind) && !state.words[d.wordId]) throw new Error('Unknown word');
+  if (['answer','attempt','sentence'].includes(kind) && state.words[d.wordId].deleted) throw new Error('Deleted word is not learnable');
+  if (kind==='sentence' && d.wordContentVersion!==contentVersion(state.words[d.wordId])) throw new Error('Stale sentence content');
+  if (kind==='deleteSentence' && (!state.sentences[d.id]||state.sentences[d.id].wordId!==d.wordId)) throw new Error('Unknown sentence');
+  if (kind==='sentenceUsage') {
+    const sentence=state.sentences[d.sentenceId];
+    if(!sentence||sentence.wordId!==d.wordId||sentence.deleted)throw new Error('Unavailable sentence');
+    if(existing.some(e=>e.kind==='sentenceUsage'&&e.data.questionId===d.questionId))throw new Error('Duplicate sentence usage');
+  }
   if (['link','unlink'].includes(kind) && (!state.categories[d.categoryId]
     || state.categories[d.categoryId].setId !== state.words[d.wordId].setId)) throw new Error('Invalid word category');
   if (kind === 'answer') {

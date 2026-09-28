@@ -11,6 +11,7 @@ import {setup,restoreSetup,studyAction,submitInput,startClock,stopClock} from '.
 import {openEditor,saveWord,deleteWord,mediaFile,clearMedia,trash} from './editor.js';
 import {settings,saveSettings,syncNow,syncInfo,scopeModal,topics,customFields,logoutAction,offlineResources} from './settings.js';
 import {samples,exportContent,importDialog,readImport,confirmImport,previewImport} from './content.js';
+import {aiPanel,generateAi,retryAi,acceptAi,removeSentence} from './ai.js';
 const studyActions=new Set(['startSession','resume','pause','finish','playAudio','slowAudio','flip','hint','unknown','remember','choose','toneChoice','checkTones','classifierChoice','formChoice','next','letter','clearLetters','checkLetters','matchLeft','matchRight']);
 app.render=(focus)=>{
   document.querySelector('#app').innerHTML=!app.user?authView():!app.setId||app.page==='sets'?setView()
@@ -86,6 +87,12 @@ async function click(action,el){
   if(action==='previewImport')return previewImport();
   if(action==='confirmImport')return confirmImport();
   if(action==='offlineResources')return offlineResources();
+  if(action==='ai')return aiPanel(el.dataset.id);
+  if(action==='aiRefresh')return aiPanel(el.dataset.word);
+  if(action==='aiGenerate')return generateAi(el.dataset.word,el.dataset.kind);
+  if(action==='aiRetry')return retryAi(el.dataset.word,el.dataset.id);
+  if(action==='aiAccept')return acceptAi(el.dataset.word,el.dataset.job,el.dataset.field,el.dataset.index==null?null:Number(el.dataset.index),el.dataset.source);
+  if(action==='deleteSentence')return removeSentence(el.dataset.word,el.dataset.id);
   if(action==='toggleSelect'){
     const id=el.dataset.id;if(app.selectedCards.has(id))app.selectedCards.delete(id);else app.selectedCards.add(id);
     return app.render();

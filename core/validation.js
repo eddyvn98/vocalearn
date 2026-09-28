@@ -49,6 +49,22 @@ export function validateEvent(e) {
     case 'deleteWord': case 'restoreWord': case 'resetWord': case 'deleteCategory':
       if (!id(d.id)) fail('Invalid entity ID');
       break;
+    case 'sentence':
+      if (!id(d.id) || !id(d.wordId) || !text(d.text,500) || !d.text.trim()
+        || !Number.isInteger(d.gapStart) || !Number.isInteger(d.gapEnd) || d.gapStart < 0 || d.gapEnd <= d.gapStart || d.gapEnd > d.text.length
+        || !text(d.targetForm,100) || !d.targetForm.trim() || d.text.slice(d.gapStart,d.gapEnd) !== d.targetForm
+        || !Array.isArray(d.acceptedAnswers) || !d.acceptedAnswers.length || d.acceptedAnswers.length > 20 || d.acceptedAnswers.some(x=>!text(x,200)||!x.trim())
+        || !Array.isArray(d.acceptedReadings||[]) || (d.acceptedReadings||[]).length > 20 || (d.acceptedReadings||[]).some(x=>!text(x,200)||!x.trim())
+        || !['ready','needs_review'].includes(d.status) || !['ai','user'].includes(d.source)
+        || !text(d.wordContentVersion,1000) || !d.wordContentVersion) fail('Invalid sentence');
+      if ('level' in d && !text(d.level,50)) fail('Invalid sentence level');
+      break;
+    case 'deleteSentence':
+      if (!id(d.id) || !id(d.wordId)) fail('Invalid sentence deletion');
+      break;
+    case 'sentenceUsage':
+      if (!id(d.sentenceId) || !id(d.wordId) || !id(d.questionId)) fail('Invalid sentence usage');
+      break;
     case 'link': case 'unlink':
       if (!id(d.wordId) || !id(d.categoryId)) fail('Invalid membership');
       break;

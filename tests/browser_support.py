@@ -22,7 +22,7 @@ def wait_for_server(server, origin):
             time.sleep(0.1)
     raise RuntimeError("Test server did not become ready")
 
-def start_server(temp_dir):
+def start_server(temp_dir, extra_env=None):
     port = free_port()
     origin = f"http://127.0.0.1:{port}"
     clock_path = Path(temp_dir) / "clock.txt"
@@ -30,6 +30,8 @@ def start_server(temp_dir):
     env = dict(os.environ, PORT=str(port), HOST="127.0.0.1",
         DB_PATH=str(Path(temp_dir) / "test.sqlite"), ALLOW_SIGNUP="true",
         NODE_ENV="test", APP_ORIGIN=origin, TEST_CLOCK_PATH=str(clock_path))
+    if extra_env:
+        env.update(extra_env)
     log = (Path(temp_dir) / "server.log").open("w")
     server = subprocess.Popen(["node","server/main.js"], cwd=ROOT, env=env,
         stdout=log, stderr=subprocess.STDOUT)

@@ -3,6 +3,7 @@ import {DEFAULTS,scheduleFor} from '../core/srs.js';
 import {question as makeQuestion,GAME_FACES,reasons} from '../core/questions.js';
 import {classifierQuestion,toneQuestion} from '../core/chinese-games.js';
 import {readingMatches,twoStepFor,twoStepSnapshot} from '../core/script-typing.js';
+import {contentVersion,sentencePrompt} from '../core/sentences.js';
 import {isDue} from '../core/time.js';
 import {WORD_FIELDS} from '../core/validation.js';
 const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
@@ -34,7 +35,9 @@ function validConfig(config, events) {
 export function validateReview(state, event, events) {
   const d=event.data,current=state.words[d.wordId],snapshot=snapshotFor(current,d.question,events);
   const profileId=state.sets[current.setId]?.language||'en';
-  const pool=Object.values(state.words).filter(w=>!w.deleted&&w.setId===current.setId).map(w=>w.id===snapshot.id?snapshot:w);
+  const withSentences=word=>({...word,sentencePool:Object.values(state.sentences||{}).filter(sentence=>sentence.wordId===word.id)});
+  Object.assign(snapshot,withSentences(snapshot));
+  const pool=Object.values(state.words).filter(w=>!w.deleted&&w.setId===current.setId).map(w=>withSentences(w.id===snapshot.id?snapshot:w));
   if(d.schemaVersion===2 && !d.question.fields)throw new Error('Missing content revisions');
   if(!validConfig(d.config,events))throw new Error('Unknown configuration snapshot');
   if(!Number.isFinite(d.activeMs)||d.activeMs<0||d.activeMs>7*86400000)throw new Error('Invalid active time');
@@ -44,10 +47,13 @@ export function validateReview(state, event, events) {
     d.question.prompt===snapshot.word && d.game==='quiz'?'word':'meaning');
   if(d.schemaVersion===2 && !GAME_FACES[d.game]?.includes(face))throw new Error('Invalid game face');
   if(d.schemaVersion===2 && !snapshot[face] && face!=='sentence')throw new Error('Missing question resource');
-  const answers=d.game.startsWith('cloze') ? snapshot.answers : d.game==='tone' ? (snapshot.pinyinSyllables||[]).map(x=>String(x.tone))
+  const selectedSentence=d.game.startsWith('cloze')&&d.question.sentenceId?state.sentences?.[d.question.sentenceId]:null;
+  if(d.question.sentenceId&&(!selectedSentence||selectedSentence.deleted||selectedSentence.wordId!==snapshot.id||selectedSentence.wordContentVersion!==contentVersion(snapshot)))
+    throw new Error('Unknown or stale sentence snapshot');
+  const answers=d.game.startsWith('cloze') ? (selectedSentence?.acceptedAnswers||snapshot.answers) : d.game==='tone' ? (snapshot.pinyinSyllables||[]).map(x=>String(x.tone))
     : d.game==='classifier' ? (snapshot.classifiers||[]) : d.game==='quiz'&&face==='word' ? [snapshot.meaning] : [snapshot.word];
   if(!Array.isArray(answers)||answers.some(a=>typeof a!=='string'||!a.trim())||!same(d.question.answers,answers))throw new Error('Question answer key mismatch');
-  const prompt=['image','audio'].includes(face)?`[${face}]`:d.game.startsWith('cloze')?snapshot.sentence:d.game==='match'?snapshot.word:
+  const prompt=['image','audio'].includes(face)?`[${face}]`:d.game.startsWith('cloze')?(selectedSentence?sentencePrompt(selectedSentence):snapshot.sentence):d.game==='match'?snapshot.word:
     d.game==='tone'?toneQuestion(snapshot.pinyinSyllables||[])?.syllables.map(s=>s.base).join(' '):
     d.game==='classifier'?classifierQuestion(snapshot)?.prompt:snapshot[face];
   if(d.schemaVersion===2 && d.question.prompt!==prompt)throw new Error('Question prompt mismatch');
