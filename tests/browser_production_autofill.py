@@ -25,16 +25,15 @@ def main():
         page.locator('[data-action="library"]').first.click()
         page.locator('[data-action="add"]').first.click()
         form=page.locator("#word-form")
-        form.locator('[name="word"]').fill("test")
+        form.locator('[name="word"]').fill("confirm")
         form.locator('[name="word"]').press("Tab")
         status=form.locator("#autofill-status")
-        expect(status).to_have_text(re.compile(r"(kho chung|tạm thời không phản hồi)"),timeout=20000)
+        expect(status).to_have_text(re.compile(r"kho chung"),timeout=8000)
+        expect(form.locator('[name="meaning"]')).not_to_have_value("")
         expect(form.locator('[name="ipa"]')).not_to_have_value("")
+        expect(form.locator('[name="pos"]')).not_to_have_value("")
         source=form.locator('[name="source"]').input_value()
-        if source=="dictionaryapi.dev":
-            expect(form.locator('[name="pos"]')).not_to_have_value("")
-        else:
-            assert "tạm thời không phản hồi" in status.inner_text()
+        assert "MinhQND Dictionary" in source, source
         original=form.locator('[name="meaning"]').input_value()
         form.locator('[name="meaning"]').fill("nghĩa riêng của người dùng")
         form.locator('[data-action="autofillWord"]').click()
@@ -42,10 +41,10 @@ def main():
         expect(form.locator('[name="meaning"]')).to_have_value("nghĩa riêng của người dùng")
         form.locator('[type="submit"]').click()
         expect(form).not_to_be_visible(timeout=10000)
-        row=page.locator(".word-row").filter(has_text="test").first
+        row=page.locator(".word-row").filter(has_text="confirm").first
         row.locator('[data-action="edit"]').click()
         expect(page.locator('[name="meaning"]')).to_have_value("nghĩa riêng của người dùng")
-        print("PASS: production automatic shared dictionary autofill")
+        print("PASS: production local lexical autofill")
         print("first meaning:",original or "(AI enrichment not configured/available)")
         browser.close()
 
