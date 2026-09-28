@@ -8,7 +8,7 @@ import {studySetProfile} from '/core/language-profiles.js';
 import {parsePinyin} from '/core/chinese-games.js';
 import {hydrateMedia,ingestFile,mediaMarkup} from './media-store.js';
 import {refreshAiPanel} from './ai-client.js';
-import {beginLookupDraft,lookupMetaForSave} from './lookups.js';
+import {beginLookupDraft,lookupMetaForSave,ensureAutoAutofill} from './lookups.js';
 let editing=null,media={},strokeDraft=null;
 const listValue=value=>(value||[]).join(', ');
 function customInputs(w) {
@@ -72,11 +72,11 @@ export function openEditor(id) {
     :`${field('ipa','ipa',w.ipa)}${lookupButton}<p id="lookup-status" class="muted small"></p>`;
   const wordLabel=['zh','ja'].includes(profile?.id)?'wordGeneric':'word';
   const strokePanel=['zh','ja'].includes(profile?.id)?`<section class="wait-panel stack"><strong>${t('strokeResources')}</strong><p id="stroke-status" class="muted small">${strokeDraft?esc(strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+(strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):'')):t('strokeResourcesHelp')}</p>${button(t('loadStrokeData'),'loadStrokeData','quiet')}</section>`:'';
-  const autoAttrs=profile?.id==='en'&&!editing?` data-auto-autofill="true" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`:'';
+  const autoAttrs=profile?.id==='en'?` data-auto-autofill="true" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`:'';
   modal(t(editing?'edit':'add'),`<form id="word-form" class="stack"${autoAttrs}>
-  ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
-  ${profile?.id==='en'?'<div class="row wrap">'+button(t('autofillWord'),'autofillWord','quiet',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)+'</div><p id="autofill-status" class="muted small"></p><p class="muted small">'+t('autofillHint')+'</p>':''}
-  ${field('pos','pos',w.pos,'maxlength="100"')}
+  ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}
+  ${profile?.id==='en'?'<div class="row wrap">'+button(t('autofillWord'),'autofillWord','primary',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)+'</div><p id="autofill-status" class="muted small"></p><p class="muted small">'+t('autofillHint')+'</p>':''}
+  ${field('meaning','meaning',w.meaning,'maxlength="2000"')}${field('pos','pos',w.pos,'maxlength="100"')}
   <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
   <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${strokePanel}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
   <div class="row wrap">${button('Tạo ô trống từ phần bôi đen','makeSentenceBlank','quiet')}</div>
@@ -96,7 +96,7 @@ export function openEditor(id) {
   ${w.errors?.inBook?`<section class="info"><p>${w.errors.failures} ${t('mistakes')} \u00b7 ${w.errors.evidence.length}/2 ${t('evidence')}</p><p>${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p>${t(e.game)} \u00b7 ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
   <div class="row between wrap">${editing?button(t('delete'),'deleteWord','danger',`data-id="${editing.id}"`):button(t('cancel'),'close','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div></form>`);
   hydrateMedia(document.querySelector('#modal')).catch(()=>{});
-  updateSentencePreview();if(editing)refreshAiPanel(editing.id);
+  updateSentencePreview();if(editing)refreshAiPanel(editing.id);if(profile?.id==='en'&&w.word)setTimeout(()=>ensureAutoAutofill(document.querySelector('#word-form')).catch(()=>{}),150);
 }
 export async function saveWord(form) {
   const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean);
