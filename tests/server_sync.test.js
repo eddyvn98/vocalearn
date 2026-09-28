@@ -54,6 +54,7 @@ test('Sync orders same-device pending events by localOrder before validation', a
   const answer = {...event('order-answer','answer',typingAnswer({
     wordId:'order-word',questionId:'order-q',word:'alpha',meaning:'updated',revision:'order-edit',mode:'free',grade:'good',input:'alpha',activeMs:6000
   }),'dev-order',1003),localOrder:3};
+  answer.data.question.fields.word='order-word';
   const r=await request('/api/sync',{events:[answer,edit,word,set],deviceId:'dev-order',cursor:0,clientNow:Date.now()});
   assert.equal(r.status,200);
 });
