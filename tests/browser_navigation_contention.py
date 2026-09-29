@@ -211,7 +211,7 @@ def contention(browser,context,page,origin,clock_file,now_ms):
     row=page.locator(".word-row").filter(has_text=target).first
     expect(row).to_contain_text("Sổ từ sai")
     row.locator('[data-action="edit"]').click()
-    expect(page.locator(".info")).to_contain_text("1")
+    expect(page.locator('[data-role="error-book-evidence"]')).to_contain_text("1")
     page.locator('[data-action="close"]').click()
     tab.close()
     print("PASS: two tabs submit one scheduled opportunity with one final event/error effect")
