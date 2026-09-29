@@ -26,8 +26,8 @@ function instruction(word,type){
     `Target language: ${language}. Meaning language: ${meaningLanguage}.`,
     `Word: ${word.word}.`,
     `Dictionary data: ${JSON.stringify(word.dictionary||{})}.`,
-    'Use the supplied dictionary data as the factual basis. Do not invent pronunciation or unsupported senses.',
-    'Return {"meaning":"one concise translation in the meaning language","collocations":["up to 6 useful collocations"],"register":"plain usage register such as neutral/formal/informal","level":"CEFR only if reasonably inferable, otherwise empty","mnemonic":"short optional memory aid"}.',
+    'Use the supplied dictionary data as the factual basis. You may use standard English morphology for common inflected forms. Do not invent pronunciation, unsupported senses, or uncommon forms.',
+    'Return {"meaning":"one concise translation in the meaning language","alternateTranslations":["up to 4 other concise translations"],"variants":["up to 6 common inflected or spelling variants"],"collocations":["up to 6 useful collocations"],"register":"plain usage register such as neutral/formal/informal","level":"CEFR only if reasonably inferable, otherwise empty","mnemonic":"short optional memory aid"}.',
     'Keep fields concise. Do not include markdown.'
   ].join('\n');
   throw new Error('Unsupported AI job type');
@@ -59,14 +59,17 @@ export function createAiProvider(config={}){
           return {sentences};
         }
         if(type==='dictionary-autofill'){
+          const list=(value,limit)=>Array.isArray(value)?[...new Set(value.map(x=>String(x||'').trim()).filter(Boolean))].slice(0,limit):[];
           const result={
             meaning:String(parsed.meaning||'').trim(),
-            collocations:Array.isArray(parsed.collocations)?parsed.collocations.map(x=>String(x||'').trim()).filter(Boolean).slice(0,6):[],
+            alternateTranslations:list(parsed.alternateTranslations,4),
+            variants:list(parsed.variants,6),
+            collocations:list(parsed.collocations,6),
             register:String(parsed.register||'').trim(),
             level:String(parsed.level||'').trim(),
             mnemonic:String(parsed.mnemonic||'').trim()
           };
-          if(!result.meaning&&!result.collocations.length&&!result.mnemonic){const error=new Error('AI provider returned no usable fields');error.code='AI_EMPTY_RESULT';throw error;}
+          if(!result.meaning&&!result.alternateTranslations.length&&!result.variants.length&&!result.collocations.length&&!result.register&&!result.level&&!result.mnemonic){const error=new Error('AI provider returned no usable fields');error.code='AI_EMPTY_RESULT';throw error;}
           return result;
         }
         const meanings=Array.isArray(parsed.meaningCandidates)?parsed.meaningCandidates.map(x=>String(x||'').trim()).filter(Boolean).slice(0,3):[];
