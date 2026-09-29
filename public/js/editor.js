@@ -1,5 +1,5 @@
 import {app} from './state.js';
-import {t,esc,button,badge,modal,closeModal,field,notify} from './ui.js';
+import {t,esc,button,iconButton,icon,badge,modal,closeModal,field,notify} from './ui.js';
 import {prepare,transact,model,uuid,api} from './storage.js';
 import {normalize} from '/core/grading.js';
 import {categoryPath} from '/core/model.js';
@@ -64,37 +64,66 @@ export function openEditor(id) {
   editing=id?app.model.words[id]:null;media={};strokeDraft=structuredClone(editing?.strokeData||null);app.dirty=false;beginLookupDraft(editing);
   const w=editing||{};
   const categories=Object.values(app.model.categories).filter(c=>c.setId===app.setId);
+  const selectedTopics=(w.categoryIds||[]).length;
   const profile=studySetProfile(app.model.sets[app.setId]);
-  const lookupButton=profile?.id==='ja'?'':button(t(profile?.id==='zh'?'lookupChinese':'lookupIpa'),'lookupReading','quiet',`data-language="${profile?.id||'en'}"`);
+  const lookupButton=profile?.id==='ja'?'':iconButton(t(profile?.id==='zh'?'lookupChinese':'lookupIpa'),'lookupReading','search','quiet',`data-language="${profile?.id||'en'}"`);
+  const lookupStatus='<p id="lookup-status" class="muted small editor-status" aria-live="polite"></p>';
   const languageFields=profile?.id==='zh'
-    ?`${field('pinyin','pinyin',w.pinyin||w.ipa||'')}${field('hanViet','hanViet',w.hanViet||'')}${lookupButton}<p id="lookup-status" class="muted small"></p>${field('radical','radical',w.radical||'')}${field('strokeCount','strokeCount',w.strokeCount||0,'type="number" min="0"')}${field('classifier','classifier',listValue(w.classifiers))}`
-    :profile?.id==='ja'?`${field('kana','kana',w.kana||w.ipa||'')}${field('onReading','onReading',w.onReading||'')}${field('kunReading','kunReading',w.kunReading||'')}<p class="muted small">${t('japaneseReadingHelp')}</p>`
-    :`${field('ipa','ipa',w.ipa)}${lookupButton}<p id="lookup-status" class="muted small"></p>`;
+    ?`${field('pinyin','pinyin',w.pinyin||w.ipa||'')}${field('hanViet','hanViet',w.hanViet||'')}<div class="editor-span-2 row editor-inline-actions">${lookupButton}${lookupStatus}</div>${field('radical','radical',w.radical||'')}${field('strokeCount','strokeCount',w.strokeCount||0,'type="number" min="0"')}${field('classifier','classifier',listValue(w.classifiers))}`
+    :profile?.id==='ja'
+      ?`${field('kana','kana',w.kana||w.ipa||'')}${field('onReading','onReading',w.onReading||'')}${field('kunReading','kunReading',w.kunReading||'')}<p class="muted small editor-span-2">${t('japaneseReadingHelp')}</p>`
+      :`${field('ipa','ipa',w.ipa)}<div class="editor-inline-actions row">${lookupButton}${lookupStatus}</div>`;
   const wordLabel=['zh','ja'].includes(profile?.id)?'wordGeneric':'word';
-  const strokePanel=['zh','ja'].includes(profile?.id)?`<section class="wait-panel stack"><strong>${t('strokeResources')}</strong><p id="stroke-status" class="muted small">${strokeDraft?esc(strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+(strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):'')):t('strokeResourcesHelp')}</p>${button(t('loadStrokeData'),'loadStrokeData','quiet')}</section>`:'';
+  const strokePanel=['zh','ja'].includes(profile?.id)?`<section class="wait-panel stack editor-span-2"><div class="row between"><strong>${t('strokeResources')}</strong>${iconButton(t('loadStrokeData'),'loadStrokeData','database','quiet')}</div><p id="stroke-status" class="muted small">${strokeDraft?esc(strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+(strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):'')):t('strokeResourcesHelp')}</p></section>`:'';
   const autoAttrs=profile?.id==='en'&&!editing?` data-auto-autofill="true" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`:'';
-  modal(t(editing?'edit':'add'),`<form id="word-form" class="stack"${autoAttrs}>
-  ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${field('meaning','meaning',w.meaning,'maxlength="2000"')}
-  ${profile?.id==='en'?'<div class="row wrap">'+button(t('autofillWord'),'autofillWord','quiet',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)+'</div><p id="autofill-status" class="muted small"></p><p class="muted small">'+t('autofillHint')+'</p>':''}
-  ${field('pos','pos',w.pos,'maxlength="100"')}
-  <fieldset><legend>${t('topics')}</legend>${categories.map(c=>`<label class="check-label"><input type="checkbox" name="category" value="${c.id}" ${w.categoryIds?.includes(c.id)?'checked':''}>${esc(categoryPath(app.model.categories,c.id))}</label>`).join('')||t('uncategorized')}</fieldset>
-  <details><summary>${t('advanced')}</summary><div class="stack">${languageFields}${strokePanel}${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}${field('answers','answers',listValue(w.answers))}
-  <div class="row wrap">${button('Tạo ô trống từ phần bôi đen','makeSentenceBlank','quiet')}</div>
-  <div id="sentence-preview" class="wait-panel stack" aria-live="polite"><strong>Xem thử câu hỏi</strong>${sentencePreview(w.sentence||'',w.answers||[])}</div>
-  ${sentencePoolMarkup(w)}
-  ${field('variants','variants',listValue(w.variants))}${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
-  ${field('collocations','collocations',listValue(w.collocations))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
-  ${field('usageRegister','register',w.register)}${field('level','level',w.level)}${field('translation','translation',w.translation)}
-  ${field('mnemonic','mnemonic',w.mnemonic)}${field('source','source',w.source)}${field('tags','tags',listValue(w.tags))}
-  ${customInputs(w)}
-  <label>${t('note')}<textarea name="note" rows="3">${esc(w.note||'')}</textarea></label>
-  <label>${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label><div id="media-image">${w.image?mediaImage(w.image):''}</div>${button(t('clear'),'clearImage','quiet')}
-  <label>${t('audioFile')}<input type="file" id="audio-upload" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"></label><small id="audio-status">${w.audio?t('saved'):t('missingAudio')}</small>${button(t('clear'),'clearAudio','quiet')}
-  <p class="muted small">${t('mediaHelp')}</p></div></details>
+  const autofill=profile?.id==='en'?`<div class="editor-autofill row wrap">${iconButton(t('autofillWord'),'autofillWord','sparkles','quiet',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)}<p id="autofill-status" class="muted small" aria-live="polite"></p><span class="muted small editor-autofill-hint">${t('autofillHint')}</span></div>`:'';
+  modal(t(editing?'edit':'add'),`<form id="word-form" class="stack word-editor"${autoAttrs}>
+  <div class="editor-grid editor-core">
+    ${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}
+    ${field('pos','pos',w.pos,'maxlength="100"')}
+    <div class="editor-span-2">${field('meaning','meaning',w.meaning,'maxlength="2000"')}</div>
+  </div>
+  ${autofill}
+  <details class="editor-block topics-block"><summary><span>${t('topics')}</span><span class="summary-meta">${selectedTopics||0}</span></summary><div class="editor-block-body">
+    <fieldset class="compact-fieldset"><legend class="sr-only">${t('topics')}</legend>${categories.map(cat=>`<label class="check-label"><input type="checkbox" name="category" value="${cat.id}" ${w.categoryIds?.includes(cat.id)?'checked':''}>${esc(categoryPath(app.model.categories,cat.id))}</label>`).join('')||t('uncategorized')}</fieldset>
+  </div></details>
+  <details class="editor-block advanced-editor"><summary><span>${t('advanced')}</span><span class="summary-meta">4</span></summary><div class="editor-block-body editor-group-list">
+    <details class="editor-subdetails"><summary>${t('pronunciationExamples')}</summary><div class="editor-block-body editor-grid">
+      ${languageFields}${strokePanel}
+      <div class="editor-span-2">${field('sentence','sentence',w.sentence,'placeholder="Yesterday, I went to school."')}</div>
+      <div class="editor-span-2">${field('answers','answers',listValue(w.answers))}</div>
+      <div class="editor-span-2 row wrap">${iconButton(t('makeBlank'),'makeSentenceBlank','sparkles','quiet')}</div>
+      <div id="sentence-preview" class="wait-panel stack editor-span-2" aria-live="polite"><strong>${t('previewQuestion')}</strong>${sentencePreview(w.sentence||'',w.answers||[])}</div>
+      <div class="editor-span-2">${sentencePoolMarkup(w)}</div>
+    </div></details>
+    <details class="editor-subdetails"><summary>${t('lexicalDetails')}</summary><div class="editor-block-body editor-grid">
+      ${field('variants','variants',listValue(w.variants))}${field('wordFamily','wordFamily',listValue(w.wordFamily))}
+      ${field('synonyms','synonyms',listValue(w.synonyms))}${field('antonyms','antonyms',listValue(w.antonyms))}
+      <div class="editor-span-2">${field('collocations','collocations',listValue(w.collocations))}</div>
+      ${field('usageRegister','register',w.register)}${field('level','level',w.level)}
+      <div class="editor-span-2">${field('translation','translation',w.translation)}</div>
+    </div></details>
+    <details class="editor-subdetails"><summary>${t('notesSources')}</summary><div class="editor-block-body editor-grid">
+      ${field('mnemonic','mnemonic',w.mnemonic)}${field('tags','tags',listValue(w.tags))}
+      <div class="editor-span-2">${field('source','source',w.source)}</div>
+      ${customInputs(w)}
+      <label class="editor-span-2">${t('note')}<textarea name="note" rows="2">${esc(w.note||'')}</textarea></label>
+    </div></details>
+    <details class="editor-subdetails"><summary>${t('mediaGroup')}</summary><div class="editor-block-body editor-grid">
+      <label class="editor-span-2">${t('imageFile')}<input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></label>
+      <div id="media-image">${w.image?mediaImage(w.image):''}</div><div class="editor-inline-actions">${iconButton(t('clear'),'clearImage','eraser','quiet')}</div>
+      <label class="editor-span-2">${t('audioFile')}<input type="file" id="audio-upload" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"></label>
+      <small id="audio-status" class="muted">${w.audio?t('saved'):t('missingAudio')}</small><div class="editor-inline-actions">${iconButton(t('clear'),'clearAudio','eraser','quiet')}</div>
+      <p class="muted small editor-span-2">${t('mediaHelp')}</p>
+    </div></details>
+  </div></details>
   ${editing?`<label>${t('changeMeaning')}<select name="identity"><option value="copy">${t('createCopy')}</option><option value="reset">${t('resetProgress')}</option></select></label>`:''}
   ${editing?`<section id="ai-panel" class="panel stack" data-word-id="${editing.id}"><p class="muted">${t('aiLoading')}</p></section>`:''}
-  ${w.errors?.inBook?`<section class="info"><p>${w.errors.failures} ${t('mistakes')} \u00b7 ${w.errors.evidence.length}/2 ${t('evidence')}</p><p>${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p>${t(e.game)} \u00b7 ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
-  <div class="row between wrap">${editing?button(t('delete'),'deleteWord','danger',`data-id="${editing.id}"`):button(t('cancel'),'close','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div></form>`);
+  ${w.errors?.inBook?`<section class="info"><p>${w.errors.failures} ${t('mistakes')} · ${w.errors.evidence.length}/2 ${t('evidence')}</p><p>${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p>${t(e.game)} · ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
+  <div class="editor-actions row between">
+    ${editing?iconButton(t('delete'),'deleteWord','trash','danger',`data-id="${editing.id}"`):iconButton(t('cancel'),'close','x','quiet')}
+    <button type="submit" class="btn primary icon-button" aria-label="${esc(t('save'))}" title="${esc(t('save'))}">${icon('check')}</button>
+  </div></form>`);
   hydrateMedia(document.querySelector('#modal')).catch(()=>{});
   updateSentencePreview();if(editing)refreshAiPanel(editing.id);
 }
