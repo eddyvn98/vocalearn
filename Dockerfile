@@ -7,6 +7,7 @@ COPY --chown=node:node core ./core
 COPY --chown=node:node server ./server
 COPY --chown=node:node public ./public
 COPY --chown=node:node scripts ./scripts
+COPY --chown=node:node data/english ./english-data
 ENV LEXICAL_DB_PATH=/app/lexicon/dictionary.db
 RUN npm run build:sw \
  && mkdir -p /app/data /app/lexicon \
