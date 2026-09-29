@@ -30,7 +30,8 @@ def add_word(page,word,meaning,priority=None):
     page.locator('[data-action="add"]:visible').first.click()
     page.locator('#word-form [name="word"]').fill(word)
     page.locator('#word-form [name="meaning"]').fill(meaning)
-    page.locator("#word-form details summary").click()
+    page.get_by_text("Trường bổ sung", exact=True).click()
+    page.get_by_text("Ghi chú & nguồn", exact=True).click()
     if priority is not None:
         page.get_by_label("Priority").select_option(priority)
     page.locator('#word-form [type="submit"]').click()
@@ -133,7 +134,8 @@ def main():
                 row=page.locator(".word-row").filter(has_text="ngân hàng").first
                 row.locator('[data-action="edit"]').click()
                 expect(page.get_by_label("Priority")).to_have_value("high")
-                page.locator("#word-form details summary").click()
+                page.get_by_text("Trường bổ sung", exact=True).click()
+                page.get_by_text("Phát âm & câu ví dụ", exact=True).click()
                 sentence=page.locator('#word-form [name="sentence"]')
                 sentence.fill("I keep money in the bank.")
                 sentence.evaluate("(el) => { const i=el.value.indexOf('bank'); el.setSelectionRange(i,i+4); }")
@@ -147,7 +149,8 @@ def main():
 
                 row=page.locator(".word-row").filter(has_text="ngân hàng").first
                 row.locator('[data-action="edit"]').click()
-                page.locator("#word-form details summary").click()
+                page.get_by_text("Trường bổ sung", exact=True).click()
+                page.get_by_text("Phát âm & câu ví dụ", exact=True).click()
                 expect(page.locator('#word-form [name="sentence"]')).to_have_value("I keep money in the ___.")
                 expect(page.locator('#word-form [name="answers"]')).to_have_value("bank")
                 page.locator('[data-action="close"]').click()
@@ -259,6 +262,7 @@ def main():
                 # Edit -> cloze authoring through labeled fields, no selection/DOM hack.
                 page.get_by_role("button", name="Sửa thẻ", exact=True).click()
                 page.get_by_text("Trường bổ sung", exact=True).click()
+                page.get_by_text("Phát âm & câu ví dụ", exact=True).click()
                 page.get_by_label("Câu khuyết (một dấu ___)").fill("We ___ the app today.")
                 page.get_by_label("Đáp án của câu (ngăn bằng dấu phẩy)").fill("deploy")
                 page.get_by_role("button", name="Lưu", exact=True).click()
@@ -268,6 +272,7 @@ def main():
                 page.get_by_label("Tên chủ đề").fill("Agent flow")
                 page.get_by_role("button", name="Thêm chủ đề", exact=True).click()
                 page.get_by_role("button", name="Sửa thẻ", exact=True).click()
+                page.get_by_text("Chủ đề", exact=True).click()
                 page.get_by_label("Agent flow", exact=True).check()
                 page.get_by_role("button", name="Lưu", exact=True).click()
 
