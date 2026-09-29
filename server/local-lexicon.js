@@ -65,14 +65,16 @@ export function lookupLocalEnglish(db,word,meaningLanguage='vi'){
   const cloze=clozeExample(example,item.word);
   const relationList=type=>unique(rels.filter(rel=>clean(rel.relation_type)===type).map(rel=>rel.related_word),20);
   const ipa=clean(sounds.find(sound=>clean(sound.ipa))?.ipa).replace(/^[/\[]/,'').replace(/[\/\]]$/,'');
+  const synonyms=relationList('s'),antonyms=relationList('a'),wordFamily=relationList('d');
   const fields={
-    meaning:meaningCandidates[0]||'',ipa,pos:posName(primary.pos),sentence:cloze.sentence,answers:cloze.answers,
-    synonyms:relationList('s'),antonyms:relationList('a'),wordFamily:relationList('d'),
+    meaning:meaningCandidates[0]||'',translation:meaningCandidates.slice(1).join(', '),ipa,pos:posName(primary.pos),
+    sentence:cloze.sentence,answers:cloze.answers,synonyms,antonyms,wordFamily,
     source:'MinhQND Dictionary · CC BY-SA 4.0'
   };
   return {
     status:'found',word:item.word,meaningCandidates,fields,
-    dictionary:{definitions:unique(defs.map(def=>def.definition),8),audioUrl:'',sourceUrls:[LOCAL_LEXICON_SOURCE.url],
+    dictionary:{word:item.word,ipa,pos:fields.pos,example,definitions:unique(defs.map(def=>def.definition),8),
+      synonyms,antonyms,translations:meaningCandidates,audioUrl:'',sourceUrls:[LOCAL_LEXICON_SOURCE.url],
       license:{name:LOCAL_LEXICON_SOURCE.license,url:'https://creativecommons.org/licenses/by-sa/4.0/'}},
     lookupMeta:{ipa:{source:LOCAL_LEXICON_SOURCE.id,version:LOCAL_LEXICON_SOURCE.version,
       license:LOCAL_LEXICON_SOURCE.license,status:ipa?'lookup':'unsupported',needsCheck:sounds.length>1,confirmed:false}},

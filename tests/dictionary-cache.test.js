@@ -55,6 +55,39 @@ test('shared dictionary cache avoids repeated provider and AI calls',async()=>{
   db.close();
 });
 
+test('local lexicon stays primary while AI fills only missing advanced fields and is cached',async()=>{
+  const db=openDatabase(':memory:');
+  let fetchCalls=0,aiCalls=0;
+  const lexicon={available:true,lookup:()=>({
+    status:'found',word:'confirm',meaningCandidates:['xác nhận','khẳng định'],
+    fields:{meaning:'xác nhận',translation:'khẳng định',ipa:'kənˈfɜːm',pos:'verb',
+      synonyms:['verify'],antonyms:[],wordFamily:['confirmation'],source:'MinhQND Dictionary · CC BY-SA 4.0'},
+    dictionary:{word:'confirm',ipa:'kənˈfɜːm',pos:'verb',example:'Please confirm the meeting time.',
+      definitions:['to establish the truth of something'],synonyms:['verify'],antonyms:[],
+      translations:['xác nhận','khẳng định'],sourceUrls:['https://dict.minhqnd.com'],license:{name:'CC BY-SA 4.0'}},
+    source:'minhqnd/dictionary:v2.0.0'
+  })};
+  const provider={configured:true,generate:async({type,word})=>{
+    aiCalls++;assert.equal(type,'dictionary-autofill');assert.equal(word.dictionary.word,'confirm');
+    return {meaning:'AI should not replace local meaning',alternateTranslations:['công nhận'],
+      variants:['confirms','confirmed','confirming'],collocations:['confirm receipt'],
+      register:'neutral',level:'B1',mnemonic:'check then confirm'};
+  }};
+  const noExternalFetch=async()=>{fetchCalls++;throw new Error('external dictionary should not be called');};
+  const first=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'confirm'},noExternalFetch,lexicon);
+  assert.equal(fetchCalls,0);assert.equal(aiCalls,1);assert.equal(first.localHit,true);
+  assert.equal(first.fields.meaning,'xác nhận');assert.equal(first.fields.translation,'khẳng định');
+  assert.deepEqual(first.fields.wordFamily,['confirmation']);
+  assert.deepEqual(first.fields.variants,['confirms','confirmed','confirming']);
+  assert.deepEqual(first.fields.collocations,['confirm receipt']);
+  assert.equal(first.fields.register,'neutral');assert.equal(first.fields.level,'B1');
+
+  const second=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'confirm'},noExternalFetch,lexicon);
+  assert.equal(fetchCalls,0);assert.equal(aiCalls,1);assert.equal(second.aiCacheHit,true);
+  assert.deepEqual(second.fields.variants,['confirms','confirmed','confirming']);
+  db.close();
+});
+
 test('same dictionary row can hold separate shared enrichments by meaning language',async()=>{
   const db=openDatabase(':memory:');
   let fetchCalls=0,aiCalls=0;

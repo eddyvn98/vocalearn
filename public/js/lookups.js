@@ -51,9 +51,9 @@ export async function autofillEditor(language,meaningLanguage='vi'){
   const fields=result.fields||{};
   const changed=[
     ['meaning',fields.meaning],['pos',fields.pos],['ipa',fields.ipa],['sentence',fields.sentence],
-    ['answers',fields.answers],['synonyms',fields.synonyms],['antonyms',fields.antonyms],
-    ['collocations',fields.collocations],['register',fields.register],['level',fields.level],
-    ['mnemonic',fields.mnemonic],['source',fields.source]
+    ['answers',fields.answers],['variants',fields.variants],['synonyms',fields.synonyms],['antonyms',fields.antonyms],
+    ['collocations',fields.collocations],['wordFamily',fields.wordFamily],['register',fields.register],['level',fields.level],
+    ['translation',fields.translation],['mnemonic',fields.mnemonic],['source',fields.source]
   ].filter(([name,value])=>setIfEmpty(form,name,value)).map(([name])=>name);
   if(fields.ipa){
     const meta=result.lookupMeta?.ipa||{source:'dictionaryapi.dev',version:String(result.fetchedAt||'shared-cache-v1'),
