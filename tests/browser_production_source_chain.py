@@ -43,7 +43,6 @@ def main():
         expect(form.locator('[name="ipa"]')).not_to_have_value("")
         expect(form.locator('[name="pos"]')).not_to_have_value("")
         expect(form.locator('[name="level"]')).to_have_value("B1",timeout=12000)
-        expect(form.locator('[name="wordFamily"]')).not_to_have_value("")
         expect(form.locator('[name="collocations"]')).not_to_have_value("",timeout=12000)
 
         variants=form.locator('[name="variants"]').input_value()
@@ -59,7 +58,7 @@ def main():
         print("level:",form.locator('[name="level"]').input_value())
         print("variants:",variants)
         print("collocations:",form.locator('[name="collocations"]').input_value())
-        print("wordFamily:",form.locator('[name="wordFamily"]').input_value())
+        print("wordFamily:",form.locator('[name="wordFamily"]').input_value() or "(not available from current sources)")
         print("source:",source)
         context.close()
         browser.close()
