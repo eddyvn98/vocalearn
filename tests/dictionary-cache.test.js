@@ -69,20 +69,24 @@ test('local lexicon stays primary while AI fills only missing advanced fields an
   })};
   const provider={configured:true,generate:async({type,word})=>{
     aiCalls++;assert.equal(type,'dictionary-autofill');assert.equal(word.dictionary.word,'confirm');
-    return {meaning:'AI should not replace local meaning',alternateTranslations:['công nhận'],
-      variants:['confirms','confirmed','confirming'],collocations:['confirm receipt'],
-      register:'neutral',level:'B1',mnemonic:'check then confirm'};
+    assert.deepEqual(word.dictionary.missingFields,['register']);
+    return {meaning:'AI should not replace local meaning',alternateTranslations:[],
+      variants:[],collocations:[],register:'neutral',level:'',mnemonic:''};
   }};
+  const enricher={enrich:async()=>({fields:{
+    variants:['confirms','confirmed','confirming'],collocations:['confirm receipt'],level:'B1'
+  },fieldSources:{variants:'rules',collocations:'corpus',level:'cefr'},sources:['CEFR-J','Datamuse']})};
   const noExternalFetch=async()=>{fetchCalls++;throw new Error('external dictionary should not be called');};
-  const first=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'confirm'},noExternalFetch,lexicon);
+  const first=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'confirm'},noExternalFetch,lexicon,enricher);
   assert.equal(fetchCalls,0);assert.equal(aiCalls,1);assert.equal(first.localHit,true);
   assert.equal(first.fields.meaning,'xác nhận');assert.equal(first.fields.translation,'khẳng định');
   assert.deepEqual(first.fields.wordFamily,['confirmation']);
   assert.deepEqual(first.fields.variants,['confirms','confirmed','confirming']);
   assert.deepEqual(first.fields.collocations,['confirm receipt']);
   assert.equal(first.fields.register,'neutral');assert.equal(first.fields.level,'B1');
+  assert.match(first.fields.source,/CEFR-J/);assert.match(first.fields.source,/Datamuse/);
 
-  const second=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'confirm'},noExternalFetch,lexicon);
+  const second=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'confirm'},noExternalFetch,lexicon,enricher);
   assert.equal(fetchCalls,0);assert.equal(aiCalls,1);assert.equal(second.aiCacheHit,true);
   assert.deepEqual(second.fields.variants,['confirms','confirmed','confirming']);
   db.close();
