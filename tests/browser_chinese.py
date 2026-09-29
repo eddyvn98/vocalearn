@@ -29,7 +29,8 @@ def add_word(page,word,meaning,pinyin,classifier=""):
     form=page.locator("#word-form")
     form.locator('[name="word"]').fill(word)
     form.locator('[name="meaning"]').fill(meaning)
-    form.locator("details summary").click()
+    form.get_by_text("Trường bổ sung", exact=True).click()
+    form.get_by_text("Phát âm & câu ví dụ", exact=True).click()
     form.locator('[name="pinyin"]').fill(pinyin)
     if classifier:
         form.locator('[name="classifier"]').fill(classifier)
