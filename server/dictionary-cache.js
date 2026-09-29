@@ -52,13 +52,13 @@ function pruneCache(db){
     SELECT rowid FROM dictionary_cache ORDER BY last_used_at ASC LIMIT ?
   )`).run(count-MAX_CACHE_ENTRIES);
 }
-export function putDictionary(db,language,word,dictionary,now=Date.now()){
+export function putDictionary(db,language,word,dictionary,now=Date.now(),source=SOURCE){
   const normalized=keyWord(word);
   db.prepare(`INSERT INTO dictionary_cache(language,normalized_word,source,payload,enrichments,fetched_at,updated_at,last_used_at)
     VALUES(?,?,?,?,?,?,?,?)
     ON CONFLICT(language,normalized_word) DO UPDATE SET source=excluded.source,payload=excluded.payload,
       fetched_at=excluded.fetched_at,updated_at=excluded.updated_at,last_used_at=excluded.last_used_at`)
-    .run(language,normalized,SOURCE,JSON.stringify(dictionary),'{}',now,now,now);
+    .run(language,normalized,source,JSON.stringify(dictionary),'{}',now,now,now);
   pruneCache(db);
   return cachedDictionary(db,language,word,now);
 }
@@ -114,7 +114,9 @@ function dictionaryFields(dictionary){
 function enrichmentFields(enrichment){
   if(!enrichment)return {};
   return {
-    meaning:clean(enrichment.meaning),collocations:list(enrichment.collocations,12),
+    meaning:clean(enrichment.meaning),
+    translation:list(enrichment.alternateTranslations,6).join(', '),
+    variants:list(enrichment.variants,12),collocations:list(enrichment.collocations,12),
     register:clean(enrichment.register),level:clean(enrichment.level),
     mnemonic:clean(enrichment.mnemonic)
   };
@@ -123,13 +125,45 @@ function localResult(lexicon,language,word,meaningLanguage){
   if(!lexicon?.available)return null;
   try{return lexicon.lookup(language,word,meaningLanguage);}catch{return null;}
 }
+function localDictionary(local,value){
+  const fields=local?.fields||{},dictionary=local?.dictionary||{};
+  return {
+    word:clean(dictionary.word||local?.word||value),
+    ipa:clean(dictionary.ipa||fields.ipa),pos:clean(dictionary.pos||fields.pos),
+    definitions:list(dictionary.definitions,8),example:clean(dictionary.example),
+    synonyms:list(dictionary.synonyms||fields.synonyms,20),antonyms:list(dictionary.antonyms||fields.antonyms,20),
+    translations:list(dictionary.translations||local?.meaningCandidates,8),
+    sourceUrls:list(dictionary.sourceUrls,10),license:dictionary.license||null
+  };
+}
+function mergeMissingFields(primary={},supplement={}){
+  const result={...primary};
+  for(const [key,value] of Object.entries(supplement)){
+    const present=Array.isArray(result[key])?result[key].length>0:Boolean(clean(result[key]));
+    const usable=Array.isArray(value)?value.length>0:Boolean(clean(value));
+    if(!present&&usable)result[key]=value;
+  }
+  return result;
+}
 export async function autofillWord(db,provider,{language,meaningLanguage,word},fetchImpl=fetch,lexicon=null){
   const value=clean(word),normalized=keyWord(value);
   if(language!=='en'||!normalized)throw new Error('English word required');
   const local=localResult(lexicon,language,value,meaningLanguage);
   if(local?.status==='found'&&clean(local.fields?.meaning)){
-    return {...local,localHit:true,cacheHit:true,aiCacheHit:false,
-      aiConfigured:Boolean(provider?.configured),aiSkipped:true};
+    let cached=cachedDictionary(db,language,value),cacheHit=Boolean(cached);
+    if(!cached)cached=putDictionary(db,language,value,localDictionary(local,value),Date.now(),local.source||'local-lexicon');
+    let enrichment=cached.enrichments?.[meaningLanguage]||null,aiCacheHit=Boolean(enrichment),aiErrorCode='';
+    if(!enrichment&&provider?.configured){
+      try{
+        enrichment=await provider.generate({type:'dictionary-autofill',word:{
+          word:value,language,meaningLanguage,dictionary:cached.dictionary
+        }});
+        cached=putEnrichment(db,language,value,meaningLanguage,enrichment);
+      }catch(error){aiErrorCode=String(error.code||'AI_ERROR');}
+    }
+    return {...local,localHit:true,cacheHit,aiCacheHit,aiConfigured:Boolean(provider?.configured),aiErrorCode,
+      aiSkipped:!provider?.configured||aiCacheHit,fields:mergeMissingFields(local.fields||{},enrichmentFields(enrichment)),
+      source:local.source,fetchedAt:cached.fetchedAt};
   }
   let cached=cachedDictionary(db,language,value),cacheHit=Boolean(cached);
   if(!cached){
