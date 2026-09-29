@@ -26,8 +26,9 @@ function instruction(word,type){
     `Target language: ${language}. Meaning language: ${meaningLanguage}.`,
     `Word: ${word.word}.`,
     `Dictionary data: ${JSON.stringify(word.dictionary||{})}.`,
-    'Use the supplied dictionary data as the factual basis. You may use standard English morphology for common inflected forms. Do not invent pronunciation, unsupported senses, or uncommon forms.',
-    'Return {"meaning":"one concise translation in the meaning language","alternateTranslations":["up to 4 other concise translations"],"variants":["up to 6 common inflected or spelling variants"],"collocations":["up to 6 useful collocations"],"register":"plain usage register such as neutral/formal/informal","level":"CEFR only if reasonably inferable, otherwise empty","mnemonic":"short optional memory aid"}.',
+    `Fields still missing after dictionary and deterministic data sources: ${JSON.stringify(word.dictionary?.missingFields||[])}.`,
+    'Use the supplied dictionary data as the factual basis. AI is the final fallback: fill only fields listed as missing and leave all other fields empty. Do not invent pronunciation, unsupported senses, or uncommon forms.',
+    'Return {"meaning":"one concise translation in the meaning language or empty","alternateTranslations":["up to 4 other concise translations, only if requested as missing"],"variants":["up to 6 common forms, only if requested as missing"],"collocations":["up to 6 useful collocations, only if requested as missing"],"register":"plain usage register such as neutral/formal/informal, only if missing","level":"CEFR only if missing and reasonably inferable, otherwise empty","mnemonic":""}.',
     'Keep fields concise. Do not include markdown.'
   ].join('\n');
   throw new Error('Unsupported AI job type');
