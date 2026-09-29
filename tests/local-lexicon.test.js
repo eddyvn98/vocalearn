@@ -50,18 +50,19 @@ test('local lexical store returns structured English data',()=>{
   }finally{lexicon.close();rmSync(dir,{recursive:true,force:true});}
 });
 
-test('local lexical store is used before external dictionary and AI',async()=>{
+test('local lexical store is used before external dictionary while AI fills only missing fields',async()=>{
   const {dir,path}=fixture(),lexicon=createLocalLexicon(path),db=openDatabase(':memory:');
   let fetchCalls=0,aiCalls=0;
-  const provider={configured:true,generate:async()=>{aiCalls++;return {meaning:'AI meaning'};}};
+  const provider={configured:true,generate:async()=>{aiCalls++;return {meaning:'AI meaning',collocations:['deploy an app']};}};
   try{
     const result=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'deploy'},
       async()=>{fetchCalls++;throw new Error('network should not be called');},lexicon);
     assert.equal(result.localHit,true);
-    assert.equal(result.aiSkipped,true);
+    assert.equal(result.aiSkipped,false);
     assert.equal(result.fields.meaning,'triển khai');
+    assert.deepEqual(result.fields.collocations,['deploy an app']);
     assert.equal(fetchCalls,0);
-    assert.equal(aiCalls,0);
+    assert.equal(aiCalls,1);
   }finally{db.close();lexicon.close();rmSync(dir,{recursive:true,force:true});}
 });
 
