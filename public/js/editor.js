@@ -90,6 +90,7 @@ export function openEditor(id) {
     ${coreReading}
   </div>
   ${autofill}
+  ${editing?`<section id="ai-panel" class="editor-ai-inline stack" data-word-id="${editing.id}"><p class="muted">${t('aiLoading')}</p></section>`:''}
   <details class="editor-plain-details topics-block">
     <summary><span>${t('topics')}</span><span class="editor-summary-value">${esc(selectedTopicText)}</span></summary>
     <div class="editor-plain-body">
@@ -139,7 +140,6 @@ export function openEditor(id) {
           <p class="muted small editor-span-2">${t('mediaHelp')}</p>
         </div>
       </section>
-      ${editing?`<section id="ai-panel" class="editor-section stack" data-word-id="${editing.id}"><h3>AI</h3><p class="muted">${t('aiLoading')}</p></section>`:''}
     </div>
   </details>
   ${editing?`<label class="editor-identity">${t('changeMeaning')}<select name="identity"><option value="copy">${t('createCopy')}</option><option value="reset">${t('resetProgress')}</option></select></label>`:''}
