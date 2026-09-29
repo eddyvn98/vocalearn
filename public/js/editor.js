@@ -143,7 +143,7 @@ export function openEditor(id) {
     </div>
   </details>
   ${editing?`<label class="editor-identity">${t('changeMeaning')}<select name="identity"><option value="copy">${t('createCopy')}</option><option value="reset">${t('resetProgress')}</option></select></label>`:''}
-  ${w.errors?.inBook?`<section class="editor-inline-panel"><p>${w.errors.failures} ${t('mistakes')} · ${w.errors.evidence.length}/2 ${t('evidence')}</p><p class="muted small">${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p class="muted small">${t(e.game)} · ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
+  ${w.errors?.inBook?`<section class="editor-inline-panel" data-role="error-book-evidence"><p>${w.errors.failures} ${t('mistakes')} · ${w.errors.evidence.length}/2 ${t('evidence')}</p><p class="muted small">${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p class="muted small">${t(e.game)} · ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
   <div class="editor-actions row between">
     ${editing?iconButton(t('delete'),'deleteWord','trash','danger',`data-id="${editing.id}"`):'<span></span>'}
     <button type="submit" class="btn primary">${t('save')}</button>
