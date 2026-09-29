@@ -3,8 +3,9 @@ import {viErrors} from './vi-errors.js';
 import {viSentences} from './vi-sentences.js';
 import {viLookups} from './vi-lookups.js';
 import {viStatistics} from './vi-statistics.js';
+import {viEditor} from './vi-editor.js';
 import {viJapanese} from './vi-japanese.js';import {viHandwriting} from './vi-handwriting.js';import {viSpeech} from './vi-speech.js';
-export const vi = {...viAi,...viErrors,...viSentences,...viLookups,...viStatistics,...viJapanese,...viHandwriting,...viSpeech,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
+export const vi = {...viAi,...viErrors,...viSentences,...viLookups,...viStatistics,...viEditor,...viJapanese,...viHandwriting,...viSpeech,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
   invalidAnswerFace:"Mặt đáp phải hợp lệ và khác mặt hỏi",
   missingAnswerFace:"Thiếu dữ liệu cho mặt đáp",
   noMixGames:"Hãy bật ít nhất một game trong Trộn",
@@ -194,12 +195,6 @@ export const vi = {...viAi,...viErrors,...viSentences,...viLookups,...viStatisti
   "moveUp": "Di chuyển lên",
   "moveDown": "Di chuyển xuống",
   "advanced": "Trường bổ sung",
-  "pronunciationExamples": "Phát âm & câu ví dụ",
-  "lexicalDetails": "Từ vựng nâng cao",
-  "notesSources": "Ghi chú & nguồn",
-  "mediaGroup": "Ảnh & âm thanh",
-  "makeBlank": "Tạo ô trống từ phần bôi đen",
-  "previewQuestion": "Xem thử câu hỏi",
   "imageFile": "Thêm ảnh (PNG/JPG/WebP)",
   "audioFile": "Âm thanh ngoại tuyến (MP3/WAV/OGG/WebM/MP4, tối đa 3 MB)",
   "mediaHelp": "Tệp được lưu trên thiết bị, nén khi cần và đồng bộ riêng theo SHA-256; thẻ chỉ giữ mã liên kết.",
