@@ -103,11 +103,13 @@ def main():
 
                 page.locator('[data-action="library"]').first.click()
                 page.get_by_role("button",name="Sửa thẻ",exact=True).click()
-                page.locator("#word-form details summary").click()
+                page.get_by_text("Trường bổ sung",exact=True).click()
+                page.get_by_text("Phát âm & câu ví dụ",exact=True).click()
                 reports=page.locator('[data-action="sentenceReport"]')
                 expect(reports).to_have_count(5)
                 reports.first.click()
-                page.locator("#word-form details summary").click()
+                page.get_by_text("Trường bổ sung",exact=True).click()
+                page.get_by_text("Phát âm & câu ví dụ",exact=True).click()
                 expect(page.locator('[data-action="sentenceReport"]')).to_have_count(4)
 
                 assert not errors,repr(errors)

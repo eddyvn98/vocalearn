@@ -49,7 +49,9 @@ def edit_deploy(page, image_path=None, note=None):
     row = page.locator(".word-row").filter(has_text="deploy").first
     row.locator('[data-action="edit"]').click()
     expect(page.locator("#word-form")).to_be_visible()
-    page.locator("#word-form details summary").click()
+    page.get_by_text("Trường bổ sung", exact=True).click()
+    page.get_by_text("Ghi chú & nguồn", exact=True).click()
+    page.get_by_text("Ảnh & âm thanh", exact=True).click()
     if note is not None:
         page.locator('#word-form textarea[name="note"]').fill(note)
     if image_path is not None:
@@ -101,7 +103,9 @@ def open_deploy_editor(page):
     expect(row).to_have_count(1)
     row.first.locator('[data-action="edit"]').click()
     expect(page.locator("#word-form")).to_be_visible()
-    page.locator("#word-form details summary").click()
+    page.get_by_text("Trường bổ sung", exact=True).click()
+    page.get_by_text("Ghi chú & nguồn", exact=True).click()
+    page.get_by_text("Ảnh & âm thanh", exact=True).click()
     return row
 
 

@@ -25,7 +25,8 @@ def add_image_card(page,word,meaning,image):
     expect(page.locator("#word-form")).to_be_visible()
     page.locator('#word-form [name="word"]').fill(word)
     page.locator('#word-form [name="meaning"]').fill(meaning)
-    page.locator("#word-form details summary").click()
+    page.get_by_text("Trường bổ sung", exact=True).click()
+    page.get_by_text("Ảnh & âm thanh", exact=True).click()
     page.locator("#image-upload").set_input_files({
         "name":"same.png","mimeType":"image/png","buffer":image.read_bytes()
     })

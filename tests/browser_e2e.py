@@ -94,7 +94,8 @@ def add_audio_and_test_export(page, temp):
         page.set_viewport_size(original_viewport)
     row.locator('[data-action="edit"]').click()
     expect(page.locator("#word-form")).to_be_visible()
-    page.locator("details summary").click()
+    page.get_by_text("Trường bổ sung", exact=True).click()
+    page.get_by_text("Ảnh & âm thanh", exact=True).click()
     wav_path = Path(temp) / "deploy.wav"
     make_wav(wav_path)
     page.locator("#audio-upload").set_input_files({

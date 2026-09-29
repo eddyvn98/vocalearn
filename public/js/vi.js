@@ -3,8 +3,9 @@ import {viErrors} from './vi-errors.js';
 import {viSentences} from './vi-sentences.js';
 import {viLookups} from './vi-lookups.js';
 import {viStatistics} from './vi-statistics.js';
+import {viEditor} from './vi-editor.js';
 import {viJapanese} from './vi-japanese.js';import {viHandwriting} from './vi-handwriting.js';import {viSpeech} from './vi-speech.js';
-export const vi = {...viAi,...viErrors,...viSentences,...viLookups,...viStatistics,...viJapanese,...viHandwriting,...viSpeech,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
+export const vi = {...viAi,...viErrors,...viSentences,...viLookups,...viStatistics,...viEditor,...viJapanese,...viHandwriting,...viSpeech,audio:"Âm thanh",missingImage:"Thiếu hình ảnh",invalidFace:"Tổ hợp mặt hỏi không hợp lệ cho game này",
   invalidAnswerFace:"Mặt đáp phải hợp lệ và khác mặt hỏi",
   missingAnswerFace:"Thiếu dữ liệu cho mặt đáp",
   noMixGames:"Hãy bật ít nhất một game trong Trộn",

@@ -3,3 +3,13 @@
 @media(max-width:360px){main,.study-shell{padding:20px 14px}.game-grid{grid-template-columns:1fr 1fr}.topbar{padding:10px 14px}.hero{padding:20px}.hero h2{font-size:24px}.sidebar .nav{gap:6px;font-size:12px}.sidebar .nav svg{width:18px}.match-cell{font-size:13px;padding:10px 8px}.question-panel{padding:20px 14px}}
 @media(max-width:720px){body.keyboard-open .study-shell{min-height:var(--visual-viewport-height,100dvh);padding-bottom:calc(24px + var(--keyboard-inset,0px))}body.keyboard-open .question-panel{scroll-margin-bottom:calc(24px + var(--keyboard-inset,0px))}body.keyboard-open dialog{max-height:min(88vh,var(--visual-viewport-height,100dvh));overflow:auto}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+@media(max-width:720px){
+  .toolbar{gap:10px}.toolbar-icons{width:100%;justify-content:flex-end;gap:7px}.toolbar-icons .icon-button{min-height:44px}
+  #modal:has(.word-editor){width:min(98vw,680px)}
+  .word-editor .editor-grid{grid-template-columns:1fr;gap:11px}
+  .word-editor .editor-span-2{grid-column:1}
+  .editor-autofill{align-items:flex-start}.editor-autofill #autofill-status{min-width:0}
+  .editor-block>summary,.editor-subdetails>summary{min-height:46px}
+  .editor-actions{padding-bottom:max(4px,env(safe-area-inset-bottom))}
+}

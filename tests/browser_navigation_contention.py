@@ -52,7 +52,8 @@ def add_card(page,word,meaning,wav_path):
     page.locator('[data-action="add"]:visible').first.click()
     page.locator('#word-form [name="word"]').fill(word)
     page.locator('#word-form [name="meaning"]').fill(meaning)
-    page.locator("#word-form details summary").click()
+    page.get_by_text("Trường bổ sung", exact=True).click()
+    page.get_by_text("Ảnh & âm thanh", exact=True).click()
     page.locator("#audio-upload").set_input_files({
         "name":f"{word}.wav","mimeType":"audio/wav","buffer":wav_path.read_bytes()
     })
