@@ -145,8 +145,18 @@ function mergeMissingFields(primary={},supplement={}){
   }
   return result;
 }
+function sourceDisplayName(value){
+  const id=clean(value);
+  if(id.startsWith('cefr-j:'))return 'CEFR-J';
+  if(id.startsWith('vocalearn-morphology:'))return 'Morphology';
+  if(id.startsWith('datamuse:'))return 'Datamuse';
+  return id;
+}
+function persistedSourceNames(fieldSources={}){
+  return [...new Set(Object.values(fieldSources).map(sourceDisplayName).filter(Boolean))];
+}
 function sourceLabel(primary,sources=[],ai=false){
-  const values=[primary,...sources,ai?'AI fallback':''].map(clean).filter(Boolean);
+  const values=[primary,...sources.map(sourceDisplayName),ai?'AI fallback':''].map(clean).filter(Boolean);
   return [...new Set(values)].join(' · ');
 }
 async function applyDataSources(db,cached,language,value,fields,enricher){
@@ -193,7 +203,7 @@ export async function autofillWord(db,provider,{language,meaningLanguage,word},f
     cached=sourced.cached;base=sourced.fields;
     const ai=await aiLast(db,provider,cached,language,meaningLanguage,value,base);
     const fields=mergeMissingFields(base,enrichmentFields(ai.enrichment));
-    fields.source=sourceLabel('MinhQND Dictionary',sourced.sources,ai.used);
+    fields.source=sourceLabel('MinhQND Dictionary',[...persistedSourceNames(cached.dictionary.fieldSources),...sourced.sources],ai.used);
     return {...local,localHit:true,cacheHit,aiCacheHit:ai.aiCacheHit,aiConfigured:Boolean(provider?.configured),
       aiErrorCode:ai.aiErrorCode,aiSkipped:!provider?.configured||ai.aiCacheHit||!ai.missing.length,
       fields,fieldSources:{...(cached.dictionary.fieldSources||{}),...sourced.fieldSources},
@@ -221,7 +231,7 @@ export async function autofillWord(db,provider,{language,meaningLanguage,word},f
   cached=sourced.cached;base=sourced.fields;
   const ai=await aiLast(db,provider,cached,language,meaningLanguage,value,base);
   const fields=mergeMissingFields(base,enrichmentFields(ai.enrichment));
-  fields.source=sourceLabel(SOURCE,sourced.sources,ai.used);
+  fields.source=sourceLabel(SOURCE,[...persistedSourceNames(cached.dictionary.fieldSources),...sourced.sources],ai.used);
   return {
     status:'found',localHit:Boolean(local),cacheHit,aiCacheHit:ai.aiCacheHit,aiConfigured:Boolean(provider?.configured),
     aiErrorCode:ai.aiErrorCode,aiSkipped:!provider?.configured||ai.aiCacheHit||!ai.missing.length,
