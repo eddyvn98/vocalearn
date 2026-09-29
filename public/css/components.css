@@ -23,6 +23,7 @@ dialog{border:1px solid var(--line);border-radius:20px;padding:26px;width:min(94
 .word-editor .editor-core{align-items:end}.word-editor textarea{min-height:68px}
 .editor-reading-field{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.editor-reading-field>label{margin:0}.editor-reading-field .editor-status{grid-column:1/-1}
 .editor-autofill{margin-top:-6px;min-height:34px;align-items:center}.editor-autofill #autofill-status{flex:1;min-width:160px;margin:0}
+.editor-ai-inline{padding:10px 0 12px;border-top:1px solid var(--line)}.editor-ai-inline>.row{gap:10px}.editor-ai-inline>.info{margin:0}
 .editor-plain-details{border-top:1px solid var(--line)}.editor-plain-details:last-of-type{border-bottom:1px solid var(--line)}
 .editor-plain-details>summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;padding:13px 2px;cursor:pointer;list-style:none;font-weight:700}
 .editor-plain-details>summary::-webkit-details-marker{display:none}.editor-plain-details>summary::before{content:'›';color:var(--muted);font-size:19px;line-height:1;transform:rotate(0deg);transition:transform .15s ease}
