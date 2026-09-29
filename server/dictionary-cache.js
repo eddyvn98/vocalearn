@@ -106,19 +106,19 @@ function dictionaryFields(dictionary){
   if(!dictionary)return {};
   const cloze=clozeExample(dictionary.example,dictionary.word);
   return {
-    ipa:dictionary.ipa||'',pos:dictionary.pos||'',sentence:cloze.sentence,
-    answers:cloze.answers,synonyms:dictionary.synonyms||[],
-    antonyms:dictionary.antonyms||[],source:SOURCE
+    ipa:dictionary.ipa||'',pos:dictionary.pos||'',sentence:cloze.sentence,answers:cloze.answers,
+    synonyms:list(dictionary.synonyms,20),antonyms:list(dictionary.antonyms,20),
+    variants:list(dictionary.variants,12),collocations:list(dictionary.collocations,12),
+    wordFamily:list(dictionary.wordFamily,20),register:clean(dictionary.register),level:clean(dictionary.level),
+    translation:clean(dictionary.translation),source:SOURCE
   };
 }
 function enrichmentFields(enrichment){
   if(!enrichment)return {};
   return {
-    meaning:clean(enrichment.meaning),
-    translation:list(enrichment.alternateTranslations,6).join(', '),
+    meaning:clean(enrichment.meaning),translation:list(enrichment.alternateTranslations,6).join(', '),
     variants:list(enrichment.variants,12),collocations:list(enrichment.collocations,12),
-    register:clean(enrichment.register),level:clean(enrichment.level),
-    mnemonic:clean(enrichment.mnemonic)
+    register:clean(enrichment.register),level:clean(enrichment.level),mnemonic:clean(enrichment.mnemonic)
   };
 }
 function localResult(lexicon,language,word,meaningLanguage){
@@ -132,8 +132,8 @@ function localDictionary(local,value){
     ipa:clean(dictionary.ipa||fields.ipa),pos:clean(dictionary.pos||fields.pos),
     definitions:list(dictionary.definitions,8),example:clean(dictionary.example),
     synonyms:list(dictionary.synonyms||fields.synonyms,20),antonyms:list(dictionary.antonyms||fields.antonyms,20),
-    translations:list(dictionary.translations||local?.meaningCandidates,8),
-    sourceUrls:list(dictionary.sourceUrls,10),license:dictionary.license||null
+    wordFamily:list(fields.wordFamily,20),translations:list(dictionary.translations||local?.meaningCandidates,8),
+    translation:clean(fields.translation),sourceUrls:list(dictionary.sourceUrls,10),license:dictionary.license||null
   };
 }
 function mergeMissingFields(primary={},supplement={}){
@@ -145,25 +145,59 @@ function mergeMissingFields(primary={},supplement={}){
   }
   return result;
 }
-export async function autofillWord(db,provider,{language,meaningLanguage,word},fetchImpl=fetch,lexicon=null){
+function sourceLabel(primary,sources=[],ai=false){
+  const values=[primary,...sources,ai?'AI fallback':''].map(clean).filter(Boolean);
+  return [...new Set(values)].join(' · ');
+}
+async function applyDataSources(db,cached,language,value,fields,enricher){
+  if(!enricher)return {cached,fields,sources:[],fieldSources:{}};
+  let result;
+  try{result=await enricher.enrich({word:value,pos:fields.pos||cached.dictionary.pos,fields});}
+  catch{return {cached,fields,sources:[],fieldSources:{}};}
+  const sourceFields=result?.fields||{},fieldSources=result?.fieldSources||{};
+  const merged=mergeMissingFields(fields,sourceFields);
+  if(Object.keys(sourceFields).length){
+    const next={...cached.dictionary,...sourceFields,
+      fieldSources:{...(cached.dictionary.fieldSources||{}),...fieldSources}};
+    cached=putDictionary(db,language,value,next,Date.now(),cached.source);
+  }
+  return {cached,fields:merged,sources:result?.sources||[],fieldSources};
+}
+function missingForAi(fields){
+  return ['meaning','translation','variants','collocations','register','level'].filter(name=>{
+    const value=fields[name];return Array.isArray(value)?!value.length:!clean(value);
+  });
+}
+async function aiLast(db,provider,cached,language,meaningLanguage,value,fields){
+  let enrichment=cached.enrichments?.[meaningLanguage]||null;
+  const aiCacheHit=Boolean(enrichment),missing=missingForAi(fields);let aiErrorCode='';
+  if(!enrichment&&provider?.configured&&missing.length){
+    try{
+      enrichment=await provider.generate({type:'dictionary-autofill',word:{
+        word:value,language,meaningLanguage,dictionary:{...cached.dictionary,missingFields:missing}
+      }});
+      cached=putEnrichment(db,language,value,meaningLanguage,enrichment);
+    }catch(error){aiErrorCode=String(error.code||'AI_ERROR');}
+  }
+  return {cached,enrichment,aiCacheHit,aiErrorCode,missing,used:Boolean(enrichment)};
+}
+export async function autofillWord(db,provider,{language,meaningLanguage,word},fetchImpl=fetch,lexicon=null,enricher=null){
   const value=clean(word),normalized=keyWord(value);
   if(language!=='en'||!normalized)throw new Error('English word required');
   const local=localResult(lexicon,language,value,meaningLanguage);
   if(local?.status==='found'&&clean(local.fields?.meaning)){
     let cached=cachedDictionary(db,language,value),cacheHit=Boolean(cached);
     if(!cached)cached=putDictionary(db,language,value,localDictionary(local,value),Date.now(),local.source||'local-lexicon');
-    let enrichment=cached.enrichments?.[meaningLanguage]||null,aiCacheHit=Boolean(enrichment),aiErrorCode='';
-    if(!enrichment&&provider?.configured){
-      try{
-        enrichment=await provider.generate({type:'dictionary-autofill',word:{
-          word:value,language,meaningLanguage,dictionary:cached.dictionary
-        }});
-        cached=putEnrichment(db,language,value,meaningLanguage,enrichment);
-      }catch(error){aiErrorCode=String(error.code||'AI_ERROR');}
-    }
-    return {...local,localHit:true,cacheHit,aiCacheHit,aiConfigured:Boolean(provider?.configured),aiErrorCode,
-      aiSkipped:!provider?.configured||aiCacheHit,fields:mergeMissingFields(local.fields||{},enrichmentFields(enrichment)),
-      source:local.source,fetchedAt:cached.fetchedAt};
+    let base=mergeMissingFields(local.fields||{},dictionaryFields(cached.dictionary));
+    const sourced=await applyDataSources(db,cached,language,value,base,enricher);
+    cached=sourced.cached;base=sourced.fields;
+    const ai=await aiLast(db,provider,cached,language,meaningLanguage,value,base);
+    const fields=mergeMissingFields(base,enrichmentFields(ai.enrichment));
+    fields.source=sourceLabel('MinhQND Dictionary',sourced.sources,ai.used);
+    return {...local,localHit:true,cacheHit,aiCacheHit:ai.aiCacheHit,aiConfigured:Boolean(provider?.configured),
+      aiErrorCode:ai.aiErrorCode,aiSkipped:!provider?.configured||ai.aiCacheHit||!ai.missing.length,
+      fields,fieldSources:{...(cached.dictionary.fieldSources||{}),...sourced.fieldSources},
+      source:local.source,fetchedAt:ai.cached.fetchedAt};
   }
   let cached=cachedDictionary(db,language,value),cacheHit=Boolean(cached);
   if(!cached){
@@ -182,21 +216,19 @@ export async function autofillWord(db,provider,{language,meaningLanguage,word},f
     }
     cached=putDictionary(db,language,value,dictionary);
   }
-  let enrichment=cached.enrichments?.[meaningLanguage]||null,aiCacheHit=Boolean(enrichment),aiErrorCode='';
-  if(!enrichment&&provider?.configured){
-    try{
-      enrichment=await provider.generate({type:'dictionary-autofill',word:{
-        word:value,language,meaningLanguage,dictionary:cached.dictionary
-      }});
-      cached=putEnrichment(db,language,value,meaningLanguage,enrichment);
-    }catch(error){aiErrorCode=String(error.code||'AI_ERROR');}
-  }
+  let base=mergeMissingFields(local?.fields||{},dictionaryFields(cached.dictionary));
+  const sourced=await applyDataSources(db,cached,language,value,base,enricher);
+  cached=sourced.cached;base=sourced.fields;
+  const ai=await aiLast(db,provider,cached,language,meaningLanguage,value,base);
+  const fields=mergeMissingFields(base,enrichmentFields(ai.enrichment));
+  fields.source=sourceLabel(SOURCE,sourced.sources,ai.used);
   return {
-    status:'found',localHit:Boolean(local),cacheHit,aiCacheHit,aiConfigured:Boolean(provider?.configured),aiErrorCode,
-    fields:{...(local?.fields||{}),...dictionaryFields(cached.dictionary),...enrichmentFields(enrichment)},
+    status:'found',localHit:Boolean(local),cacheHit,aiCacheHit:ai.aiCacheHit,aiConfigured:Boolean(provider?.configured),
+    aiErrorCode:ai.aiErrorCode,aiSkipped:!provider?.configured||ai.aiCacheHit||!ai.missing.length,
+    fields,fieldSources:{...(cached.dictionary.fieldSources||{}),...sourced.fieldSources},
     lookupMeta:local?.lookupMeta||{},dictionary:{definitions:cached.dictionary.definitions,audioUrl:cached.dictionary.audioUrl,
       sourceUrls:cached.dictionary.sourceUrls,license:cached.dictionary.license},
-    source:enrichment?'ai-fallback':SOURCE,fetchedAt:cached.fetchedAt
+    source:ai.used?'ai-fallback':cached.source,fetchedAt:ai.cached.fetchedAt
   };
 }
 export const DICTIONARY_SOURCE={id:SOURCE,url:'https://dictionaryapi.dev/'};
