@@ -54,6 +54,7 @@ def edit_topics(page,meaning,names):
     row=page.locator(".word-row").filter(has_text=meaning).first
     row.locator('[data-action="edit"]').click()
     expect(page.locator("#word-form")).to_be_visible()
+    page.locator("#word-form details summary").filter(has_text="Chủ đề").click()
     for name in names:
         page.get_by_label(name,exact=True).check()
     page.locator('#word-form [type="submit"]').click()
