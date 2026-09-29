@@ -273,7 +273,7 @@ def main():
                 page.get_by_label("Tên chủ đề").fill("Agent flow")
                 page.get_by_role("button", name="Thêm chủ đề", exact=True).click()
                 page.get_by_role("button", name="Sửa thẻ", exact=True).click()
-                page.get_by_text("Chủ đề", exact=True).click()
+                page.locator("#word-form details summary").filter(has_text="Chủ đề").click()
                 page.get_by_label("Agent flow", exact=True).check()
                 page.get_by_role("button", name="Lưu", exact=True).click()
 
