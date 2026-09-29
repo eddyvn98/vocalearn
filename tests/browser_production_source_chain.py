@@ -16,7 +16,7 @@ def main():
         health=context.request.get(ORIGIN+"/api/health")
         assert health.status==200
         health_json=health.json()
-        assert health_json.get("commit")=="be21e116b4f583231177c020ffadfec3f33329e4",health_json
+        assert health_json.get("commit")=="42610bd86ddb08753795e495dfb7399200c33bde",health_json
 
         page=context.new_page()
         page.goto(ORIGIN,wait_until="networkidle")
