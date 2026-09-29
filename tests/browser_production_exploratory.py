@@ -108,17 +108,24 @@ def main():
             rows=page.locator(".word-row")
             assert rows.count()>=8
             row=rows.filter(has_text="deploy").first
-            row.get_by_role("button",name="Sửa thẻ").click()
+            edit_button=row.get_by_role("button",name="Sửa thẻ")
+            assert edit_button.inner_text().strip()==""
+            edit_button.click()
             expect(page.locator("#word-form")).to_be_visible()
+            expect(page.locator("#word-form")).to_have_class(re.compile(r"word-editor"))
             page.get_by_text("Trường bổ sung",exact=True).click()
-            page.get_by_label("Mẹo nhớ / ghi chú").fill("Manual QA note")
+            page.get_by_text("Từ vựng nâng cao",exact=True).click()
             page.get_by_label("Mức độ trang trọng").fill("trung tính")
+            page.get_by_text("Ghi chú & nguồn",exact=True).click()
+            page.get_by_label("Mẹo nhớ / ghi chú").fill("Manual QA note")
             page.get_by_role("button",name="Lưu",exact=True).click()
             expect(page.locator("dialog")).not_to_be_visible()
             row.get_by_role("button",name="Sửa thẻ").click()
             page.get_by_text("Trường bổ sung",exact=True).click()
-            expect(page.get_by_label("Mẹo nhớ / ghi chú")).to_have_value("Manual QA note")
+            page.get_by_text("Từ vựng nâng cao",exact=True).click()
             expect(page.get_by_label("Mức độ trang trọng")).to_have_value("trung tính")
+            page.get_by_text("Ghi chú & nguồn",exact=True).click()
+            expect(page.get_by_label("Mẹo nhớ / ghi chú")).to_have_value("Manual QA note")
             page.get_by_role("button",name="Đóng").click()
             return f"{rows.count()} thẻ"
 
@@ -132,6 +139,7 @@ def main():
             expect(page.locator("dialog")).not_to_be_visible()
             row=page.locator(".word-row").filter(has_text="deploy").first
             row.get_by_role("button",name="Sửa thẻ").click()
+            page.get_by_text("Chủ đề",exact=True).click()
             page.get_by_label("Manual QA",exact=True).check()
             page.get_by_role("button",name="Lưu",exact=True).click()
             page.locator('[data-action="scope"]').click()
