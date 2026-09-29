@@ -18,6 +18,7 @@ import {createJob,listJobs,retryJob,runDueJobs} from './ai-jobs.js';
 import {lookupWord,LOOKUP_SOURCES} from './lookups.js';
 import {autofillWord,DICTIONARY_SOURCE} from './dictionary-cache.js';
 import {createLocalLexicon,LOCAL_LEXICON_SOURCE} from './local-lexicon.js';
+import {createEnglishEnricher} from './english-enrichment.js';
 import {strokesFor,STROKE_SOURCES} from './strokes.js';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const resetDefaults={mode:'disabled',appOrigin:'http://localhost',providerUrl:'',providerToken:'',resendApiKey:'',resendFrom:'',ttlMs:30*60000};
@@ -36,10 +37,10 @@ function rejectOrigin(req,origin){
   if(supplied==='null')return fetchSite!=='same-origin';
   return Boolean(supplied&&supplied!==expected);
 }
-export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),lexicalDbPath='',secure=false,origin='',allowSignup=true,
+export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),lexicalDbPath='',englishDataDir=resolve(root,'data/english'),secure=false,origin='',allowSignup=true,
   limits={},reset={},ai={},aiProvider=null,logger=noopLogger}={}){
   const db=openDatabase(dbPath),configuredLimits={...DEFAULT_LIMITS,...limits},resetConfig={...resetDefaults,...reset};
-  const provider=aiProvider||createAiProvider(ai),lexicon=createLocalLexicon(lexicalDbPath);
+  const provider=aiProvider||createAiProvider(ai),lexicon=createLocalLexicon(lexicalDbPath),englishEnricher=createEnglishEnricher({dataDir:englishDataDir});
   if(lexicalDbPath&&!lexicon.available)logger.warn('lexical_store_unavailable',{message:lexicon.error||'unknown error'});
   const loadWord=(userId,wordId)=>{
     const word=replay(allEvents(db,userId)).words[wordId];if(!word)return null;
@@ -135,7 +136,7 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),lexica
         const word=String(url.searchParams.get('word')||'');
         if(language!=='en'||!['en','vi','zh','ja'].includes(meaningLanguage)||!word||word.length>100)
           return json(res,400,{error:'English word and meaning language required'});
-        return json(res,200,{result:await autofillWord(db,provider,{language,meaningLanguage,word},undefined,lexicon),
+        return json(res,200,{result:await autofillWord(db,provider,{language,meaningLanguage,word},undefined,lexicon,englishEnricher),
           source:lexicon.available?LOCAL_LEXICON_SOURCE:DICTIONARY_SOURCE});
       }
       if(path==='/api/media'&&req.method==='POST')return json(res,200,putMedia(db,user.id,await body(req,configuredLimits.maxRequestBytes)));
@@ -172,7 +173,7 @@ export function application({dbPath=resolve(root,'data/vocalearn.sqlite'),lexica
 if(process.argv[1]===fileURLToPath(import.meta.url)){
   try{process.loadEnvFile?.();}catch{}
   const config=loadConfig();
-  const server=application({dbPath:config.dbPath,lexicalDbPath:config.lexicalDbPath,secure:config.production,origin:config.appOrigin,
+  const server=application({dbPath:config.dbPath,lexicalDbPath:config.lexicalDbPath,englishDataDir:config.englishDataDir,secure:config.production,origin:config.appOrigin,
     allowSignup:config.allowSignup,limits:config.limits,reset:config.reset,ai:config.ai,logger:createLogger()});
   server.listen(config.port,config.host,()=>console.log(`VocaLearn: http://${config.host}:${config.port}`));
   process.on('SIGTERM',()=>server.close());process.on('SIGINT',()=>server.close());
