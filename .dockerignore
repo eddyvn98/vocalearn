@@ -1,7 +1,9 @@
 .git
 .env
 .env.*
-data
+data/*
+!data/english/
+!data/english/**
 node_modules
 test-results
 *.sqlite*
