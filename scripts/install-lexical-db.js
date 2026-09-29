@@ -36,4 +36,5 @@ async function main(){
   renameSync(temp,target);writeFileSync(marker,SHA256+'\n',{mode:0o644});ensureRuntimeReadable();
   console.log('Lexical DB installed:',target,statSync(target).size,'bytes');
 }
-// Exit explicitly so Railway can continue the chained startup command.\nmain().then(()=>process.exit(0)).catch(error=>{console.error(error.message);process.exit(1);});
+// Exit explicitly so Railway can continue the chained startup command.
+main().then(()=>process.exit(0)).catch(error=>{console.error(error.message);process.exit(1);});
