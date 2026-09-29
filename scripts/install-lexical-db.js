@@ -36,4 +36,4 @@ async function main(){
   renameSync(temp,target);writeFileSync(marker,SHA256+'\n',{mode:0o644});ensureRuntimeReadable();
   console.log('Lexical DB installed:',target,statSync(target).size,'bytes');
 }
-main().catch(error=>{console.error(error.message);process.exitCode=1;});
+main().then(()=>process.exit(0)).catch(error=>{console.error(error.message);process.exit(1);});
