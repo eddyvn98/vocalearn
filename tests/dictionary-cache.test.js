@@ -75,7 +75,7 @@ test('local lexicon stays primary while AI fills only missing advanced fields an
   }};
   const enricher={enrich:async()=>({fields:{
     variants:['confirms','confirmed','confirming'],collocations:['confirm receipt'],level:'B1'
-  },fieldSources:{variants:'rules',collocations:'corpus',level:'cefr'},sources:['CEFR-J','Datamuse']})};
+  },fieldSources:{variants:'vocalearn-morphology:v1',collocations:'datamuse:v1',level:'cefr-j:v1.5+octanove:v1.0'},sources:['CEFR-J','Morphology','Datamuse']})};
   const noExternalFetch=async()=>{fetchCalls++;throw new Error('external dictionary should not be called');};
   const first=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'confirm'},noExternalFetch,lexicon,enricher);
   assert.equal(fetchCalls,0);assert.equal(aiCalls,1);assert.equal(first.localHit,true);
@@ -84,11 +84,12 @@ test('local lexicon stays primary while AI fills only missing advanced fields an
   assert.deepEqual(first.fields.variants,['confirms','confirmed','confirming']);
   assert.deepEqual(first.fields.collocations,['confirm receipt']);
   assert.equal(first.fields.register,'neutral');assert.equal(first.fields.level,'B1');
-  assert.match(first.fields.source,/CEFR-J/);assert.match(first.fields.source,/Datamuse/);
+  assert.match(first.fields.source,/CEFR-J/);assert.match(first.fields.source,/Morphology/);assert.match(first.fields.source,/Datamuse/);
 
   const second=await autofillWord(db,provider,{language:'en',meaningLanguage:'vi',word:'confirm'},noExternalFetch,lexicon,enricher);
   assert.equal(fetchCalls,0);assert.equal(aiCalls,1);assert.equal(second.aiCacheHit,true);
   assert.deepEqual(second.fields.variants,['confirms','confirmed','confirming']);
+  assert.match(second.fields.source,/CEFR-J/);assert.match(second.fields.source,/Morphology/);assert.match(second.fields.source,/Datamuse/);
   db.close();
 });
 
