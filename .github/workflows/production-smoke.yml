@@ -49,7 +49,6 @@ jobs:
       - name: Run user-like exploratory journey against production
         run: python tests/browser_production_exploratory.py
       - name: Verify shared dictionary autofill after deploy
-        if: github.event_name == 'push' && github.run_attempt > 1
         run: python tests/browser_production_autofill.py
       - uses: actions/upload-artifact@v4
         if: always()
