@@ -59,13 +59,7 @@ export function libraryView() {
   app.selectedCards=app.selectedCards||new Set();
   const list=filtered(),selectedCount=app.selectedCards.size;
   return shell(`<header class="page-heading row between wrap"><div><span class="eyebrow">${esc(app.model.sets[app.setId]?.name)}</span><h1 tabindex="-1">${t(app.page==='errors'?'errors':'library')}</h1></div>${button(`${icon('tag')}${t('chooseScope')}`,'scope','quiet')}</header>
-  <div class="row wrap toolbar library-toolbar"><input id="search" type="search" class="search" placeholder="${t('search')}" aria-label="${t('search')}" value="${esc(app.query)}"><div class="row toolbar-icons library-actions">${button(`${icon('plus')}${t('add')}`,'add','primary')}${button(`${icon('tag')}${t('topics')}`,'topics')}
-    <details class="toolbar-menu"><summary class="btn icon-button" aria-label="Thêm thao tác" title="Thêm thao tác">${icon('more')}</summary><div class="toolbar-menu-popover">
-      ${button(`${icon('sliders')}<span>${t('customFields')}</span>`,'customFields','quiet')}
-      ${button(`${icon('upload')}<span>${t('import')}</span>`,'import','quiet')}
-      ${button(`${icon('database')}<span>Tài nguyên</span>`,'offlineResources','quiet')}
-      ${button(`${icon('trash')}<span>${t('deleted')}</span>`,'trash','quiet danger')}
-    </div></details>${iconButton('Xuất Excel','export','download','quiet library-export')}</div></div>
+  <div class="row wrap toolbar library-toolbar"><input id="search" type="search" class="search" placeholder="${t('search')}" aria-label="${t('search')}" value="${esc(app.query)}"><div class="row toolbar-icons library-actions">${button(`${icon('plus')}${t('add')}`,'add','primary')}${button(`${icon('tag')}${t('topics')}`,'topics')}${iconButton(t('customFields'),'customFields','sliders','quiet')}${iconButton(t('import'),'import','upload','quiet')}${iconButton('Xuất Excel','export','download','quiet library-export')}${iconButton('Tài nguyên','offlineResources','database','quiet')}${iconButton(t('deleted'),'trash','trash','quiet danger')}</div></div>
   <div class="tabs">${['all','due','new','learning','waiting','errors'].map(f=>button(t(f),'filter',app.filter===f?'active':'',`data-filter="${f}" aria-pressed="${app.filter===f}"`)).join('')}</div>
   ${selectedCount?`<section class="resume row between wrap"><div><strong>${selectedCount} thẻ đã chọn</strong></div><div class="row wrap">${iconButton(t('topics'),'bulkTopic','tag')}${iconButton('Chuyển chủ đề','moveCardTopic','arrow')}${iconButton('Đặt lại lịch','bulkReset','refresh')}${iconButton('Xóa','bulkDelete','trash','danger')}${iconButton('Bỏ chọn','clearSelect','x','quiet')}</div></section>`:''}
   <div class="row between items-center sub-toolbar"><small class="muted">${list.length} thẻ</small>${list.length?button(selectedCount===list.length?'Bỏ chọn tất cả':t('selectVisible'),'toggleSelectAll','quiet small'):''}</div>
