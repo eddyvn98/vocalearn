@@ -84,7 +84,10 @@ def create_target_set(page):
 
 
 def preview_xlsx(page, xlsx):
-    page.locator('[data-action="import"]').click()
+    import_action = page.locator('[data-action="import"]')
+    if not import_action.is_visible():
+        page.locator(".toolbar-menu > summary").click()
+    import_action.click()
     expect(page.locator("dialog")).to_be_visible()
     page.locator("#import-file").set_input_files(
         {
