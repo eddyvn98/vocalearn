@@ -18,15 +18,17 @@ function editorReadiness(form=document.querySelector('#word-form')) {
   const hasImage=!!(media.image||editing?.image);
   const ready=!!(word&&(meaning||ipa||hasImage));
   return ready
-    ?{ready:true,title:'Sẵn sàng học',detail:'Thẻ đã có đủ nội dung tối thiểu để đưa vào lịch học.'}
-    :{ready:false,title:'Chờ bổ sung',detail:word?'Thêm nghĩa, phiên âm hoặc hình ảnh để thẻ có thể học.':'Nhập từ hoặc cụm từ trước, sau đó bổ sung nghĩa, phiên âm hoặc hình ảnh.'};
+    ?{visible:true,ready:true,title:'Sẵn sàng học',detail:'Đủ nội dung tối thiểu để học.'}
+    :{visible:!!word||!!editing,ready:false,title:'Chờ bổ sung',detail:'Thêm nghĩa, phiên âm hoặc hình ảnh.'};
 }
 export function updateEditorReadiness() {
   const el=document.querySelector('[data-role="editor-readiness"]');
   if(!el)return;
   const state=editorReadiness();
+  el.hidden=!state.visible;
+  if(!state.visible)return;
   el.classList.toggle('waiting',!state.ready);
-  el.innerHTML=`<span aria-hidden="true">${state.ready?'✓':'!'}</span><div><strong>${state.title}</strong><p class="small">${state.detail}</p></div>`;
+  el.innerHTML=`<span aria-hidden="true">${state.ready?'✓':'!'}</span><span><strong>${state.title}</strong> · ${state.detail}</span>`;
 }
 
 function customInputs(w) {
@@ -99,16 +101,15 @@ export function openEditor(id) {
   const wordLabel=['zh','ja'].includes(profile?.id)?'wordGeneric':'word';
   const strokePanel=['zh','ja'].includes(profile?.id)?`<section class="editor-inline-panel stack editor-span-2"><div class="row between"><strong>${t('strokeResources')}</strong>${iconButton(t('loadStrokeData'),'loadStrokeData','database','quiet')}</div><p id="stroke-status" class="muted small">${strokeDraft?esc(strokeDraft.source+' · '+strokeDraft.version+' · '+strokeDraft.license+(strokeDraft.missing?.length?' · '+t('missingStrokeData')+': '+strokeDraft.missing.join(' '):'')):t('strokeResourcesHelp')}</p></section>`:'';
   const autoAttrs=profile?.id==='en'&&!editing?` data-auto-autofill="true" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`:'';
-  const autofill=profile?.id==='en'?`<div class="editor-autofill row wrap">${button(t('autofillWord'),'autofillWord','quiet small',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)}<p id="autofill-status" class="muted small" aria-live="polite"></p></div>`:'';
-  modal(t(editing?'edit':'add'),`<form id="word-form" class="stack word-editor"${autoAttrs}>
+  const autofill=profile?.id==='en'?`<div class="editor-autofill row wrap">${button(editing?'Tự điền lại':'Tự điền','autofillWord','quiet small editor-text-action',`data-language="en" data-meaning-language="${esc(app.model.sets[app.setId]?.meaningLanguage||'vi')}"`)}<p id="autofill-status" class="muted small" aria-live="polite"></p></div>`:'';
+  modal(t(editing?'edit':'add'),`<form id="word-form" class="word-editor"${autoAttrs}>
   <div class="editor-grid editor-core">
-    <div class="editor-span-2">${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}</div>
+    <div class="editor-span-2 editor-word-block">${field(wordLabel,'word',w.word,'required maxlength="100" autocomplete="off"')}${autofill}</div>
     <div class="editor-span-2">${field('meaning','meaning',w.meaning,'maxlength="2000"')}</div>
     ${field('pos','pos',w.pos,'maxlength="100"')}
     ${coreReading}
   </div>
-  ${autofill}
-  <section class="editor-readiness waiting" data-role="editor-readiness" aria-live="polite"></section>
+  <section class="editor-readiness waiting" data-role="editor-readiness" aria-live="polite" hidden></section>
   ${editing?`<section id="ai-panel" class="editor-ai-inline stack" data-word-id="${editing.id}"><p class="muted">${t('aiLoading')}</p></section>`:''}
   <details class="editor-plain-details topics-block">
     <summary><span>${t('topics')}</span><span class="editor-summary-value">${esc(selectedTopicText)}</span></summary>
@@ -164,8 +165,8 @@ export function openEditor(id) {
   ${editing?`<label class="editor-identity">${t('changeMeaning')}<select name="identity"><option value="copy">${t('createCopy')}</option><option value="reset">${t('resetProgress')}</option></select></label>`:''}
   ${w.errors?.inBook?`<section class="editor-inline-panel" data-role="error-book-evidence"><p>${w.errors.failures} ${t('mistakes')} · ${w.errors.evidence.length}/2 ${t('evidence')}</p><p class="muted small">${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p class="muted small">${t(e.game)} · ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
   <div class="editor-actions row between">
-    ${editing?iconButton(t('delete'),'deleteWord','trash','danger',`data-id="${editing.id}"`):'<span></span>'}
-    <button type="submit" class="btn primary">${t('save')}</button>
+    <div>${editing?iconButton(t('delete'),'deleteWord','trash','danger',`data-id="${editing.id}"`):''}</div>
+    <div class="row editor-save-actions">${button('Hủy','cancelEditor','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div>
   </div></form>`);
   hydrateMedia(document.querySelector('#modal')).catch(()=>{});
   updateSentencePreview();updateEditorReadiness();if(editing)refreshAiPanel(editing.id);
