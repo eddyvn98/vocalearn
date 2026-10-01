@@ -99,3 +99,8 @@ Feature-merge evidence on `52be1fc6ce25c23347162e08039e7516b823d4bd`:
 - Production web smoke run `36323372832`: **SUCCESS** on the feature merge. The final documentation/release-gate commit is re-verified separately before issue #77 closes.
 
 Physical-device evidence is not fabricated. Issue #84 remains open for real device/browser ASR, pen and palm-rejection certification. Until a combination is explicitly verified, Speak stays hidden for that combination and no palm-rejection claim is made.
+
+
+## Compact word-editor UI update (2026-10-01)
+
+The Add/Edit word modal was flattened and compacted on main after PR #109. Primary word/meaning inputs now use compact single-line sizing, part-of-speech and pronunciation stay dense, autofill no longer overlaps adjacent fields, readiness is an inline status, Topic/Additional fields collapse to single rows, and the footer uses clear Cancel/Save actions. Browser regression includes geometry checks for modal width, field height, collapsed-row height, overlap and horizontal overflow. This changes presentation only; learning, grading, storage and sync semantics are unchanged.
