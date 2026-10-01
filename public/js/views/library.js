@@ -1,5 +1,5 @@
 import {app,words} from '../state.js';
-import {button,iconButton,t,esc,badge} from '../ui.js';
+import {button,iconButton,icon,t,esc,badge} from '../ui.js';
 import {isDue} from '/core/time.js';
 import {categoryPath} from '/core/model.js';
 import {scoped} from './home.js';
