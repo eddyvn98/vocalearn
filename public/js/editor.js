@@ -228,11 +228,13 @@ export async function mediaFile(file,type) {
   if(type==='image'){
     document.querySelector('#media-image').innerHTML=mediaImage(ref);
     await hydrateMedia(document.querySelector('#media-image'));
+    updateEditorReadiness();
   } else document.querySelector('#audio-status').textContent=file.name+' · '+t('saved');
 }
 export function clearMedia(type) {
   media[type]='';app.dirty=true;
   document.querySelector(type==='image'?'#media-image':'#audio-status').textContent='';
+  if(type==='image')updateEditorReadiness();
 }
 export async function deleteWord(id) {
   if(!confirm(t('confirmDelete')))return;
