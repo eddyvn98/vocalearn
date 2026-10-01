@@ -166,7 +166,7 @@ export function openEditor(id) {
   ${w.errors?.inBook?`<section class="editor-inline-panel" data-role="error-book-evidence"><p>${w.errors.failures} ${t('mistakes')} · ${w.errors.evidence.length}/2 ${t('evidence')}</p><p class="muted small">${t('evidenceHelp')}</p>${w.errors.evidence.map(e=>`<p class="muted small">${t(e.game)} · ${new Date(e.at).toLocaleString('vi-VN')}</p>`).join('')}</section>`:''}
   <div class="editor-actions row between">
     <div>${editing?iconButton(t('delete'),'deleteWord','trash','danger',`data-id="${editing.id}"`):''}</div>
-    <div class="row editor-save-actions">${button('Hủy','close','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div>
+    <div class="row editor-save-actions">${button('Hủy','cancelEditor','quiet')}<button type="submit" class="btn primary">${t('save')}</button></div>
   </div></form>`);
   hydrateMedia(document.querySelector('#modal')).catch(()=>{});
   updateSentencePreview();updateEditorReadiness();if(editing)refreshAiPanel(editing.id);
