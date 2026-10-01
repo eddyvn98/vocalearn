@@ -6,15 +6,17 @@
 
 @media(max-width:720px){
   .toolbar{gap:10px}.toolbar-icons{width:100%;justify-content:flex-end;gap:7px}.toolbar-icons .icon-button{min-height:44px}
-  #modal:has(.word-editor){width:min(98vw,680px)}
-  .word-editor .editor-grid{grid-template-columns:1fr;gap:11px}
-  .word-editor .editor-span-2{grid-column:1}
-  .editor-reading-field{grid-template-columns:minmax(0,1fr) auto}
-  .editor-autofill{align-items:flex-start}.editor-autofill #autofill-status{min-width:0}
-  .editor-plain-details>summary{min-height:46px;grid-template-columns:auto minmax(0,1fr)}
-  .editor-summary-value{max-width:68%}
+  #modal:has(.word-editor){width:min(96vw,640px);padding:16px 16px 0}
+  .word-editor .editor-grid{grid-template-columns:1fr;gap:8px}
+  .word-editor .editor-core{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:8px 10px}
+  .word-editor .editor-core .editor-span-2{grid-column:1/-1}
+  .word-editor .editor-core>label,.editor-reading-field{min-width:0}
+  .editor-reading-field{grid-template-columns:minmax(0,1fr) 44px}
+  .editor-autofill{align-items:center}.editor-autofill #autofill-status{min-width:0}
+  .editor-plain-details>summary{min-height:44px;grid-template-columns:auto minmax(0,1fr)}
+  .editor-summary-value{max-width:64%}
   .compact-fieldset{grid-template-columns:1fr}
-  .editor-actions{padding-bottom:max(4px,env(safe-area-inset-bottom))}
+  .editor-actions{padding-bottom:max(10px,env(safe-area-inset-bottom))}.editor-save-actions{flex-wrap:nowrap}
 }
 
 
@@ -41,7 +43,7 @@
   .word-primary{grid-column:1}.word-meaning{grid-column:1;grid-row:2}.word-topic{display:block;grid-column:1;grid-row:3;white-space:nowrap}.word-status{grid-column:1;grid-row:4}.word-due{display:none}.word-row>.icon-button{grid-column:2;grid-row:1/5}.word-row>.error-evidence{grid-column:1/-1}
   .summary .metrics{grid-template-columns:1fr 1fr}.summary .metric{display:grid;text-align:left}.summary .metric.is-zero{display:none}
   .question-panel{margin-top:18px}.feedback{position:relative}.feedback .row:last-child{gap:10px}
-  .editor-readiness{padding:11px 12px}
+  .editor-readiness{padding:1px 2px 3px}
 }
 @media(max-width:360px){
   .set-switcher small{display:none}.set-switcher>span{max-width:120px}.summary .metrics{grid-template-columns:1fr}
