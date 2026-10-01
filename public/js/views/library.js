@@ -46,7 +46,7 @@ export function rows() {
     return `<article class="word-row ${app.selectedCards.has(w.id)?'selected':''}">
       <div class="row word-primary"><label class="card-select-target"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id)?'checked':''} aria-label="Chọn ${esc(w.word)}"></label><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div>
       <p class="word-meaning">${esc(w.meaning||t('waiting'))}</p>
-      <p class="word-topic muted small" title="${esc(topics)}">${esc(topics)}</p>
+      <small class="word-topic muted" title="${esc(topics)}">${esc(topics)}</small>
       <div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.errors.inBook?`<small>${esc(evidenceHint(w))}</small>`:''}</div>
       <small class="word-due muted">${esc(due)}</small>
       ${iconButton(t('edit'),'edit','edit','quiet',`data-id="${w.id}"`)}
