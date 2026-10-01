@@ -104,3 +104,5 @@ Physical-device evidence is not fabricated. Issue #84 remains open for real devi
 ## Compact word-editor UI update (2026-10-01)
 
 The Add/Edit word modal was flattened and compacted on main after PR #109. Primary word/meaning inputs now use compact single-line sizing, part-of-speech and pronunciation stay dense, autofill no longer overlaps adjacent fields, readiness is an inline status, Topic/Additional fields collapse to single rows, and the footer uses clear Cancel/Save actions. Browser regression includes geometry checks for modal width, field height, collapsed-row height, overlap and horizontal overflow. This changes presentation only; learning, grading, storage and sync semantics are unchanged.
+
+Deployment note: the production source deploy for this UI release was re-triggered after the prior queued deployment was superseded; release verification remains tied to terminal Railway status.
