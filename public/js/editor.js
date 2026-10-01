@@ -11,6 +11,24 @@ import {refreshAiPanel} from './ai-client.js';
 import {beginLookupDraft,lookupMetaForSave} from './lookups.js';
 let editing=null,media={},strokeDraft=null;
 const listValue=value=>(value||[]).join(', ');
+function editorReadiness(form=document.querySelector('#word-form')) {
+  const word=String(form?.elements.word?.value??editing?.word??'').trim();
+  const meaning=String(form?.elements.meaning?.value??editing?.meaning??'').trim();
+  const ipa=String(form?.elements.ipa?.value??editing?.ipa??'').trim();
+  const hasImage=!!(media.image||editing?.image);
+  const ready=!!(word&&(meaning||ipa||hasImage));
+  return ready
+    ?{ready:true,title:'Sẵn sàng học',detail:'Thẻ đã có đủ nội dung tối thiểu để đưa vào lịch học.'}
+    :{ready:false,title:'Chờ bổ sung',detail:word?'Thêm nghĩa, phiên âm hoặc hình ảnh để thẻ có thể học.':'Nhập từ hoặc cụm từ trước, sau đó bổ sung nghĩa, phiên âm hoặc hình ảnh.'};
+}
+export function updateEditorReadiness() {
+  const el=document.querySelector('[data-role="editor-readiness"]');
+  if(!el)return;
+  const state=editorReadiness();
+  el.classList.toggle('waiting',!state.ready);
+  el.innerHTML=`<span aria-hidden="true">${state.ready?'✓':'!'}</span><div><strong>${state.title}</strong><p class="small">${state.detail}</p></div>`;
+}
+
 function customInputs(w) {
   const defs=app.model.sets[app.setId]?.customFields||[],values=w.custom||{};
   return defs.map(def=>{
@@ -90,6 +108,7 @@ export function openEditor(id) {
     ${coreReading}
   </div>
   ${autofill}
+  <section class="editor-readiness waiting" data-role="editor-readiness" aria-live="polite"></section>
   ${editing?`<section id="ai-panel" class="editor-ai-inline stack" data-word-id="${editing.id}"><p class="muted">${t('aiLoading')}</p></section>`:''}
   <details class="editor-plain-details topics-block">
     <summary><span>${t('topics')}</span><span class="editor-summary-value">${esc(selectedTopicText)}</span></summary>
@@ -149,7 +168,7 @@ export function openEditor(id) {
     <button type="submit" class="btn primary">${t('save')}</button>
   </div></form>`);
   hydrateMedia(document.querySelector('#modal')).catch(()=>{});
-  updateSentencePreview();if(editing)refreshAiPanel(editing.id);
+  updateSentencePreview();updateEditorReadiness();if(editing)refreshAiPanel(editing.id);
 }
 export async function saveWord(form) {
   const f=new FormData(form),list=name=>String(f.get(name)||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -209,11 +228,13 @@ export async function mediaFile(file,type) {
   if(type==='image'){
     document.querySelector('#media-image').innerHTML=mediaImage(ref);
     await hydrateMedia(document.querySelector('#media-image'));
+    updateEditorReadiness();
   } else document.querySelector('#audio-status').textContent=file.name+' · '+t('saved');
 }
 export function clearMedia(type) {
   media[type]='';app.dirty=true;
   document.querySelector(type==='image'?'#media-image':'#audio-status').textContent='';
+  if(type==='image')updateEditorReadiness();
 }
 export async function deleteWord(id) {
   if(!confirm(t('confirmDelete')))return;

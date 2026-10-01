@@ -1,6 +1,7 @@
 import {app,words} from '../state.js';
-import {button,iconButton,t,esc,badge} from '../ui.js';
+import {button,iconButton,icon,t,esc,badge} from '../ui.js';
 import {isDue} from '/core/time.js';
+import {categoryPath} from '/core/model.js';
 import {scoped} from './home.js';
 import {shell} from './shell.js';
 export function filtered() {
@@ -33,21 +34,37 @@ function errorDetails(w,now=Date.now()) {
     <p class="muted small">${t('errorExitRule')}</p><p class="muted small">${t('resetKeepsErrorHistory')}</p>
   </details>`;
 }
+function topicText(w) {
+  const names=(w.categoryIds||[]).map(id=>app.model.categories[id]?.name).filter(Boolean);
+  return names.join(' · ')||t('uncategorized');
+}
 export function rows() {
-  app.selectedCards = app.selectedCards || new Set();
-  const list = filtered();
-  return list.map(w => `<article class="word-row ${app.selectedCards.has(w.id) ? 'selected' : ''}"><div class="row items-center"><label class="card-select-target"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id) ? 'checked' : ''} aria-label="Chọn ${esc(w.word)}"></label><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div><p>${esc(w.meaning||t('waiting'))}</p><div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.review.dueDate?`<small>${esc(w.review.dueDate)}</small>`:''}${w.errors.inBook?`<small>${esc(evidenceHint(w))}</small>`:''}</div>${app.page==='errors'?errorDetails(w):''}${iconButton(t('edit'),'edit','edit','quiet',`data-id="${w.id}"`)}</article>`).join('') || `<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
+  app.selectedCards=app.selectedCards||new Set();
+  const list=filtered();
+  return list.map(w=>{
+    const topics=topicText(w),due=w.review.dueDate||'—';
+    return `<article class="word-row ${app.selectedCards.has(w.id)?'selected':''}">
+      <div class="row word-primary"><label class="card-select-target"><input type="checkbox" class="card-select" data-action="toggleSelect" data-id="${w.id}" ${app.selectedCards.has(w.id)?'checked':''} aria-label="Chọn ${esc(w.word)}"></label><div><h3>${esc(w.word)}</h3><small class="muted">${esc(w.pos||'')} ${esc(w.ipa||'')}</small></div></div>
+      <p class="word-meaning">${esc(w.meaning||t('waiting'))}</p>
+      <small class="word-topic muted" title="${esc(topics)}">${esc(topics)}</small>
+      <div class="word-status">${badge(t(!w.ready?'waiting':w.review.phase==='review'?'reviewing':w.review.phase))}${w.errors.inBook?badge(t(w.errors.persistent?'persistent':'errors'),'warn'):''}${w.errors.inBook?`<small>${esc(evidenceHint(w))}</small>`:''}</div>
+      <small class="word-due muted">${esc(due)}</small>
+      ${iconButton(t('edit'),'edit','edit','quiet',`data-id="${w.id}"`)}
+      ${app.page==='errors'?errorDetails(w):''}
+    </article>`;
+  }).join('')||`<div class="empty"><h2>${t('noResults')}</h2>${button(t('clear'),'clearFilter')}</div>`;
 }
 
 export function libraryView() {
-  app.selectedCards = app.selectedCards || new Set();
-  const list = filtered();
-  const selectedCount = app.selectedCards.size;
-  return shell(`<header class="page-heading row between wrap"><div><span class="eyebrow">${esc(app.model.sets[app.setId]?.name)}</span><h1 tabindex="-1">${t(app.page==='errors'?'errors':'library')}</h1></div>${iconButton(t('chooseScope'),'scope','tag','quiet')}</header>
-  <div class="row wrap toolbar"><input id="search" type="search" class="search" placeholder="${t('search')}" aria-label="${t('search')}" value="${esc(app.query)}"><div class="row toolbar-icons">${iconButton(t('add'),'add','plus','primary')}${iconButton(t('topics'),'topics','tag')}${iconButton(t('customFields'),'customFields','sliders')}${iconButton('Xuất Excel','export','download')}${iconButton('Tài nguyên','offlineResources','database','quiet')}</div></div>
+  app.selectedCards=app.selectedCards||new Set();
+  const list=filtered(),selectedCount=app.selectedCards.size;
+  return shell(`<header class="page-heading row between wrap"><div><span class="eyebrow">${esc(app.model.sets[app.setId]?.name)}</span><h1 tabindex="-1">${t(app.page==='errors'?'errors':'library')}</h1></div>${button(`${icon('tag')}${t('chooseScope')}`,'scope','quiet')}</header>
+  <div class="row wrap toolbar library-toolbar"><input id="search" type="search" class="search" placeholder="${t('search')}" aria-label="${t('search')}" value="${esc(app.query)}"><div class="row toolbar-icons library-actions">${button(`${icon('plus')}${t('add')}`,'add','primary')}${button(`${icon('tag')}${t('topics')}`,'topics')}${iconButton(t('customFields'),'customFields','sliders','quiet')}${iconButton(t('import'),'import','upload','quiet')}${iconButton('Xuất Excel','export','download','quiet library-export')}${iconButton('Tài nguyên','offlineResources','database','quiet')}${iconButton(t('deleted'),'trash','trash','quiet danger')}</div></div>
   <div class="tabs">${['all','due','new','learning','waiting','errors'].map(f=>button(t(f),'filter',app.filter===f?'active':'',`data-filter="${f}" aria-pressed="${app.filter===f}"`)).join('')}</div>
-  ${selectedCount ? `<section class="resume row between wrap"><div><strong>${selectedCount} thẻ đã chọn</strong></div><div class="row wrap">${iconButton(t('topics'),'bulkTopic','tag')}${iconButton('Chuyển chủ đề','moveCardTopic','arrow')}${iconButton('Đặt lại lịch','bulkReset','refresh')}${iconButton('Xóa','bulkDelete','trash','danger')}${iconButton('Bỏ chọn','clearSelect','x','quiet')}</div></section>` : ''}
-  <div class="row between items-center sub-toolbar"><small class="muted">${list.length} thẻ</small>${list.length ? button(selectedCount === list.length ? 'Bỏ chọn tất cả' : t('selectVisible'), 'toggleSelectAll', 'quiet small') : ''}</div>
-  ${app.page==='errors'?`<section class="resume"><p>${t('evidenceHelp')}</p>${button(t('free'),'setupErrors','primary')}</section>`:''}<div id="word-rows" class="word-list">${rows()}</div>
-  <div class="row wrap foot-actions">${iconButton(t('import'),'import','upload')}${!words().length?button(t('loadSamples'),'samples'):''}${iconButton(t('deleted'),'trash','trash','quiet')}</div>`);
+  ${selectedCount?`<section class="resume row between wrap"><div><strong>${selectedCount} thẻ đã chọn</strong></div><div class="row wrap">${iconButton(t('topics'),'bulkTopic','tag')}${iconButton('Chuyển chủ đề','moveCardTopic','arrow')}${iconButton('Đặt lại lịch','bulkReset','refresh')}${iconButton('Xóa','bulkDelete','trash','danger')}${iconButton('Bỏ chọn','clearSelect','x','quiet')}</div></section>`:''}
+  <div class="row between items-center sub-toolbar"><small class="muted">${list.length} thẻ</small>${list.length?button(selectedCount===list.length?'Bỏ chọn tất cả':t('selectVisible'),'toggleSelectAll','quiet small'):''}</div>
+  ${app.page==='errors'?`<section class="resume"><p>${t('evidenceHelp')}</p>${button(t('free'),'setupErrors','primary')}</section>`:''}
+  <div class="word-list-head" aria-hidden="true"><span>Từ</span><span>Nghĩa</span><span>Chủ đề</span><span>Trạng thái</span><span>Đến hạn</span><span></span></div>
+  <div id="word-rows" class="word-list">${rows()}</div>
+  ${!words().length?`<div class="foot-actions">${button(t('loadSamples'),'samples')}</div>`:''}`);
 }

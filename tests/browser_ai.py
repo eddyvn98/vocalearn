@@ -93,7 +93,7 @@ def main():
                 expect(page.locator("#word-form")).not_to_be_visible()
                 row=page.locator(".word-row").filter(has_text="deploy")
                 expect(row).to_be_visible(timeout=5000)
-                expect(row.locator("p")).to_have_text("triển khai")
+                expect(row.locator(".word-meaning")).to_have_text("triển khai")
                 assert not errors,repr(errors)
                 browser.close()
                 print("PASS: Phase-2 AI jobs protect editor flow and explicit meaning choice")

@@ -12,7 +12,7 @@ export function settings() {
   <label class="check-label"><input type="checkbox" name="reminderPrimary" ${primary?'checked':''}>${t('reminderPrimary')}</label>
   <p class="muted small">${t('reminderHelp')} ${t('notificationStatus')}: ${permission}.</p>
   <details><summary>${t('advanced')}</summary><div class="stack"><label>Hard multiplier<input type="number" name="hardFactor" step="0.1" min="1" max="3" value="${s.hardFactor}"></label><label>Easy multiplier<input type="number" name="easyFactor" step="0.1" min="1" max="3" value="${s.easyFactor}"></label><label>Easy threshold (ms)<input type="number" name="easyMs" min="1000" max="120000" value="${s.easyMs}"></label></div></details>
-  <div class="row between"><button type="submit" class="btn primary">${t('save')}</button>${button(t('logout'),'logout','danger')}</div></form><p class="muted small">${esc(app.user.email)} \u00b7 ${t('onlyLocal')}</p>`);
+  <div class="row between"><button type="submit" class="btn primary">${t('save')}</button>${button(t('logout'),'logout','danger')}</div></form><p class="muted small">${esc(app.user.email)} · VocaLearn 0.1.0 · ${t('onlyLocal')}</p>`);
 }
 export async function saveSettings(form) {
   const f=new FormData(form),oldZone=app.model.settings.zone,zone=f.get('zone');

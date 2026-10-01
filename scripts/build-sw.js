@@ -19,3 +19,4 @@ self.addEventListener('fetch',event=>{
 });
 `;
 await writeFile('public/sw.js',code);
+console.log(`Built offline cache vocalearn-0.1.0-${digest}`);

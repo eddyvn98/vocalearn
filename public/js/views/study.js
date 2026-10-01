@@ -91,7 +91,7 @@ function matchView() {
   ${done===s.queue.length?button(t('results'),'finish','primary'):''}</section></main>`;
 }
 function summaryMetric(value,label){
-  return `<div class="metric" data-summary-metric="${esc(label)}"><strong>${value}</strong><span>${t(label)}</span></div>`;
+  return `<div class="metric ${value===0?'is-zero':''}" data-summary-metric="${esc(label)}"><strong>${value}</strong><span>${t(label)}</span></div>`;
 }
 export function resultsView() {
   const s=app.session,now=Date.now(),summary=buildSessionSummary(s,app.model,pendingCount(),now);
@@ -108,7 +108,7 @@ export function resultsView() {
       ${summaryMetric(summary.enteredErrorBook,'enteredErrorBook')}
       ${summaryMetric(summary.leftErrorBook,'leftErrorBook')}
     </div>
-    <p class="muted small">${summary.answered} ${t('answered')} · ${summary.clean} ${t('clean')} · ${summary.mistakes} ${t('mistakes')}</p>
+    <p class="muted small summary-detail">${summary.answered} ${t('answered')} · ${summary.clean} ${t('clean')} · ${summary.mistakes} ${t('mistakes')}</p>
     ${pending.length?`<section class="info"><strong>${pending.length} ${t('pendingLearning')}</strong>
       ${pending.map(item=>`<p>${esc(item.word)} · ${t(item.phase)} · ${t('step')} ${Number(item.step)+1}${item.dueAt?` · ${new Date(item.dueAt).toLocaleString('vi-VN',{timeZone:app.model.settings.zone})}`:''}</p>`).join('')}
       ${next?`<p class="muted small">${t('nextAt')} ${new Date(next.dueAt).toLocaleString('vi-VN',{timeZone:app.model.settings.zone})}</p>`:''}

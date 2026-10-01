@@ -17,7 +17,15 @@ const paths={book:'M4 4h6a3 3 0 0 1 2 1 3 3 0 0 1 2-1h6v15h-6a3 3 0 0 0-2 1 3 3 
  refresh:'M20 7v5h-5 M4 17v-5h5 M18 10a7 7 0 0 0-12-3 M6 14a7 7 0 0 0 12 3',
  search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14 M16 16l5 5',x:'M6 6l12 12 M18 6 6 18',
  sparkles:'M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15z',
- eraser:'M4 16l8-8 6 6-6 6H8l-4-4z M11 20h9',folder:'M3 7h7l2 2h9v10H3V7z'};
+ eraser:'M4 16l8-8 6 6-6 6H8l-4-4z M11 20h9',folder:'M3 7h7l2 2h9v10H3V7z',
+ more:'M5 12h.01 M12 12h.01 M19 12h.01',
+ shuffle:'M4 7h3c5 0 5 10 10 10h3 M17 14l3 3-3 3 M4 17h3c2 0 3-1 4-3 M13 10c1-2 2-3 4-3h3 M17 4l3 3-3 3',
+ cards:'M6 4h11a2 2 0 0 1 2 2v12H8a2 2 0 0 1-2-2V4z M4 7v11a2 2 0 0 0 2 2h10',
+ help:'M9.5 9a2.7 2.7 0 1 1 4.7 1.8c-1.6 1.1-2.2 1.6-2.2 3.2 M12 18h.01 M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18',
+ swap:'M4 8h13 m-3-3 3 3-3 3 M20 16H7 m3-3-3 3 3 3',
+ keyboard:'M3 6h18v12H3z M6 10h.01 M9 10h.01 M12 10h.01 M15 10h.01 M18 10h.01 M7 14h10',
+ volume:'M5 10v4h3l4 4V6L8 10H5z M16 9a4 4 0 0 1 0 6 M18 6a8 8 0 0 1 0 12',
+ type:'M5 5h14 M12 5v14 M8 19h8'};
 export const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="${paths[name]||paths.arrow}"/></svg>`;
 export const brand=()=>`<div class="brand"><span class="brand-mark">${icon('book')}</span>VocaLearn</div>`;
 export function notify(text,error=false) {
