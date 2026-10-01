@@ -13,8 +13,8 @@
   .word-editor .editor-core>label,.editor-reading-field{min-width:0}
   .editor-reading-field{grid-template-columns:minmax(0,1fr) 44px}
   .editor-autofill{align-items:center}.editor-autofill #autofill-status{min-width:0}
-  .editor-plain-details>summary{min-height:44px;grid-template-columns:auto minmax(0,1fr) auto}
-  .editor-summary-value{max-width:64%}
+  .editor-plain-details>summary{grid-template-columns:18px minmax(0,1fr) minmax(0,45%)}
+  .editor-summary-value{max-width:none}
   .compact-fieldset{grid-template-columns:1fr}
   .editor-actions{padding-bottom:max(10px,env(safe-area-inset-bottom))}.editor-save-actions{flex-wrap:nowrap}
 }
