@@ -66,7 +66,7 @@ export function libraryView() {
       ${button(`${icon('download')}<span>Xuất Excel</span>`,'export','quiet')}
       ${button(`${icon('database')}<span>Tài nguyên</span>`,'offlineResources','quiet')}
       ${button(`${icon('trash')}<span>${t('deleted')}</span>`,'trash','quiet danger')}
-    </div></details></div></div>
+    </div></details>${iconButton('Xuất Excel','export','download','quiet library-export')}</div></div>
   <div class="tabs">${['all','due','new','learning','waiting','errors'].map(f=>button(t(f),'filter',app.filter===f?'active':'',`data-filter="${f}" aria-pressed="${app.filter===f}"`)).join('')}</div>
   ${selectedCount?`<section class="resume row between wrap"><div><strong>${selectedCount} thẻ đã chọn</strong></div><div class="row wrap">${iconButton(t('topics'),'bulkTopic','tag')}${iconButton('Chuyển chủ đề','moveCardTopic','arrow')}${iconButton('Đặt lại lịch','bulkReset','refresh')}${iconButton('Xóa','bulkDelete','trash','danger')}${iconButton('Bỏ chọn','clearSelect','x','quiet')}</div></section>`:''}
   <div class="row between items-center sub-toolbar"><small class="muted">${list.length} thẻ</small>${list.length?button(selectedCount===list.length?'Bỏ chọn tất cả':t('selectVisible'),'toggleSelectAll','quiet small'):''}</div>
