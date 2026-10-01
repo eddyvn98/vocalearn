@@ -37,3 +37,12 @@ dialog{border:1px solid var(--line);border-radius:20px;padding:26px;width:min(94
 .editor-identity{margin-top:0}.word-editor .panel{padding:14px}
 .editor-actions{position:sticky;bottom:-1px;z-index:3;margin-top:4px;padding:10px 0 2px;background:linear-gradient(to bottom,#fff0 0,#fff 24%,#fff 100%);border-top:1px solid var(--line)}
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+/* UI/UX upgrade v1 */
+.library-toolbar{align-items:stretch}.library-actions{margin-left:auto}.library-actions>.btn{white-space:nowrap}
+.toolbar-menu{position:relative}.toolbar-menu>summary{list-style:none}.toolbar-menu>summary::-webkit-details-marker{display:none}.toolbar-menu-popover{position:absolute;right:0;top:calc(100% + 8px);z-index:15;display:grid;min-width:220px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 42px #16223c20}.toolbar-menu-popover .btn{justify-content:flex-start;border:0}
+.word-list-head{display:grid;grid-template-columns:1.1fr 1.2fr 1fr .9fr .6fr 44px;gap:16px;padding:9px 20px;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.word-row{grid-template-columns:1.1fr 1.2fr 1fr .9fr .6fr 44px}.word-primary,.word-meaning,.word-topic,.word-status,.word-due{min-width:0}.word-meaning,.word-topic{overflow:hidden;text-overflow:ellipsis}.word-due{align-self:center}.word-row>.icon-button{grid-column:6}.word-row>.error-evidence{grid-column:1/-1}
+.editor-readiness{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid #b9d7c5;border-radius:12px;background:#f1f9f4;color:var(--good)}.editor-readiness.waiting{border-color:#e5d1a3;background:#fff9ec;color:var(--warning)}.editor-readiness strong{display:block}.editor-readiness p{margin-top:2px;color:var(--muted)}
+.summary .metrics{grid-template-columns:repeat(3,1fr)}.summary .metric.is-zero{display:none}.summary-detail{margin-top:12px}
+.feedback .btn.primary{min-width:128px}
