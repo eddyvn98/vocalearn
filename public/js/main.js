@@ -67,14 +67,16 @@ async function click(action,el){
   if(action==='practice')return setup('free',el.dataset.game);
   if(action==='add'||action==='edit')return openEditor(el.dataset.id);
   if(action==='makeSentenceBlank')return makeSentenceBlank();
-  if(action==='lookupReading')return lookupEditorReading(el.dataset.language||'en');if(action==='autofillWord')return autofillEditor(el.dataset.language||'en',el.dataset.meaningLanguage||'vi');if(action==='loadStrokeData')return loadStrokeData();
+  if(action==='lookupReading'){const result=await lookupEditorReading(el.dataset.language||'en');updateEditorReadiness();return result;}
+  if(action==='autofillWord'){const result=await autofillEditor(el.dataset.language||'en',el.dataset.meaningLanguage||'vi');updateEditorReadiness();return result;}
+  if(action==='loadStrokeData')return loadStrokeData();
   if(action==='aiStart')return startAi(el.dataset.wordId);
   if(action==='aiApply'){const id=await applyAi(el.dataset.wordId,el.dataset.jobId);return openEditor(id);}
   if(action==='aiApplyField'){const id=await applyAiField(el.dataset.wordId,el.dataset.jobId,el.dataset.field);return openEditor(id);}
   if(action==='aiMeaning'){
     const value=await applyAiMeaning(el.dataset.wordId,el.dataset.jobId,el.dataset.index);
     const form=document.querySelector('#word-form');if(!form)throw new Error(t('aiWordMissing'));
-    form.elements.meaning.value=value;app.dirty=true;return;
+    form.elements.meaning.value=value;app.dirty=true;updateEditorReadiness();return;
   }
   if(action==='aiRetry')return retryAi(el.dataset.wordId,el.dataset.jobId);
   if(action==='sentenceReport'||action==='sentenceDelete'){
