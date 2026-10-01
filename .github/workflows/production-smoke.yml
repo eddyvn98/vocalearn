@@ -8,6 +8,7 @@ on:
       - 'tests/browser_production_smoke.py'
       - 'tests/browser_production_exploratory.py'
       - 'tests/browser_production_autofill.py'
+      - 'tests/browser_production_games.py'
       - '.github/workflows/production-smoke.yml'
       - 'docs/DELIVERY_WORKFLOW.md'
   workflow_dispatch:
@@ -48,6 +49,8 @@ jobs:
         run: python tests/browser_production_smoke.py
       - name: Run user-like exploratory journey against production
         run: python tests/browser_production_exploratory.py
+      - name: Run real vocabulary through all MVP games
+        run: python tests/browser_production_games.py
       - name: Verify shared dictionary autofill after deploy
         if: github.event_name == 'push' && github.run_attempt > 1
         run: python tests/browser_production_autofill.py
@@ -58,5 +61,7 @@ jobs:
           path: |
             tests/browser-evidence/production-*.png
             tests/browser-evidence/production-exploratory-results.json
+            tests/browser-evidence/production-game-*.png
+            tests/browser-evidence/production-game-results.json
           if-no-files-found: ignore
           retention-days: 7
