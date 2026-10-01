@@ -33,7 +33,7 @@
   .topbar-start{gap:8px;min-width:0;flex:1}.mobile-brand{display:block}.mobile-brand .brand{font-size:0;gap:0}.mobile-brand .brand-mark{width:34px;height:34px}.set-switcher{flex:1;justify-content:flex-start;padding:7px 8px;min-width:0}.set-switcher>svg{display:none}.set-switcher>span{font-size:13px;max-width:110px}.set-switcher small{font-size:10px;white-space:nowrap}
   .topbar-actions{gap:4px}.topbar .status-button{width:40px;min-width:40px;padding:0;font-size:0}.topbar .status-button::before{content:'✓';font-size:14px;font-weight:800}.topbar .icon-button{width:40px;min-width:40px}
   main{padding-top:20px}.page-heading{margin-bottom:12px}.page-heading p{margin-top:5px}.page-actions{width:100%;gap:8px}.page-actions .btn{flex:1}
-  .scope-line{margin-bottom:4px}.hero{margin-top:10px;padding:20px}.hero.resume{margin-top:10px;padding:20px;border-radius:22px}.hero h2{font-size:24px;margin:9px 0 7px}.hero .actions{margin-top:18px}.hero .actions .btn{flex:1 1 140px}
+  .scope-line{margin-bottom:4px}.hero{margin-top:10px;padding:20px}.hero.resume,.hero.wait-panel{margin-top:10px;padding:20px;border-radius:22px}.hero h2{font-size:24px;margin:9px 0 7px}.hero .actions{margin-top:18px}.hero .actions .btn{flex:1 1 140px}
   .compact-metrics{display:flex;overflow-x:auto;gap:8px;margin:12px -2px 12px;padding:2px}.compact-metrics .metric{flex:1 0 118px;padding:11px 12px}.compact-metrics .metric strong{font-size:21px}
   .home-secondary{margin-top:18px}.game-grid{grid-template-columns:1fr 1fr}.game-tile{min-height:88px;padding:12px 8px}.tile-icon{width:36px;height:36px}
   .library-toolbar{margin-top:14px}.library-actions{width:100%;margin-left:0}.library-actions>.btn{flex:1}.toolbar-menu{margin-left:auto}
