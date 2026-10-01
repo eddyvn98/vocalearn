@@ -36,7 +36,7 @@
   .scope-line{margin-bottom:4px}.hero{margin-top:10px;padding:20px}.hero.resume,.hero.wait-panel{margin-top:10px;padding:20px;border-radius:22px}.hero h2{font-size:24px;margin:9px 0 7px}.hero .actions{margin-top:18px}.hero .actions .btn{flex:1 1 140px}
   .compact-metrics{display:flex;overflow-x:auto;gap:8px;margin:12px -2px 12px;padding:2px}.compact-metrics .metric{flex:1 0 118px;padding:11px 12px}.compact-metrics .metric strong{font-size:21px}
   .home-secondary{margin-top:18px}.game-grid{grid-template-columns:1fr 1fr}.game-tile{min-height:88px;padding:12px 8px}.tile-icon{width:36px;height:36px}
-  .library-toolbar{margin-top:14px}.library-actions{width:100%;margin-left:0}.library-actions>.btn{flex:1}.toolbar-menu{margin-left:auto}
+  .library-toolbar{margin-top:14px}.library-actions{width:100%;margin-left:0;overflow-x:auto;justify-content:flex-start;padding-bottom:2px}.library-actions>.btn{flex:0 0 auto}.library-actions>.btn:not(.icon-button){flex:1 0 auto}.toolbar-menu{margin-left:auto}
   .word-list-head{display:none}.word-list{border:0;background:transparent;display:grid;gap:10px}.word-row{grid-template-columns:minmax(0,1fr) 44px;gap:6px 10px;padding:15px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
   .word-primary{grid-column:1}.word-meaning{grid-column:1;grid-row:2}.word-topic{display:block;grid-column:1;grid-row:3;white-space:nowrap}.word-status{grid-column:1;grid-row:4}.word-due{display:none}.word-row>.icon-button{grid-column:2;grid-row:1/5}.word-row>.error-evidence{grid-column:1/-1}
   .summary .metrics{grid-template-columns:1fr 1fr}.summary .metric{display:grid;text-align:left}.summary .metric.is-zero{display:none}
