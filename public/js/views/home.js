@@ -27,7 +27,7 @@ export function homeView() {
             ?{kind:'done',eyebrow:'✓ Hôm nay',title:'Bạn đã hoàn thành phần cần học',detail:'Không còn thẻ đến hạn. Bạn có thể luyện tự do hoặc xem lại chủ đề mình muốn.',action:'setupFree',label:t('free')}
             :{kind:'empty',eyebrow:t('todayTitle'),title:t('noData'),detail:'Thêm từ đầu tiên để bắt đầu xây lịch học cá nhân.',action:'add',label:t('add')};
   const games=[
-    ['mix','sparkles'],['flash','book'],['quiz','check'],['match','arrow'],['typing','edit'],['spell','list'],['cloze','sliders']
+    ['mix','shuffle'],['flash','cards'],['quiz','help'],['match','swap'],['typing','keyboard'],['spell','volume'],['cloze','type']
   ];
   return shell(`<header class="page-heading row between wrap"><div><div class="eyebrow">${t('intro')}</div><h1 tabindex="-1">${t('todayTitle')}</h1><p class="muted">${t('todaySub')}</p></div><div class="row wrap page-actions">${button(t('statistics'),'statistics','quiet')}${button(t('chooseScope'),'scope')}</div></header>
   <p class="muted small scope-line">${t('scope')}: ${app.scope.length?app.scope.map(id=>esc(app.model.categories[id]?.name||t(id))).join(' / '):t('all')}</p>
