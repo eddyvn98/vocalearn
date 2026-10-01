@@ -94,21 +94,32 @@ def add_audio_and_test_export(page, temp):
         page.set_viewport_size(original_viewport)
     row.locator('[data-action="edit"]').click()
     expect(page.locator("#word-form")).to_be_visible()
-    modal_box = page.locator("#modal").bounding_box()
-    assert modal_box and modal_box["width"] <= 650, f"Word editor is too wide: {modal_box}"
-    for name in ("word", "meaning", "pos", "ipa"):
-        box = page.locator(f'#word-form [name="{name}"]').bounding_box()
-        assert box and 43 <= box["height"] <= 48, f"Compact editor field {name} has unexpected height: {box}"
-    for index in range(page.locator(".editor-plain-details > summary").count()):
-        box = page.locator(".editor-plain-details > summary").nth(index).bounding_box()
-        assert box and 43 <= box["height"] <= 52, f"Collapsed editor row is too tall: {box}"
-    auto = page.locator('[data-action="autofillWord"]')
-    if auto.is_visible():
-        auto_box = auto.bounding_box()
-        meaning_box = page.locator('#word-form [name="meaning"]').bounding_box()
-        assert auto_box and auto_box["height"] >= 44, f"Autofill touch target too small: {auto_box}"
-        assert meaning_box and auto_box["y"] + auto_box["height"] <= meaning_box["y"] + 1, "Autofill overlaps the meaning field"
-    assert page.evaluate("() => document.querySelector('#modal').scrollWidth <= document.querySelector('#modal').clientWidth + 1")
+    deterministic_geometry = (
+        os.environ.get("PW_BROWSER", "chromium") == "chromium"
+        and os.environ.get("RUNNER_OS", "Linux") == "Linux"
+        and original_viewport["width"] == 1280
+    )
+    if deterministic_geometry:
+        def assert_compact_editor():
+            modal_box = page.locator("#modal").bounding_box()
+            assert modal_box and modal_box["width"] <= 650, f"Word editor is too wide: {modal_box}"
+            for name in ("word", "meaning", "pos", "ipa"):
+                box = page.locator(f'#word-form [name="{name}"]').bounding_box()
+                assert box and 43 <= box["height"] <= 48, f"Compact editor field {name} has unexpected height: {box}"
+            for index in range(page.locator(".editor-plain-details > summary").count()):
+                box = page.locator(".editor-plain-details > summary").nth(index).bounding_box()
+                assert box and 43 <= box["height"] <= 52, f"Collapsed editor row is too tall: {box}"
+            auto = page.locator('[data-action="autofillWord"]')
+            if auto.is_visible():
+                auto_box = auto.bounding_box()
+                meaning_box = page.locator('#word-form [name="meaning"]').bounding_box()
+                assert auto_box and auto_box["height"] >= 44, f"Autofill touch target too small: {auto_box}"
+                assert meaning_box and auto_box["y"] + auto_box["height"] <= meaning_box["y"] + 1, "Autofill overlaps the meaning field"
+            assert page.evaluate("() => document.querySelector('#modal').scrollWidth <= document.querySelector('#modal').clientWidth + 1")
+        assert_compact_editor()
+        page.set_viewport_size({"width": 390, "height": 844})
+        assert_compact_editor()
+        page.set_viewport_size(original_viewport)
     page.get_by_text("Trường bổ sung", exact=True).click()
     page.get_by_text("Ảnh & âm thanh", exact=True).click()
     wav_path = Path(temp) / "deploy.wav"
