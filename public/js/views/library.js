@@ -63,7 +63,6 @@ export function libraryView() {
     <details class="toolbar-menu"><summary class="btn icon-button" aria-label="Thêm thao tác" title="Thêm thao tác">${icon('more')}</summary><div class="toolbar-menu-popover">
       ${button(`${icon('sliders')}<span>${t('customFields')}</span>`,'customFields','quiet')}
       ${button(`${icon('upload')}<span>${t('import')}</span>`,'import','quiet')}
-      ${button(`${icon('download')}<span>Xuất Excel</span>`,'export','quiet')}
       ${button(`${icon('database')}<span>Tài nguyên</span>`,'offlineResources','quiet')}
       ${button(`${icon('trash')}<span>${t('deleted')}</span>`,'trash','quiet danger')}
     </div></details>${iconButton('Xuất Excel','export','download','quiet library-export')}</div></div>
