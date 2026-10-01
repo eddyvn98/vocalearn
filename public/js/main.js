@@ -53,7 +53,7 @@ function pruneSelection(){const ids=new Set(filtered().map(w=>w.id));for(const i
 async function click(action,el){
   if(studyActions.has(action))return studyAction(action,el);
   if(action==='toggleAuth'){app.register=!app.register;app.render();return;}
-  if(action==='close'){if(app.dirty&&!confirm(t('unsaved')))return;app.dirty=false;closeModal(true);return;}
+  if(action==='close'||action==='cancelEditor'){if(app.dirty&&!confirm(t('unsaved')))return;app.dirty=false;closeModal(true);return;}
   if(['home','library','errors','statistics','sets'].includes(action)){
     if(action==='errors')app.filter='errors';if(action==='library')app.filter='all';return navigate(action);
   }
